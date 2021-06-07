@@ -92,12 +92,21 @@ function getRecentlyVisited() {
         }
         console.log(history.length)
         history.forEach(item => {
-            item = item.reverse()
+            //item = item.reverse()
+            item.sort(function(a, b) {
+                if(a.utc_time > b.utc_time) {
+                    return -1
+                }
+                if(b.utc_time > a.utc_time) {
+                    return 1
+                }
+              });
             let i = 0
             for(let j = 0; j < item.length; j++) {
                 if (item[j].url.indexOf('https://gitlab.com/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1)) {
                     i++
                     recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a></br></br>'
+                    console.log(item[j])
                     if(i == numberOfRecentlyVisited) {
                         break 
                     }
