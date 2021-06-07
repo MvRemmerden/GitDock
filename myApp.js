@@ -30,13 +30,18 @@ console.log(username)
 if (access_token && user_id && username) {
     setupSecondaryMenu()
     mb.on('after-create-window', () => {
-        //mb.window.webContents.openDevTools()
-        getRecentlyVisited()
+        console.log('after-create-window')
+        mb.window.webContents.openDevTools()
 
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
             shell.openExternal(url);
             return { action: 'deny' };
         });
+    })
+
+    mb.on('show', () => {
+        console.log('show')
+        getRecentlyVisited()
     })
 } else {
     setupSecondaryMenu()
@@ -79,12 +84,18 @@ function handleLogin() {
 }
 
 function getRecentlyVisited() {
+    recentlyVisitedString = ''
     BrowserHistory.getAllHistory(500).then(history => {
+        if(history.length == 2) {
+            history[0]= history[0].concat(history[1])
+            history.splice(1,1)
+        }
+        console.log(history.length)
         history.forEach(item => {
             item = item.reverse()
             let i = 0
             for(let j = 0; j < item.length; j++) {
-                if (item[j].url.indexOf('https://gitlab.com/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge-requests/') != -1)) {
+                if (item[j].url.indexOf('https://gitlab.com/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1)) {
                     i++
                     recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a></br></br>'
                     if(i == numberOfRecentlyVisited) {
