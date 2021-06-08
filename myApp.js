@@ -12,7 +12,7 @@ let username = store.get('username')
 let recentlyVisitedString = ''
 let numberOfRecentlyVisited = 10
 
-
+console.log(access_token)
 const mb = menubar({
     showDockIcon: false,
     showOnAllWorkspaces: false,
@@ -23,25 +23,30 @@ const mb = menubar({
     }
 });
 
-console.log(access_token)
-console.log(user_id)
-console.log(username)
-
 if (access_token && user_id && username) {
     setupSecondaryMenu()
     mb.on('after-create-window', () => {
-        console.log('after-create-window')
         mb.window.webContents.openDevTools()
 
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
             shell.openExternal(url);
             return { action: 'deny' };
         });
+        /*store.delete('user_id')
+        store.delete('username')
+        store.delete('access_token')
+        mb.window.webContents.session.clearCache()
+        mb.window.webContents.session.clearStorageData()*/
     })
 
     mb.on('show', () => {
-        console.log('show')
         getRecentlyVisited()
+
+        fetch('https://gitlab.com/api/v4/projects/278964/pipelines?username=mvanremmerden&per_page=5&access_token=' + access_token).then(result => {
+            return result.json()
+        }).then(result => {
+            console.log(result)
+        })
     })
 } else {
     setupSecondaryMenu()
@@ -65,13 +70,9 @@ function setupSecondaryMenu() {
 function handleLogin() {
     if (mb.window.webContents.getURL().indexOf('#access_token=') != '-1') {
         const code = mb.window.webContents.getURL().split('#access_token=')[1].replace('&token_type=Bearer&state=test', '')
-        console.log('https://gitlab.com/api/v4/issues?assignee_id=813373&access_token=' + code)
         fetch('https://gitlab.com/api/v4/user?access_token=' + code).then(result => {
             return result.json()
         }).then(result => {
-            console.log(code)
-            console.log(result.id)
-            console.log(result.username)
             store.set('access_token', code)
             store.set('user_id', result.id)
             store.set('username', result.username)
@@ -85,44 +86,46 @@ function handleLogin() {
 
 function getRecentlyVisited() {
     recentlyVisitedString = ''
-    BrowserHistory.getAllHistory(500).then(history => {
-        if(history.length == 2) {
-            history[0]= history[0].concat(history[1])
-            history.splice(1,1)
+    recentlyVisitedArray = new Array()
+    BrowserHistory.getAllHistory(14320).then(history => {
+        if (history.length == 2) {
+            history[0] = history[0].concat(history[1])
+            history.splice(1, 1)
         }
-        console.log(history.length)
         history.forEach(item => {
-            //item = item.reverse()
-            item.sort(function(a, b) {
-                if(a.utc_time > b.utc_time) {
+            item.sort(function (a, b) {
+                if (a.utc_time > b.utc_time) {
                     return -1
                 }
-                if(b.utc_time > a.utc_time) {
+                if (b.utc_time > a.utc_time) {
                     return 1
                 }
-              });
+            });
             let i = 0
-            for(let j = 0; j < item.length; j++) {
+            for (let j = 0; j < item.length; j++) {
                 if (item[j].url.indexOf('https://gitlab.com/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1)) {
-                    i++
-                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a></br></br>'
-                    console.log(item[j])
-                    if(i == numberOfRecentlyVisited) {
-                        break 
+                    if(!recentlyVisitedArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found') {
+                        recentlyVisitedArray.push(item[j].title)
+                        recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a></br></br>'
+                        i++
+                        if (i == numberOfRecentlyVisited) {
+                            break
+                        }
                     }
                 }
             }
         })
+        console.log(recentlyVisitedArray)
         mb.window.webContents.executeJavaScript('document.getElementById("test").innerHTML = "' + recentlyVisitedString + '"')
     })
 }
 
 function escapeHtml(unsafe) {
     return unsafe
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
- }
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
