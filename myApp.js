@@ -41,12 +41,7 @@ if (access_token && user_id && username) {
 
     mb.on('show', () => {
         getRecentlyVisited()
-
-        fetch('https://gitlab.com/api/v4/projects/278964/pipelines?username=mvanremmerden&per_page=5&access_token=' + access_token).then(result => {
-            return result.json()
-        }).then(result => {
-            console.log(result)
-        })
+        getLastPipeline()
     })
 } else {
     setupSecondaryMenu()
@@ -113,8 +108,26 @@ function getRecentlyVisited() {
                 }
             }
         })
-        console.log(recentlyVisitedArray)
-        mb.window.webContents.executeJavaScript('document.getElementById("test").innerHTML = "' + recentlyVisitedString + '"')
+        mb.window.webContents.executeJavaScript('document.getElementById("history").innerHTML = "' + recentlyVisitedString + '"')
+    })
+}
+
+function getLastPipeline() {
+    fetch('https://gitlab.com/api/v4/events?action=pushed&per_page=5&access_token=' + access_token).then(result => {
+        return result.json()
+    }).then(commits => {
+        console.log(commits)
+        fetch('https://gitlab.com/api/v4/projects/' + commits[0].project_id + '/pipelines?&username=mvanremmerden&per_page=1&access_token=' + access_token).then(result => {
+            return result.json()
+        }).then(pipelines => {
+            console.log(pipelines[0])
+            fetch('https://gitlab.com/api/v4/projects/' + commits[0].project_id + '/repository/commits/' + pipelines[0].sha +'?access_token=' + access_token).then(result => {
+                return result.json()
+            }).then(commit => {
+                console.log(commit)
+                mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<a href=\\"' + pipelines[0].web_url + '\\" target=\\"_blank\\">' + commit.title + '</a></br></br>"')
+            })
+        })
     })
 }
 

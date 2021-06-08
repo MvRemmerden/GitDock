@@ -13,3 +13,6 @@ a {
     width: 40px;
     margin: -8px 0 0 -8px;
 }
+#pipeline {
+    font-weight: bold;
+}
