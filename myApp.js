@@ -133,6 +133,8 @@ function getLastPipeline() {
                     logo += '<path d=\\"M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z\\"/></g></svg>'
                 } else if (commit.last_pipeline.status == 'pending') {
                     logo += '<path d=\\"M4.7 5.3c0-.2.1-.3.3-.3h.9c.2 0 .3.1.3.3v3.4c0 .2-.1.3-.3.3H5c-.2 0-.3-.1-.3-.3V5.3m3 0c0-.2.1-.3.3-.3h.9c.2 0 .3.1.3.3v3.4c0 .2-.1.3-.3.3H8c-.2 0-.3-.1-.3-.3V5.3\\"/></g></svg>'
+                } else if (commit.last_pipeline.status == 'canceled') {
+                    logo += '<path d=\\"M5.2 3.8l4.9 4.9c.2.2.2.5 0 .7l-.7.7c-.2.2-.5.2-.7 0L3.8 5.2c-.2-.2-.2-.5 0-.7l.7-.7c.2-.2.5-.2.7 0\\"/></g></svg>'
                 }
                 mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "' + logo + '<a href=\\"' + pipelines[0].web_url + '\\" target=\\"_blank\\">' + commit.title + '</a></br>' + commit.last_pipeline.status + ' (' + timeSince(new Date(commit.last_pipeline.updated_at)) + ' ago' + ')<br/></br>"')
             })
