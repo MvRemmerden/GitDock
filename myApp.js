@@ -147,7 +147,6 @@ function getUsersProjects() {
                 return result.json()
             }).then(commits => {
                 commits.forEach(commit => {
-                    //console.log(commit)
                 })
             })
         })
@@ -159,8 +158,6 @@ function getRecentComments() {
         return result.json()
     }).then(comments => {
         comments.forEach(comment => {
-            //console.log(comment.target_title)
-            //console.log(comment.note.body)
         })
     })
 }
@@ -171,7 +168,6 @@ function getTodos() {
         return result.json()
     }).then(todos => {
         todos.forEach(todo => {
-            //console.log(todo)
             let title
             if (todo.target.title) {
                 title = todo.target.title
