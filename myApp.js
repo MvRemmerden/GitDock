@@ -102,7 +102,7 @@ function getRecentlyVisited() {
             for (let j = 0; j < item.length; j++) {
                 if (item[j].url.indexOf('https://gitlab.com/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !recentlyVisitedArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
                     recentlyVisitedArray.push(item[j].title)
-                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a></br>' + new Date(item[j].utc_time + ' UTC').toLocaleString() + '</br></br>'
+                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a></br>' + timeSince(new Date(item[j].utc_time + ' UTC')) +' ago (' + new Date(item[j].utc_time + ' UTC').toLocaleString() + ')</br></br>'
                     i++
                     if (i == numberOfRecentlyVisited) {
                         break
@@ -125,11 +125,11 @@ function getLastPipeline() {
                 return result.json()
             }).then(commit => {
                 let logo
-                if(commit.last_pipeline.status == 'running') {
+                if (commit.last_pipeline.status == 'running') {
                     logo = '<svg viewBox=\\"0 0 14 14\\" xmlns=\\"http://www.w3.org/2000/svg\\"><g fill-rule=\\"evenodd\\"><path d=\\"M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z\\"/><path d=\\"M13 7A6 6 0 1 0 1 7a6 6 0 0 0 12 0z\\" fill=\\"#FFF\\" style=\\"fill: var(--svg-status-bg, #fff);\\"/><path d=\\"M7 3c2.2 0 4 1.8 4 4s-1.8 4-4 4c-1.3 0-2.5-.7-3.3-1.7L7 7V3\\"/></g></svg>'
-                } else if(commit.last_pipeline.status == 'failed') {
+                } else if (commit.last_pipeline.status == 'failed') {
                     logo = '<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 14 14\\"><g fill-rule=\\"evenodd\\"><path d=\\"M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z\\"/><path d=\\"M13 7A6 6 0 1 0 1 7a6 6 0 0 0 12 0z\\" fill=\\"#FFF\\" style=\\"fill: var(--svg-status-bg, #fff);\\"/><path d=\\"M7 5.969L5.599 4.568a.29.29 0 0 0-.413.004l-.614.614a.294.294 0 0 0-.004.413L5.968 7l-1.4 1.401a.29.29 0 0 0 .004.413l.614.614c.113.114.3.117.413.004L7 8.032l1.401 1.4a.29.29 0 0 0 .413-.004l.614-.614a.294.294 0 0 0 .004-.413L8.032 7l1.4-1.401a.29.29 0 0 0-.004-.413l-.614-.614a.294.294 0 0 0-.413-.004L7 5.968z\\"/></g></svg>'
-                } else if(commit.last_pipeline.status == 'succeeded') {
+                } else if (commit.last_pipeline.status == 'succeeded') {
                     logo = '<svg viewBox=\\"0 0 14 14\\" xmlns=\\"http://www.w3.org/2000/svg\\"><g fill-rule=\\"evenodd\\"><path d=\\"M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z\\"/><path d=\\"M13 7A6 6 0 1 0 1 7a6 6 0 0 0 12 0z\\" fill=\\"#FFF\\" style=\\"fill: var(--svg-status-bg, #fff);\\"/><path d=\\"M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z\\"/></g></svg>'
                 }
                 mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "' + logo + '<a href=\\"' + pipelines[0].web_url + '\\" target=\\"_blank\\">' + commit.title + '</a></br>' + commit.last_pipeline.status + '<br/></br>"')
@@ -173,16 +173,16 @@ function getTodos() {
         todos.forEach(todo => {
             //console.log(todo)
             let title
-            if(todo.target.title) {
+            if (todo.target.title) {
                 title = todo.target.title
-            }else{
+            } else {
                 title = todo.target.filename
             }
             let body
-            if(todo.body) {
-                let trimmedString = todo.body.substring(0,75).replace(/\n/g, " ")
+            if (todo.body) {
+                let trimmedString = todo.body.substring(0, 75).replace(/\n/g, " ")
                 body = trimmedString.substr(0, Math.min(trimmedString.length, trimmedString.lastIndexOf(" ")))
-            }else{
+            } else {
                 body = todo.target.description
             }
             todosString += '<a href=\\"' + todo.target_url + '\\" target=\\"_blank\\">' + escapeHtml(title) + '</a></br>' + body + '<br/></br>'
@@ -200,3 +200,27 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
+function timeSince(date) {
+    var seconds = Math.floor((new Date() - date) / 1000);
+    var interval = seconds / 31536000;
+    if (interval > 1) {
+        return Math.floor(interval) + " years";
+    }
+    interval = seconds / 2592000;
+    if (interval > 1) {
+        return Math.floor(interval) + " months";
+    }
+    interval = seconds / 86400;
+    if (interval > 1) {
+        return Math.floor(interval) + " days";
+    }
+    interval = seconds / 3600;
+    if (interval > 1) {
+        return Math.floor(interval) + " hours";
+    }
+    interval = seconds / 60;
+    if (interval > 1) {
+        return Math.floor(interval) + " minutes";
+    }
+    return Math.floor(seconds) + " seconds";
+}
