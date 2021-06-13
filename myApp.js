@@ -199,10 +199,6 @@ function getRecentComments() {
     }).then(comments => {
         let recentCommentsString = ''
         comments.forEach(comment => {
-            console.log(escapeHtml(comment.note.body))
-            /*console.log(comment.note.body)
-            console.log(comment.target_title)
-            console.log(timeSince(new Date(comment.created_at + ' ago')))*/
             recentCommentsString += '<div class=\\"comment\\"><a href=\\"#\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; ' + escapeHtml(comment.target_title) + '</span></div></div>'
         })
         mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "' + recentCommentsString + '"')
