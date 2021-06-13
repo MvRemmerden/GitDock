@@ -24,7 +24,7 @@ a:hover {
 #pipeline, #history, #todos {
     margin-bottom: 1rem;
 }
-.time-since {
+.namespace-with-time {
     font-size: 0.825rem;
     color: #aaa;
 }
@@ -44,23 +44,27 @@ a:hover {
     display: flex;
     flex-direction: column;
 }
-.todo, .history-entry {
+.todo, .history-entry, .comment {
     display: flex;
     align-items: center;
     margin-bottom: 1rem;
     width: calc(100% - 2rem);
     box-sizing: border-box;
 }
+.history-entry, .comment {
+    align-items: flex-start;
+    flex-direction: column;
+}
 .todo img, #history img {
     width: 2rem;
     border-radius: 2rem;
     margin-right: 1rem;
 }
-.todo-information, .history-entry-information {
+.todo-information, .history-entry-information, .comment, .comment-information {
     width: 100%;
     box-sizing: border-box;
 }
-.todo-information a, .todo-information span, .history-entry-information a, .history-entry-information span {
+.todo-information a, .todo-information span, .history-entry-information a, .history-entry-information span, .comment a, .comment span {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
