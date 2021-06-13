@@ -110,23 +110,16 @@ async function getRecentlyVisited() {
                     }
                     let response = await fetch(url)
                     let project = await response.json()
-
-                    console.log('4')
                     recentlyVisitedArray.push(item[j].title)
                     recentlyVisitedString += '<div class=\\"history-entry\\"><img src=\\"' + project.avatar_url + '\\"><div class=\\"history-entry-information\\"><a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><div>' + item[j].title.split('·')[2].trim() + ' &middot; <span class=\\"time-since\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago</span></div></div></div>'
                     i++
                     if (i == numberOfRecentlyVisited) {
                         break
                     }
-                    
-                    console.log('3')
                 }
-                console.log('2')
             }
-            console.log('1')
             mb.window.webContents.executeJavaScript('document.getElementById("history").innerHTML = "' + recentlyVisitedString + '"')
         })
-        console.log('0')
     })
 }
 
