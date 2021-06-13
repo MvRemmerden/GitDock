@@ -66,3 +66,63 @@ a:hover {
     text-overflow: ellipsis;
     max-width: 100%;
 }
+.list-container {
+    padding: 0;
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 0.375rem;
+}
+.list-container li {
+    list-style-type: none;
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #21262d;
+    font-weight: bold;
+    cursor: pointer;
+}
+.list-container li:hover {
+    background-color: #161b22;
+}
+.list-container li:last-of-type {
+    border-bottom: none;
+}
+.list-container li svg, .list-container li img {
+    width: 1rem;
+    height: 1rem;
+    margin: 0 1rem 0 0.5rem;
+}
+.list-container li svg.chevron {
+    width: 1rem;
+    margin: 0;
+    margin-left: auto;
+}
+.list-container li .name-with-namespace {
+    display: flex;
+    flex-direction: column;
+}
+.list-container li .name-with-namespace .namespace {
+    font-weight: normal;
+    font-size: 0.825rem;
+    color: #aaa;
+}
+#detail-view {
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    overflow: scroll;
+    left: 100vw;
+    top: 0;
+    padding: 1rem;
+    background-color: #090c10;
+    transition: 400ms ease-in;
+}
+#detail-view .header {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+#detail-view .header svg {
+    width: 1rem;
+    margin-right: 0.25rem;
+}
