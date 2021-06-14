@@ -75,6 +75,7 @@ a:hover {
     background-color: #0d1117;
     border: 1px solid #30363d;
     border-radius: 0.375rem;
+    overflow: hidden;
 }
 .list-container li {
     list-style-type: none;
@@ -84,6 +85,12 @@ a:hover {
     border-bottom: 1px solid #21262d;
     font-weight: bold;
     cursor: pointer;
+}
+.list-container#projects li {
+    padding: 0.5rem 0.75rem;
+}
+.list-container#top-nav li {
+    padding: 1rem 0.75rem;
 }
 .list-container li:hover {
     background-color: #161b22;
@@ -128,5 +135,8 @@ a:hover {
 }
 #detail-view .header svg {
     width: 1rem;
-    margin-right: 0.25rem;
+    margin-right: 0.125rem;
+}
+#detail-view .headline {
+    margin-top: 1rem;
 }

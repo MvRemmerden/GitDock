@@ -14,6 +14,7 @@ let recentlyVisitedString = ''
 let numberOfRecentlyVisited = 3
 let numberOfTodos = 3
 let numberOfRecentComments = 3
+let numberOfFavoriteProjects = 5
 
 const mb = menubar({
     showDockIcon: false,
@@ -59,6 +60,7 @@ if (access_token && user_id && username) {
 function setupSecondaryMenu() {
     mb.on('ready', () => {
         const contextMenu = Menu.buildFromTemplate([
+            { label: 'Settings', click: () => { mb.app.quit(); } },
             { label: 'Quit', click: () => { mb.app.quit(); } }
         ])
         mb.tray.on('right-click', () => {
@@ -171,7 +173,7 @@ function getLastPipeline() {
 }
 
 function getUsersProjects() {
-    fetch('https://gitlab.com/api/v4/users/' + user_id + '/starred_projects?min_access_level=30&per_page=4&order_by=updated_at&access_token=' + access_token).then(result => {
+    fetch('https://gitlab.com/api/v4/users/' + user_id + '/starred_projects?min_access_level=30&per_page=' + numberOfFavoriteProjects + '&order_by=updated_at&access_token=' + access_token).then(result => {
         return result.json()
     }).then(projects => {
         let favoriteProjectsString = ''
@@ -196,11 +198,23 @@ function getUsersProjects() {
 function getRecentComments() {
     fetch('https://gitlab.com/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token).then(result => {
         return result.json()
-    }).then(comments => {
+    }).then(async comments => {
         let recentCommentsString = ''
-        comments.forEach(comment => {
-            recentCommentsString += '<div class=\\"comment\\"><a href=\\"#\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; ' + escapeHtml(comment.target_title) + '</span></div></div>'
-        })
+        for (comment of comments) {
+            let url = ''
+            if (comment.note.noteable_type == 'MergeRequest') {
+                url = 'https://gitlab.com/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
+            } else if (comment.note.noteable_type == 'Issue') {
+                url = 'https://gitlab.com/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + access_token
+            } else if (comment.noteableType == 'Epic') {
+                break
+            }
+            await fetch(url).then(result => {
+                return result.json()
+            }).then(collabject => {
+                recentCommentsString += '<div class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; ' + escapeHtml(comment.target_title) + '</span></div></div>'
+            })
+        }
         mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "' + recentCommentsString + '"')
     })
 }
