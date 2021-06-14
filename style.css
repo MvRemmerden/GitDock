@@ -126,7 +126,7 @@ a:hover {
     top: 0;
     padding: 1rem;
     background-color: #090c10;
-    transition: 400ms ease-in;
+    transition: 250ms ease-in;
 }
 #detail-view .header {
     display: flex;

@@ -1,11 +1,9 @@
 const { menubar } = require('menubar')
-const { Menu } = require("electron")
+const { Menu, shell, ipcMain } = require("electron")
 const fetch = require('node-fetch');
 const Store = require('electron-store');
 const store = new Store()
-const shell = require('electron').shell
 const BrowserHistory = require('node-browser-history');
-const fs = require('fs');
 
 let access_token = store.get('access_token')
 let user_id = store.get('user_id')
@@ -22,7 +20,13 @@ const mb = menubar({
     icon: __dirname + '/assets/gitlab.png',
     browserWindow: {
         width: 500,
-        height: 600
+        height: 600,
+        webPreferences: {
+            preload: __dirname + '/preload.js',
+            nodeIntegration: false,
+            contextIsolation: true,
+            enableRemoteModule: false
+        }
     }
 });
 
@@ -30,6 +34,16 @@ if (access_token && user_id && username) {
     setupSecondaryMenu()
     mb.on('after-create-window', () => {
         mb.window.webContents.openDevTools()
+        ipcMain.on('detail-page', (event, arg) => {
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "' + arg + '"')
+            if(arg == 'Issues') {
+                mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your issues"')
+            }else if(arg == 'Merge requests') {
+                mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your merge requests"')
+            }else if(arg == 'To-Do list') {
+                mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your todos"')
+            }
+        })
 
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
             shell.openExternal(url);
