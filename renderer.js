@@ -1,8 +1,11 @@
-function goToDetail(page) {
-    window.electron.doThing(page)
+function goToDetail(page, object) {
+    let value = {
+        page: page,
+        object: object
+    }
+    window.electron.doThing(value)
     document.getElementById('detail-view').style.left = 0
     document.body.style.overflow = 'hidden'
-    console.log(page)
 }
 function goToOverview() {
     document.getElementById('detail-view').style.left = '100vw'

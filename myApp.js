@@ -35,12 +35,15 @@ if (access_token && user_id && username) {
     mb.on('after-create-window', () => {
         mb.window.webContents.openDevTools()
         ipcMain.on('detail-page', (event, arg) => {
-            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "' + arg + '"')
-            if(arg == 'Issues') {
+            if(arg.object) {
+                console.log(JSON.parse(arg.object))
+            }
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "' + arg.page + '"')
+            if(arg.page == 'Issues') {
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your issues"')
-            }else if(arg == 'Merge requests') {
+            }else if(arg.page == 'Merge requests') {
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your merge requests"')
-            }else if(arg == 'To-Do list') {
+            }else if(arg.page == 'To-Do list') {
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your todos"')
             }
         })
@@ -101,7 +104,7 @@ function handleLogin() {
 }
 
 async function getRecentlyVisited() {
-    recentlyVisitedString = ''
+    recentlyVisitedString = '<ul class=\\"list-container\\">'
     recentlyVisitedArray = new Array()
     await BrowserHistory.getAllHistory(14320).then(async history => {
         if (history.length == 2) {
@@ -129,15 +132,16 @@ async function getRecentlyVisited() {
                     let response = await fetch(url)
                     let project = await response.json()
                     recentlyVisitedArray.push(item[j].title)
-                    recentlyVisitedString += '<div class=\\"history-entry\\">'
+                    recentlyVisitedString += '<li class=\\"history-entry\\">'
                     //recentlyVisitedString += '<img src=\\"' + project.avatar_url + '\\"><div class=\\"history-entry-information\\">'
-                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><div><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; ' + item[j].title.split('·')[2].trim() + '</span></div></div></div>'
+                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; ' + item[j].title.split('·')[2].trim() + '</span></div></li>'
                     i++
                     if (i == numberOfRecentlyVisited) {
                         break
                     }
                 }
             }
+            recentlyVisitedString += '</ul>'
             mb.window.webContents.executeJavaScript('document.getElementById("history").innerHTML = "' + recentlyVisitedString + '"')
         })
     })
@@ -165,7 +169,7 @@ function getLastPipeline() {
                             logo += '<path d=\\"M7 3c2.2 0 4 1.8 4 4s-1.8 4-4 4c-1.3 0-2.5-.7-3.3-1.7L7 7V3\\"/></g></svg>'
                         } else if (commit.last_pipeline.status == 'failed') {
                             logo += '<path d=\\"M7 5.969L5.599 4.568a.29.29 0 0 0-.413.004l-.614.614a.294.294 0 0 0-.004.413L5.968 7l-1.4 1.401a.29.29 0 0 0 .004.413l.614.614c.113.114.3.117.413.004L7 8.032l1.401 1.4a.29.29 0 0 0 .413-.004l.614-.614a.294.294 0 0 0 .004-.413L8.032 7l1.4-1.401a.29.29 0 0 0-.004-.413l-.614-.614a.294.294 0 0 0-.413-.004L7 5.968z\\"/></g></svg>'
-                        } else if (commit.last_pipeline.status == 'succeeded') {
+                        } else if (commit.last_pipeline.status == 'success') {
                             logo += '<path d=\\"M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z\\"/></g></svg>'
                         } else if (commit.last_pipeline.status == 'pending') {
                             logo += '<path d=\\"M4.7 5.3c0-.2.1-.3.3-.3h.9c.2 0 .3.1.3.3v3.4c0 .2-.1.3-.3.3H5c-.2 0-.3-.1-.3-.3V5.3m3 0c0-.2.1-.3.3-.3h.9c.2 0 .3.1.3.3v3.4c0 .2-.1.3-.3.3H8c-.2 0-.3-.1-.3-.3V5.3\\"/></g></svg>'
@@ -196,7 +200,21 @@ function getUsersProjects() {
             /*if(project.visibility == 'public') {
                 favoriteProjectsString += '<li><img src=\\"' + project.avatar_url + '\\">'
             }else{*/
-            favoriteProjectsString += '<li><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" fill=\\"#fff\\"/></svg>'
+            let projectString = "'Projects'"
+            let projectObject = {
+                id: project.id,
+                visibility: project.visibility,
+                web_url: project.web_url,
+                name: project.name,
+                name_with_namespace: project.name_with_namespace,
+                open_issues_count: project.open_issues_count,
+                last_activity_at: project.last_activity_at,
+                avatar_url: project.avatar_url,
+                star_count: project.star_count,
+                forks_count: project.forks_count,
+            }
+            let projectJson = "'" + escapeHtml(JSON.stringify(projectObject)) + "'"
+            favoriteProjectsString += '<li onclick=\\"goToDetail(' + projectString + ', ' + projectJson + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" fill=\\"#fff\\"/></svg>'
             //}
             favoriteProjectsString += '<div class=\\"name-with-namespace\\"><span>' + project.name + '</span><span class=\\"namespace\\">' + project.namespace.name + '</span></div>' + chevron + '</li>'
             /*fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits?per_page=1&access_token=' + access_token).then(result => {
@@ -210,10 +228,10 @@ function getUsersProjects() {
 }
 
 function getRecentComments() {
+    let recentCommentsString = '<ul class=\\"list-container\\">'
     fetch('https://gitlab.com/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(async comments => {
-        let recentCommentsString = ''
         for (comment of comments) {
             let url = ''
             if (comment.note.noteable_type == 'MergeRequest') {
@@ -226,9 +244,10 @@ function getRecentComments() {
             await fetch(url).then(result => {
                 return result.json()
             }).then(collabject => {
-                recentCommentsString += '<div class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; ' + escapeHtml(comment.target_title) + '</span></div></div>'
+                recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; ' + escapeHtml(comment.target_title) + '</span></div></li>'
             })
         }
+        recentCommentsString += '</ul>'
         mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "' + recentCommentsString + '"')
     })
 }
