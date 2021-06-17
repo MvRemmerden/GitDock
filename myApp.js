@@ -19,7 +19,7 @@ const mb = menubar({
     showOnAllWorkspaces: false,
     icon: __dirname + '/assets/gitlab.png',
     browserWindow: {
-        width: 500,
+        width: 1000,
         height: 600,
         webPreferences: {
             preload: __dirname + '/preload.js',
@@ -35,16 +35,29 @@ if (access_token && user_id && username) {
     mb.on('after-create-window', () => {
         mb.window.webContents.openDevTools()
         ipcMain.on('detail-page', (event, arg) => {
-            if(arg.object) {
-                console.log(JSON.parse(arg.object))
-            }
-            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "' + arg.page + '"')
-            if(arg.page == 'Issues') {
-                mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your issues"')
-            }else if(arg.page == 'Merge requests') {
-                mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your merge requests"')
-            }else if(arg.page == 'To-Do list') {
-                mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your todos"')
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = ""')
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
+            if (arg.page == 'Project') {
+                let project = JSON.parse(arg.object)
+                displayProjectPage(project)
+                fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/?per_page=1&access_token=' + access_token).then(result => {
+                    return result.json()
+                }).then(commits => {
+                    fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/' + commits[0].id + '?access_token=' + access_token).then(result => {
+                        return result.json()
+                    }).then(commit => {
+                        mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "<div id=\\"project-pipeline\\">' + displayCommit(commit, project) + '</div>"')
+                    })
+                })
+            } else {
+                mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "' + arg.page + '"')
+                if (arg.page == 'Issues') {
+                    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your issues"')
+                } else if (arg.page == 'Merge requests') {
+                    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your merge requests"')
+                } else if (arg.page == 'To-Do list') {
+                    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your todos"')
+                }
             }
         })
 
@@ -61,7 +74,7 @@ if (access_token && user_id && username) {
 
     mb.on('show', () => {
         getRecentlyVisited()
-        getLastPipeline()
+        getLastCommits()
         getUsersProjects()
         getRecentComments()
         //getTodos()
@@ -147,44 +160,17 @@ async function getRecentlyVisited() {
     })
 }
 
-function getLastPipeline() {
-    fetch('https://gitlab.com/api/v4/events?action=pushed&per_page=5&access_token=' + access_token).then(result => {
+function getLastCommits() {
+    fetch('https://gitlab.com/api/v4/events?action=pushed&per_page=1&access_token=' + access_token).then(result => {
         return result.json()
     }).then(commits => {
         fetch('https://gitlab.com/api/v4/projects/' + commits[0].project_id + '?access_token=' + access_token).then(result => {
             return result.json()
         }).then(project => {
-            fetch('https://gitlab.com/api/v4/projects/' + commits[0].project_id + '/pipelines?&username=mvanremmerden&per_page=1&access_token=' + access_token).then(result => {
+            fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/' + commits[0].push_data.commit_to + '?access_token=' + access_token).then(result => {
                 return result.json()
-            }).then(pipelines => {
-                fetch('https://gitlab.com/api/v4/projects/' + commits[0].project_id + '/repository/commits/' + pipelines[0].sha + '?access_token=' + access_token).then(result => {
-                    return result.json()
-                }).then(commit => {
-                    let logo
-                    if (commit.last_pipeline.status == 'scheduled') {
-                        logo = '<svg viewBox=\\"0 0 14 14\\" xmlns=\\"http://www.w3.org/2000/svg\\"><circle cx=\\"7\\" cy=\\"7\\" r=\\"7\\"/><circle fill=\\"#FFF\\" style=\\"fill: var(--svg-status-bg, #fff);\\" cx=\\"7\\" cy=\\"7\\" r=\\"6\\"/><g transform=\\"translate(2.75 2.75)\\" fill-rule=\\"nonzero\\"><path d=\\"M4.165 7.81a3.644 3.644 0 1 1 0-7.29 3.644 3.644 0 0 1 0 7.29zm0-1.042a2.603 2.603 0 1 0 0-5.206 2.603 2.603 0 0 0 0 5.206z\\"/><rect x=\\"3.644\\" y=\\"2.083\\" width=\\"1.041\\" height=\\"2.603\\" rx=\\".488\\"/><rect x=\\"3.644\\" y=\\"3.644\\" width=\\"2.083\\" height=\\"1.041\\" rx=\\".488\\"/></g></svg>'
-                    } else {
-                        logo = '<svg viewBox=\\"0 0 14 14\\" xmlns=\\"http://www.w3.org/2000/svg\\"><g fill-rule=\\"evenodd\\"><path d=\\"M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z\\"/><path d=\\"M13 7A6 6 0 1 0 1 7a6 6 0 0 0 12 0z\\" fill=\\"#FFF\\" style=\\"fill: var(--svg-status-bg, #fff);\\"/>'
-                        if (commit.last_pipeline.status == 'running') {
-                            logo += '<path d=\\"M7 3c2.2 0 4 1.8 4 4s-1.8 4-4 4c-1.3 0-2.5-.7-3.3-1.7L7 7V3\\"/></g></svg>'
-                        } else if (commit.last_pipeline.status == 'failed') {
-                            logo += '<path d=\\"M7 5.969L5.599 4.568a.29.29 0 0 0-.413.004l-.614.614a.294.294 0 0 0-.004.413L5.968 7l-1.4 1.401a.29.29 0 0 0 .004.413l.614.614c.113.114.3.117.413.004L7 8.032l1.401 1.4a.29.29 0 0 0 .413-.004l.614-.614a.294.294 0 0 0 .004-.413L8.032 7l1.4-1.401a.29.29 0 0 0-.004-.413l-.614-.614a.294.294 0 0 0-.413-.004L7 5.968z\\"/></g></svg>'
-                        } else if (commit.last_pipeline.status == 'success') {
-                            logo += '<path d=\\"M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z\\"/></g></svg>'
-                        } else if (commit.last_pipeline.status == 'pending') {
-                            logo += '<path d=\\"M4.7 5.3c0-.2.1-.3.3-.3h.9c.2 0 .3.1.3.3v3.4c0 .2-.1.3-.3.3H5c-.2 0-.3-.1-.3-.3V5.3m3 0c0-.2.1-.3.3-.3h.9c.2 0 .3.1.3.3v3.4c0 .2-.1.3-.3.3H8c-.2 0-.3-.1-.3-.3V5.3\\"/></g></svg>'
-                        } else if (commit.last_pipeline.status == 'canceled') {
-                            logo += '<path d=\\"M5.2 3.8l4.9 4.9c.2.2.2.5 0 .7l-.7.7c-.2.2-.5.2-.7 0L3.8 5.2c-.2-.2-.2-.5 0-.7l.7-.7c.2-.2.5-.2.7 0\\"/></g></svg>'
-                        } else if (commit.last_pipeline.status == 'skipped') {
-                            logo += '<path d=\\"M6.415 7.04L4.579 5.203a.295.295 0 0 1 .004-.416l.349-.349a.29.29 0 0 1 .416-.004l2.214 2.214a.289.289 0 0 1 .019.021l.132.133c.11.11.108.291 0 .398L5.341 9.573a.282.282 0 0 1-.398 0l-.331-.331a.285.285 0 0 1 0-.399L6.415 7.04zm2.54 0L7.119 5.203a.295.295 0 0 1 .004-.416l.349-.349a.29.29 0 0 1 .416-.004l2.214 2.214a.289.289 0 0 1 .019.021l.132.133c.11.11.108.291 0 .398L7.881 9.573a.282.282 0 0 1-.398 0l-.331-.331a.285.285 0 0 1 0-.399L8.955 7.04z\\"/></svg>'
-                        } else if (commit.last_pipeline.status == 'created') {
-                            logo += '<circle cx=\\"7\\" cy=\\"7\\" r=\\"3.25\\"/></g></svg>'
-                        } else if (commit.last_pipeline.status == 'preparing') {
-                            logo += '</g><circle cx=\\"7\\" cy=\\"7\\" r=\\"1\\"/><circle cx=\\"10\\" cy=\\"7\\" r=\\"1\\"/><circle cx=\\"4\\" cy=\\"7\\" r=\\"1\\"/></g></svg>'
-                        }
-                    }
-                    mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<div class=\\"commit\\">' + logo + '<div class=\\"commit-information\\"><a href=\\"' + pipelines[0].web_url + '\\" target=\\"_blank\\">' + commit.title + '</a><div><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.last_pipeline.updated_at)) + ' ago &middot; ' + project.name_with_namespace + '</span></div></div></div>"')
-                })
+            }).then(commit => {
+                mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "' + displayCommit(commit, project) + '"')
             })
         })
     })
@@ -197,15 +183,19 @@ function getUsersProjects() {
         let favoriteProjectsString = ''
         let chevron = '<svg class=\\"chevron\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#fff\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg>'
         for (project of projects) {
+            //TODO Figure out a way to see avatars of private repositories
             /*if(project.visibility == 'public') {
                 favoriteProjectsString += '<li><img src=\\"' + project.avatar_url + '\\">'
             }else{*/
-            let projectString = "'Projects'"
+            let projectString = "'Project'"
             let projectObject = {
                 id: project.id,
                 visibility: project.visibility,
                 web_url: project.web_url,
                 name: project.name,
+                namespace: {
+                    name: project.namespace.name
+                },
                 name_with_namespace: project.name_with_namespace,
                 open_issues_count: project.open_issues_count,
                 last_activity_at: project.last_activity_at,
@@ -215,13 +205,7 @@ function getUsersProjects() {
             }
             let projectJson = "'" + escapeHtml(JSON.stringify(projectObject)) + "'"
             favoriteProjectsString += '<li onclick=\\"goToDetail(' + projectString + ', ' + projectJson + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" fill=\\"#fff\\"/></svg>'
-            //}
             favoriteProjectsString += '<div class=\\"name-with-namespace\\"><span>' + project.name + '</span><span class=\\"namespace\\">' + project.namespace.name + '</span></div>' + chevron + '</li>'
-            /*fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits?per_page=1&access_token=' + access_token).then(result => {
-                return result.json()
-            }).then(commits => {
-                commits.forEach(commit => {
-            })*/
         }
         mb.window.webContents.executeJavaScript('document.getElementById("projects").innerHTML = "' + favoriteProjectsString + '"')
     })
@@ -275,6 +259,50 @@ function getTodos() {
         })
         mb.window.webContents.executeJavaScript('document.getElementById("todos").innerHTML = "' + todosString + '"')
     })
+}
+
+function displayProjectPage(project) {
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + project.name + '</span> <span class=\\"namespace\\">' + project.namespace.name + '</span>"')
+}
+
+function displayCommit(commit, project) {
+    let logo = ''
+    if (commit.last_pipeline) {
+        if (commit.last_pipeline.status == 'scheduled') {
+            logo = '<svg viewBox=\\"0 0 14 14\\" xmlns=\\"http://www.w3.org/2000/svg\\"><circle cx=\\"7\\" cy=\\"7\\" r=\\"7\\"/><circle fill=\\"#FFF\\" style=\\"fill: var(--svg-status-bg, #fff);\\" cx=\\"7\\" cy=\\"7\\" r=\\"6\\"/><g transform=\\"translate(2.75 2.75)\\" fill-rule=\\"nonzero\\"><path d=\\"M4.165 7.81a3.644 3.644 0 1 1 0-7.29 3.644 3.644 0 0 1 0 7.29zm0-1.042a2.603 2.603 0 1 0 0-5.206 2.603 2.603 0 0 0 0 5.206z\\"/><rect x=\\"3.644\\" y=\\"2.083\\" width=\\"1.041\\" height=\\"2.603\\" rx=\\".488\\"/><rect x=\\"3.644\\" y=\\"3.644\\" width=\\"2.083\\" height=\\"1.041\\" rx=\\".488\\"/></g></svg>'
+        } else {
+            logo = '<svg viewBox=\\"0 0 14 14\\" xmlns=\\"http://www.w3.org/2000/svg\\"><g fill-rule=\\"evenodd\\"><path d=\\"M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z\\"/><path d=\\"M13 7A6 6 0 1 0 1 7a6 6 0 0 0 12 0z\\" fill=\\"#FFF\\" style=\\"fill: var(--svg-status-bg, #fff);\\"/>'
+            if (commit.last_pipeline.status == 'running') {
+                logo += '<path d=\\"M7 3c2.2 0 4 1.8 4 4s-1.8 4-4 4c-1.3 0-2.5-.7-3.3-1.7L7 7V3\\"/></g></svg>'
+            } else if (commit.last_pipeline.status == 'failed') {
+                logo += '<path d=\\"M7 5.969L5.599 4.568a.29.29 0 0 0-.413.004l-.614.614a.294.294 0 0 0-.004.413L5.968 7l-1.4 1.401a.29.29 0 0 0 .004.413l.614.614c.113.114.3.117.413.004L7 8.032l1.401 1.4a.29.29 0 0 0 .413-.004l.614-.614a.294.294 0 0 0 .004-.413L8.032 7l1.4-1.401a.29.29 0 0 0-.004-.413l-.614-.614a.294.294 0 0 0-.413-.004L7 5.968z\\"/></g></svg>'
+            } else if (commit.last_pipeline.status == 'success') {
+                logo += '<path d=\\"M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z\\"/></g></svg>'
+            } else if (commit.last_pipeline.status == 'pending') {
+                logo += '<path d=\\"M4.7 5.3c0-.2.1-.3.3-.3h.9c.2 0 .3.1.3.3v3.4c0 .2-.1.3-.3.3H5c-.2 0-.3-.1-.3-.3V5.3m3 0c0-.2.1-.3.3-.3h.9c.2 0 .3.1.3.3v3.4c0 .2-.1.3-.3.3H8c-.2 0-.3-.1-.3-.3V5.3\\"/></g></svg>'
+            } else if (commit.last_pipeline.status == 'canceled') {
+                logo += '<path d=\\"M5.2 3.8l4.9 4.9c.2.2.2.5 0 .7l-.7.7c-.2.2-.5.2-.7 0L3.8 5.2c-.2-.2-.2-.5 0-.7l.7-.7c.2-.2.5-.2.7 0\\"/></g></svg>'
+            } else if (commit.last_pipeline.status == 'skipped') {
+                logo += '<path d=\\"M6.415 7.04L4.579 5.203a.295.295 0 0 1 .004-.416l.349-.349a.29.29 0 0 1 .416-.004l2.214 2.214a.289.289 0 0 1 .019.021l.132.133c.11.11.108.291 0 .398L5.341 9.573a.282.282 0 0 1-.398 0l-.331-.331a.285.285 0 0 1 0-.399L6.415 7.04zm2.54 0L7.119 5.203a.295.295 0 0 1 .004-.416l.349-.349a.29.29 0 0 1 .416-.004l2.214 2.214a.289.289 0 0 1 .019.021l.132.133c.11.11.108.291 0 .398L7.881 9.573a.282.282 0 0 1-.398 0l-.331-.331a.285.285 0 0 1 0-.399L8.955 7.04z\\"/></svg>'
+            } else if (commit.last_pipeline.status == 'created') {
+                logo += '<circle cx=\\"7\\" cy=\\"7\\" r=\\"3.25\\"/></g></svg>'
+            } else if (commit.last_pipeline.status == 'preparing') {
+                logo += '</g><circle cx=\\"7\\" cy=\\"7\\" r=\\"1\\"/><circle cx=\\"10\\" cy=\\"7\\" r=\\"1\\"/><circle cx=\\"4\\" cy=\\"7\\" r=\\"1\\"/></g></svg>'
+            } else if (commit.last_pipeline.status == 'manual') {
+                logo += '<path d=\\"M10.5 7.63V6.37l-.787-.13c-.044-.175-.132-.349-.263-.61l.481-.652-.918-.913-.657.478a2.346 2.346 0 0 0-.612-.26L7.656 3.5H6.388l-.132.783c-.219.043-.394.13-.612.26l-.657-.478-.918.913.437.652c-.131.218-.175.392-.262.61l-.744.086v1.261l.787.13c.044.218.132.392.263.61l-.438.651.92.913.655-.434c.175.086.394.173.613.26l.131.783h1.313l.131-.783c.219-.043.394-.13.613-.26l.656.478.918-.913-.48-.652c.13-.218.218-.435.262-.61l.656-.13zM7 8.283a1.285 1.285 0 0 1-1.313-1.305c0-.739.57-1.304 1.313-1.304.744 0 1.313.565 1.313 1.304 0 .74-.57 1.305-1.313 1.305z\\"/></g></svg>'
+            }
+        }
+    } else {
+        logo = '<img src=\\"' + project.avatar_url + '\\" />'
+        //TODO When https://gitlab.com/gitlab-org/gitlab/-/issues/20924 is fixed, get users avatar here
+        /*await fetch('https://gitlab.com/api/v4/users?search=' + commit.author_email + '&access_token=' + access_token).then(result => {
+            return result.json()
+        }).then(user => {
+            console.log(user[0])
+            logo = '<img src=\\"' + user[0].avatar_url + '\\" />'
+        })*/
+    }
+    return '<div class=\\"commit\\">' + logo + '<div class=\\"commit-information\\"><a href=\\"' + commit.web_url + '\\" target=\\"_blank\\">' + commit.title + '</a><div><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.committed_date.split('.')[0] + 'Z')) + ' ago &middot; ' + project.name_with_namespace + '</span></div></div></div>'
 }
 
 function escapeHtml(unsafe) {

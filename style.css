@@ -29,9 +29,10 @@ a:hover {
     font-size: 0.825rem;
     color: #aaa;
 }
-#pipeline svg {
+#pipeline svg, #project-pipeline svg, #pipeline img, #project-pipeline img {
     width: 1.5rem;
     margin-right: 0.75rem;
+    border-radius: 1.5rem;
 }
 .commit {
     display: flex;
@@ -126,7 +127,8 @@ a:hover {
     overflow: scroll;
     left: 100vw;
     top: 0;
-    padding: 1.5rem;
+    padding: 0;
+    box-sizing: border-box;
     background-color: #090c10;
     transition: 250ms ease-in;
 }
@@ -134,11 +136,32 @@ a:hover {
     display: flex;
     align-items: center;
     cursor: pointer;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #21262d;
 }
 #detail-view .header svg {
     width: 1rem;
     margin-right: 0.125rem;
 }
 #detail-view .headline {
-    margin-top: 1rem;
+    margin: 1rem 0 0.5rem;
+    display: inline-block;
+    justify-content: flex-start;
+    align-items: baseline;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    font-weight: normal;
+    font-size: 0.875rem;
+    color: #aaa;
+}
+#detail-view .headline .name {
+    margin-right: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #c9d1d9;
+}
+#detail-view #detail-headline, #detail-view #detail-content {
+    padding: 0 1.5rem;
 }
