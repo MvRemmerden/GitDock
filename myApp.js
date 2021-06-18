@@ -10,10 +10,11 @@ let user_id = store.get('user_id')
 let username = store.get('username')
 let recentlyVisitedString = ''
 let numberOfRecentlyVisited = 3
-let numberOfTodos = 3
 let numberOfRecentComments = 3
 let numberOfFavoriteProjects = 5
-let numberOfAssignedIssues = 10
+let numberOfIssues = 10
+let numberOfMRs = 10
+let numberOfTodos = 10
 let activeIssuesOption = 'assigned_to_me'
 let activeMRsOption = 'assigned_to_me'
 
@@ -65,7 +66,8 @@ if (access_token && user_id && username) {
                     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"mrs_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchMRs(' + assigned + ')\\">Assigned</div><div id=\\"mrs_created_by_me\\" class=\\"option\\" onclick=\\"switchMRs(' + created + ')\\">Created</div><div id=\\"mrs_review_requests_for_me\\" class=\\"option\\" onclick=\\"switchMRs(' + reviewed + ')\\">Review requests</div></div>"')
                     getMRs()
                 } else if (arg.page == 'To-Do list') {
-                    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your todos"')
+                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
+                    getTodos()
                 }
             }
         })
@@ -107,7 +109,6 @@ if (access_token && user_id && username) {
         getRecentComments()
         getRecentlyVisited()
         getUsersProjects()
-        //getTodos()
     })
 } else {
     setupSecondaryMenu()
@@ -266,34 +267,9 @@ function getRecentComments() {
     })
 }
 
-function getTodos() {
-    todosString = ''
-    fetch('https://gitlab.com/api/v4/todos?per_page=' + numberOfTodos + '&access_token=' + access_token).then(result => {
-        return result.json()
-    }).then(todos => {
-        todos.forEach(todo => {
-            let title
-            if (todo.target.title) {
-                title = todo.target.title
-            } else {
-                title = todo.target.filename
-            }
-            let body
-            if (todo.body) {
-                let trimmedString = todo.body.substring(0, 75).replace(/\n/g, " ")
-                body = trimmedString.substr(0, Math.min(trimmedString.length, trimmedString.lastIndexOf(" ")))
-            } else {
-                body = todo.target.description
-            }
-            todosString += '<div class=\\"todo\\"><img src=\\"' + todo.author.avatar_url + '\\"><div class=\\"todo-information\\"><a href=\\"' + todo.target_url + '\\" target=\\"_blank\\">' + escapeHtml(title) + '</a><span>' + body + '</span></div></div>'
-        })
-        mb.window.webContents.executeJavaScript('document.getElementById("todos").innerHTML = "' + todosString + '"')
-    })
-}
-
 function getIssues(scope = 'assigned_to_me') {
     let assignedIssuesString = '<ul class=\\"list-container\\">'
-    fetch('https://gitlab.com/api/v4/issues?scope=' + scope + '&state=opened&order_by=updated_at&per_page=' + numberOfAssignedIssues + '&access_token=' + access_token).then(result => {
+    fetch('https://gitlab.com/api/v4/issues?scope=' + scope + '&state=opened&order_by=updated_at&per_page=' + numberOfIssues + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(issues => {
         for (issue of issues) {
@@ -314,8 +290,8 @@ function getMRs(scope = 'assigned_to_me') {
         variable = 'scope=' + scope
     }
     let mrsString = '<ul class=\\"list-container\\">'
-    console.log('https://gitlab.com/api/v4/merge_requests?' + variable + '&state=opened&order_by=updated_at&per_page=' + numberOfAssignedIssues + '&access_token=' + access_token)
-    fetch('https://gitlab.com/api/v4/merge_requests?' + variable + '&state=opened&order_by=updated_at&per_page=' + numberOfAssignedIssues + '&access_token=' + access_token).then(result => {
+    console.log('https://gitlab.com/api/v4/merge_requests?' + variable + '&state=opened&order_by=updated_at&per_page=' + numberOfMRs+ '&access_token=' + access_token)
+    fetch('https://gitlab.com/api/v4/merge_requests?' + variable + '&state=opened&order_by=updated_at&per_page=' + numberOfMRs + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(mrs => {
         for (mr of mrs) {
@@ -325,6 +301,28 @@ function getMRs(scope = 'assigned_to_me') {
         }
         mrsString += '</ul>'
         mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + mrsString + '"')
+    })
+}
+
+function getTodos() {
+    let todosString = '<ul class=\\"list-container\\">'
+    fetch('https://gitlab.com/api/v4/todos?per_page=' + numberOfTodos + '&access_token=' + access_token).then(result => {
+        return result.json()
+    }).then(todos => {
+        for (todo of todos) {
+            console.log(todo)
+            todosString += '<li class=\\"history-entry\\">'
+            let location = ''
+            if(todo.project) {
+                location = todo.project.name_with_namespace
+            } else if(todo.group) {
+                location = todo.group.name
+            }
+            todosString += '<a href=\\"' + todo.target_url + '\\" target=\\"_blank\\">' + escapeHtml(todo.target.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(todo.updated_at)) + ' ago &middot; ' + location + '</span></div></li>'
+
+        }
+        todosString += '</ul>'
+        mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + todosString + '"')
     })
 }
 
