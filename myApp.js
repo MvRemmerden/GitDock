@@ -14,7 +14,7 @@ let numberOfTodos = 3
 let numberOfRecentComments = 3
 let numberOfFavoriteProjects = 5
 let numberOfAssignedIssues = 10
-let activeIssuesOption = 'Assigned'
+let activeIssuesOption = 'assigned_to_me'
 
 const mb = menubar({
     showDockIcon: false,
@@ -52,9 +52,11 @@ if (access_token && user_id && username) {
                     })
                 })
             } else {
-                mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
                 if (arg.page == 'Issues') {
-                    getAssignedIssues()
+                    let assigned = "'assigned_to_me'"
+                    let created = "'created_by_me'"
+                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"issues_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchIssues(' + assigned + ')\\">Assigned</div><div id=\\"issues_created_by_me\\" class=\\"option\\" onclick=\\"switchIssues(' + created + ')\\">Created</div></div>"')
+                    getIssues()
                 } else if (arg.page == 'Merge requests') {
                     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your merge requests"')
                 } else if (arg.page == 'To-Do list') {
@@ -67,9 +69,11 @@ if (access_token && user_id && username) {
         ipcMain.on('switch-issues', (event, arg) => {
             console.log(arg)
             if(arg != activeIssuesOption) {
-                console.log('switching')
-            }else{
-                console.log('already active')
+                mb.window.webContents.executeJavaScript('document.getElementById("issues_' + activeIssuesOption + '").classList.remove("active")')
+                mb.window.webContents.executeJavaScript('document.getElementById("issues_' + arg + '").classList.add("active")')
+                activeIssuesOption = arg
+                mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
+                getIssues(arg)
             }
         })
 
@@ -273,16 +277,14 @@ function getTodos() {
     })
 }
 
-function getAssignedIssues() {
-    let assigned = "'Assigned'"
-    let created = "'Created'"
-    let assignedIssuesString = '<div class=\\"segmented-control\\"><div class=\\"option active\\" onclick=\\"switchIssues(' + assigned + ')\\">Assigned</div><div class=\\"option\\" onclick=\\"switchIssues(' + created + ')\\">Created</div></div><ul class=\\"list-container\\">'
-    fetch('https://gitlab.com/api/v4/issues?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=' + numberOfAssignedIssues + '&access_token=' + access_token).then(result => {
+function getIssues(scope = 'assigned_to_me') {
+    let assignedIssuesString = '<ul class=\\"list-container\\">'
+    fetch('https://gitlab.com/api/v4/issues?scope=' + scope + '&state=opened&order_by=updated_at&per_page=' + numberOfAssignedIssues + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(issues => {
         for(issue of issues) {
             assignedIssuesString += '<li class=\\"history-entry\\">'
-            assignedIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + issue.title+ '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(issue.updated_at)) + ' ago &middot; ' + issue.references.full.split('#')[0] + '</span></div></li>'
+            assignedIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(issue.updated_at)) + ' ago &middot; ' + issue.references.full.split('#')[0] + '</span></div></li>'
                     
         }
         assignedIssuesString += '</ul>'
