@@ -15,6 +15,7 @@ let numberOfRecentComments = 3
 let numberOfFavoriteProjects = 5
 let numberOfAssignedIssues = 10
 let activeIssuesOption = 'assigned_to_me'
+let activeMRsOption = 'assigned_to_me'
 
 const mb = menubar({
     showDockIcon: false,
@@ -58,22 +59,35 @@ if (access_token && user_id && username) {
                     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"issues_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchIssues(' + assigned + ')\\">Assigned</div><div id=\\"issues_created_by_me\\" class=\\"option\\" onclick=\\"switchIssues(' + created + ')\\">Created</div></div>"')
                     getIssues()
                 } else if (arg.page == 'Merge requests') {
-                    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your merge requests"')
+                    let assigned = "'assigned_to_me'"
+                    let created = "'created_by_me'"
+                    let reviewed = "'review_requests_for_me'"
+                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"mrs_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchMRs(' + assigned + ')\\">Assigned</div><div id=\\"mrs_created_by_me\\" class=\\"option\\" onclick=\\"switchMRs(' + created + ')\\">Created</div><div id=\\"mrs_review_requests_for_me\\" class=\\"option\\" onclick=\\"switchMRs(' + reviewed + ')\\">Review requests</div></div>"')
+                    getMRs()
                 } else if (arg.page == 'To-Do list') {
                     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "Here are all your todos"')
                 }
             }
         })
 
-
         ipcMain.on('switch-issues', (event, arg) => {
-            console.log(arg)
-            if(arg != activeIssuesOption) {
+            if (arg != activeIssuesOption) {
                 mb.window.webContents.executeJavaScript('document.getElementById("issues_' + activeIssuesOption + '").classList.remove("active")')
                 mb.window.webContents.executeJavaScript('document.getElementById("issues_' + arg + '").classList.add("active")')
                 activeIssuesOption = arg
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
                 getIssues(arg)
+            }
+        })
+
+        ipcMain.on('switch-mrs', (event, arg) => {
+            console.log(arg)
+            if (arg != activeMRsOption) {
+                mb.window.webContents.executeJavaScript('document.getElementById("mrs_' + activeMRsOption + '").classList.remove("active")')
+                mb.window.webContents.executeJavaScript('document.getElementById("mrs_' + arg + '").classList.add("active")')
+                activeMRsOption = arg
+                mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
+                getMRs(arg)
             }
         })
 
@@ -282,13 +296,35 @@ function getIssues(scope = 'assigned_to_me') {
     fetch('https://gitlab.com/api/v4/issues?scope=' + scope + '&state=opened&order_by=updated_at&per_page=' + numberOfAssignedIssues + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(issues => {
-        for(issue of issues) {
+        for (issue of issues) {
             assignedIssuesString += '<li class=\\"history-entry\\">'
             assignedIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(issue.updated_at)) + ' ago &middot; ' + issue.references.full.split('#')[0] + '</span></div></li>'
-                    
+
         }
         assignedIssuesString += '</ul>'
         mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + assignedIssuesString + '"')
+    })
+}
+
+function getMRs(scope = 'assigned_to_me') {
+    let variable = ''
+    if (scope == 'review_requests_for_me') {
+        variable = 'scope=all&reviewer_id=' + user_id
+    } else {
+        variable = 'scope=' + scope
+    }
+    let mrsString = '<ul class=\\"list-container\\">'
+    console.log('https://gitlab.com/api/v4/merge_requests?' + variable + '&state=opened&order_by=updated_at&per_page=' + numberOfAssignedIssues + '&access_token=' + access_token)
+    fetch('https://gitlab.com/api/v4/merge_requests?' + variable + '&state=opened&order_by=updated_at&per_page=' + numberOfAssignedIssues + '&access_token=' + access_token).then(result => {
+        return result.json()
+    }).then(mrs => {
+        for (mr of mrs) {
+            mrsString += '<li class=\\"history-entry\\">'
+            mrsString += '<a href=\\"' + mr.web_url + '\\" target=\\"_blank\\">' + escapeHtml(mr.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(mr.updated_at)) + ' ago &middot; ' + mr.references.full.split('#')[0] + '</span></div></li>'
+
+        }
+        mrsString += '</ul>'
+        mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + mrsString + '"')
     })
 }
 

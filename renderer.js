@@ -12,6 +12,10 @@ function switchIssues(option) {
     window.electron.switchIssues(option)
 }
 
+function switchMRs(option) {
+    window.electron.switchMRs(option)
+}
+
 function goToOverview() {
     document.getElementById('detail-view').style.left = '100vw'
     document.body.style.overflow = 'auto'
