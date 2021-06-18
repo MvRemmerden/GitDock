@@ -1,8 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
-contextBridge.exposeInMainWorld(
-  'electron',
-  {doThing: (value) => ipcRenderer.send('detail-page', value)}
+contextBridge.exposeInMainWorld('electron',{
+    goToDetail: (value) => ipcRenderer.send('detail-page', value),
+    switchIssues: (value) => ipcRenderer.send('switch-issues', value)
+  }
 )
 
 window.addEventListener('DOMContentLoaded', () => {

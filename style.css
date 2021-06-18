@@ -138,6 +138,7 @@ a:hover {
     cursor: pointer;
     padding: 1rem 1.5rem;
     border-bottom: 1px solid #21262d;
+    font-weight: bold;
 }
 #detail-view .header svg {
     width: 1rem;
@@ -164,4 +165,35 @@ a:hover {
 }
 #detail-view #detail-headline, #detail-view #detail-content {
     padding: 0 1.5rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+#detail-view #detail-content .segmented-control {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: space-evenly;
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 0.375rem;
+}
+#detail-view #detail-content .segmented-control .option {
+    cursor: pointer;
+    padding: 0.5rem;
+    color: #c9d1d9;
+    width: 100%;
+    text-align: center;
+}
+#detail-view #detail-content .segmented-control .option:first-child {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+}
+#detail-view #detail-content .segmented-control .option:last-child {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+}
+#detail-view #detail-content .segmented-control .option.active {
+    background-color: #1f6feb;
+    border-color: #388bfd;
+    color: #f0f6fc;
 }
