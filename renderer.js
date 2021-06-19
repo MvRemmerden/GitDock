@@ -22,3 +22,11 @@ function switchIssues(option) {
 function switchMRs(option) {
     window.electron.switchMRs(option)
 }
+
+function switchPage(url, type) {
+    let value = {
+        url: url,
+        type: type
+    }
+    window.electron.switchPage(value)
+}

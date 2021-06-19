@@ -12,9 +12,9 @@ let recentlyVisitedString = ''
 let numberOfRecentlyVisited = 3
 let numberOfRecentComments = 3
 let numberOfFavoriteProjects = 5
-let numberOfIssues = 10
-let numberOfMRs = 10
-let numberOfTodos = 10
+let numberOfIssues = 1
+let numberOfMRs = 1
+let numberOfTodos = 1
 let activeIssuesOption = 'assigned_to_me'
 let activeMRsOption = 'assigned_to_me'
 
@@ -63,7 +63,7 @@ if (access_token && user_id && username) {
                     let assigned = "'assigned_to_me'"
                     let created = "'created_by_me'"
                     let reviewed = "'review_requests_for_me'"
-                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"mrs_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchMRs(' + assigned + ')\\">Assigned</div><div id=\\"mrs_created_by_me\\" class=\\"option\\" onclick=\\"switchMRs(' + created + ')\\">Created</div><div id=\\"mrs_review_requests_for_me\\" class=\\"option\\" onclick=\\"switchMRs(' + reviewed + ')\\">Review requests</div></div>"')
+                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"mrs_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchMRs(' + assigned + ')\\">Assigned</div><div id=\\"mrs_review_requests_for_me\\" class=\\"option\\" onclick=\\"switchMRs(' + reviewed + ')\\">Review requests</div><div id=\\"mrs_created_by_me\\" class=\\"option\\" onclick=\\"switchMRs(' + created + ')\\">Created</div></div>"')
                     getMRs()
                 } else if (arg.page == 'To-Do list') {
                     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
@@ -90,6 +90,11 @@ if (access_token && user_id && username) {
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
                 getMRs(arg)
             }
+        })
+
+        ipcMain.on('switch-page', (event, arg) => {
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
+            getTodos(arg.url)
         })
 
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
@@ -165,11 +170,10 @@ function getUser() {
         let count = Number(stats.assigned_merge_requests) + Number(stats.review_requested_merge_requests)
         mb.window.webContents.executeJavaScript('document.getElementById("mrs-count").innerHTML = "' + count + '"')
     })
-    fetch('https://gitlab.com/api/v4/todos?&access_token=' + access_token).then(result => {
-        return result.json()
-    }).then(todos => {
-        let count = Number(todos.length)
+    fetch('https://gitlab.com/api/v4/todos?&per_page=1&pagination=keyset&access_token=' + access_token).then(result => {
+        let count = result.headers.get('x-total')
         mb.window.webContents.executeJavaScript('document.getElementById("todos-count").innerHTML = "' + count + '"')
+        return result.json()
     })
 }
 
@@ -329,9 +333,13 @@ function getMRs(scope = 'assigned_to_me') {
     })
 }
 
-function getTodos() {
+function getTodos(url = 'https://gitlab.com/api/v4/todos?per_page=' + numberOfTodos + '&access_token=' + access_token) {
     let todosString = '<ul class=\\"list-container\\">'
-    fetch('https://gitlab.com/api/v4/todos?per_page=' + numberOfTodos + '&access_token=' + access_token).then(result => {
+    let totalNumber
+    let keysetLinks
+    fetch(url).then(result => {
+        keysetLinks = result.headers.get('Link')
+        totalNumber = result.headers.get('x-total')
         return result.json()
     }).then(todos => {
         for (todo of todos) {
@@ -343,9 +351,18 @@ function getTodos() {
                 location = todo.group.name
             }
             todosString += '<a href=\\"' + todo.target_url + '\\" target=\\"_blank\\">' + escapeHtml(todo.target.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(todo.updated_at)) + ' ago &middot; ' + location + '</span></div></li>'
-
         }
         todosString += '</ul>'
+        if(totalNumber > numberOfTodos && keysetLinks.indexOf('rel="next"') != -1) {
+            let nextLink
+            if(keysetLinks.indexOf('rel="prev", <') != -1) {
+                nextLink = escapeHtml('"' + keysetLinks.split('rel="prev", ')[1].split('>; rel="next"')[0].substring(1) + '"')
+            }else{
+                nextLink = escapeHtml('"' + keysetLinks.split('>; rel="next"')[0].substring(1) + '"')
+            }
+            let type = "'Todos'"
+            todosString += '<div id=\\"pagination\\"><button onclick=\\"switchPage(' + nextLink + ', ' + type + ')\\">Next</button></div>'
+        }
         mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + todosString + '"')
     })
 }
