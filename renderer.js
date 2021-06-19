@@ -8,15 +8,17 @@ function goToDetail(page, object) {
     document.body.style.overflow = 'hidden'
 }
 
+function goToOverview() {
+    document.getElementById('detail-view').style.left = '100vw'
+    document.getElementById('detail-content').innerHTML = ''
+    document.getElementById('detail-headline').innerHTML = ''
+    document.body.style.overflow = 'auto'
+}
+
 function switchIssues(option) {
     window.electron.switchIssues(option)
 }
 
 function switchMRs(option) {
     window.electron.switchMRs(option)
-}
-
-function goToOverview() {
-    document.getElementById('detail-view').style.left = '100vw'
-    document.body.style.overflow = 'auto'
 }
