@@ -24,7 +24,7 @@ const mb = menubar({
     icon: __dirname + '/assets/gitlab.png',
     browserWindow: {
         width: 1000,
-        height: 600,
+        height: 650,
         webPreferences: {
             preload: __dirname + '/preload.js',
             nodeIntegration: false,
@@ -83,7 +83,6 @@ if (access_token && user_id && username) {
         })
 
         ipcMain.on('switch-mrs', (event, arg) => {
-            console.log(arg)
             if (arg != activeMRsOption) {
                 mb.window.webContents.executeJavaScript('document.getElementById("mrs_' + activeMRsOption + '").classList.remove("active")')
                 mb.window.webContents.executeJavaScript('document.getElementById("mrs_' + arg + '").classList.add("active")')
@@ -105,6 +104,7 @@ if (access_token && user_id && username) {
     })
 
     mb.on('show', () => {
+        getUser()
         getLastCommits()
         getRecentComments()
         getRecentlyVisited()
@@ -145,6 +145,32 @@ function handleLogin() {
     } else {
         console.log('not loaded')
     }
+}
+
+function getUser() {
+    fetch('https://gitlab.com/api/v4/user?access_token=' + access_token).then(result => {
+        return result.json()
+    }).then(user => {
+        let userString = '<a href=\\"' + user.web_url + '\\" target=\\"_blank\\"><img src=\\"' + user.avatar_url + '\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' + user.name + '</span><span class=\\"username\\">@' + user.username + '</span></div></a>'
+        mb.window.webContents.executeJavaScript('document.getElementById("user").innerHTML = "' + userString + '"')
+    })
+    fetch('https://gitlab.com/api/v4/issues_statistics?scope=all&assignee_id=' + user_id + '&access_token=' + access_token).then(result => {
+        return result.json()
+    }).then(stats => {
+        mb.window.webContents.executeJavaScript('document.getElementById("issues-count").innerHTML = "' + stats.statistics.counts.opened + '"')
+    })
+    fetch('https://gitlab.com/api/v4/user_counts?&access_token=' + access_token).then(result => {
+        return result.json()
+    }).then(stats => {
+        let count = Number(stats.assigned_merge_requests) + Number(stats.review_requested_merge_requests)
+        mb.window.webContents.executeJavaScript('document.getElementById("mrs-count").innerHTML = "' + count + '"')
+    })
+    fetch('https://gitlab.com/api/v4/todos?&access_token=' + access_token).then(result => {
+        return result.json()
+    }).then(todos => {
+        let count = Number(todos.length)
+        mb.window.webContents.executeJavaScript('document.getElementById("todos-count").innerHTML = "' + count + '"')
+    })
 }
 
 async function getRecentlyVisited() {
@@ -290,7 +316,6 @@ function getMRs(scope = 'assigned_to_me') {
         variable = 'scope=' + scope
     }
     let mrsString = '<ul class=\\"list-container\\">'
-    console.log('https://gitlab.com/api/v4/merge_requests?' + variable + '&state=opened&order_by=updated_at&per_page=' + numberOfMRs+ '&access_token=' + access_token)
     fetch('https://gitlab.com/api/v4/merge_requests?' + variable + '&state=opened&order_by=updated_at&per_page=' + numberOfMRs + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(mrs => {
@@ -310,12 +335,11 @@ function getTodos() {
         return result.json()
     }).then(todos => {
         for (todo of todos) {
-            console.log(todo)
             todosString += '<li class=\\"history-entry\\">'
             let location = ''
-            if(todo.project) {
+            if (todo.project) {
                 location = todo.project.name_with_namespace
-            } else if(todo.group) {
+            } else if (todo.group) {
                 location = todo.group.name
             }
             todosString += '<a href=\\"' + todo.target_url + '\\" target=\\"_blank\\">' + escapeHtml(todo.target.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(todo.updated_at)) + ' ago &middot; ' + location + '</span></div></li>'
