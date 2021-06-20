@@ -248,11 +248,6 @@ a:hover {
     width: 100%;
     box-sizing: border-box;
 }
-#detail-view #detail-headline .date {
-    font-size: 1.125rem;
-    font-weight: bold;
-    color: #c9d1d9;;
-}
 #detail-view #detail-headline .segmented-control {
     display: flex;
     width: 100%;
@@ -287,6 +282,20 @@ a:hover {
     color: #f0f6fc;
     border-left: 1px solid transparent;
 }
+#detail-view #detail-headline input {
+    border: none;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    background-color: #161b22;
+    border-radius: 0.375rem;
+    color: #aaa;
+    width: 100%;
+    box-sizing: border-box;
+}
+#detail-view #detail-headline input:focus {
+    border: none;
+    outline: none;
+}
 #detail-view #detail-content {
     margin-bottom: 1.5rem;
 }
@@ -294,6 +303,9 @@ a:hover {
     margin: 1.5rem 0 1rem;
     font-size: 1.125rem;
     font-weight: bold;
+}
+#detail-view #detail-content .date:first-of-type {
+    margin-top: 0.5rem;
 }
 #detail-view #detail-content .list-container {
     margin-top: 0.5rem;

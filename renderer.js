@@ -39,3 +39,7 @@ function switchPage(url, type) {
     }
     window.electron.switchPage(value)
 }
+
+function searchRecent(input) {
+    window.electron.searchRecent(input.value)
+}

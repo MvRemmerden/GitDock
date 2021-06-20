@@ -9,6 +9,7 @@ let access_token = store.get('access_token')
 let user_id = store.get('user_id')
 let username = store.get('username')
 let recentlyVisitedString = ''
+let moreRecentlyVisitedArray = []
 let numberOfRecentlyVisited = 3
 let numberOfRecentComments = 3
 let numberOfFavoriteProjects = 5
@@ -81,6 +82,7 @@ if (access_token && user_id && username) {
         ipcMain.on('go-to-overview', (event, arg) => {
             activeIssuesOption = 'assigned_to_me'
             activeMRsOption = 'assigned_to_me'
+            moreRecentlyVisitedArray = []
         })
 
         ipcMain.on('switch-issues', (event, arg) => {
@@ -112,6 +114,11 @@ if (access_token && user_id && username) {
             } else if (arg.type == 'MRs') {
                 getMRs(arg.url)
             }
+        })
+
+        ipcMain.on('search-recent', (event, arg) => {
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
+            searchRecentlyVisited(arg)
         })
 
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
@@ -254,7 +261,7 @@ async function getRecentlyVisited() {
 
 async function getMoreRecentlyVisited() {
     recentlyVisitedString = ''
-    recentlyVisitedArray = new Array()
+    let moreRecentlyVisitedTitlesArray = []
     await BrowserHistory.getAllHistory(14320).then(async history => {
         if (history.length == 2) {
             history[0] = history[0].concat(history[1])
@@ -269,24 +276,29 @@ async function getMoreRecentlyVisited() {
                     return 1
                 }
             });
-            let i = 0
-            let previousDate = new Date(item[0].utc_time).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone})
-            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<div class=\\"date\\">' + previousDate + '</div>"')
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<input id=\\"recentSearch\\" type=\\"text\\" onkeyup=\\"searchRecent(this)\\" placeholder=\\"Search...\\" />"')
+            let previousDate = new Date(item[0].utc_time).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })
+            if (previousDate == new Date(Date.now()).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })) {
+                recentlyVisitedString += '<div class=\\"date\\">Today</div>'
+            } else {
+                recentlyVisitedString += '<div class=\\"date\\">' + previousDate + '</div>'
+            }
             recentlyVisitedString += '<ul class=\\"list-container history-list-container\\">'
             for (let j = 0; j < item.length; j++) {
-                if (item[j].title && item[j].url.indexOf('https://gitlab.com/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !recentlyVisitedArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
+                if (item[j].title && item[j].url.indexOf('https://gitlab.com/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !moreRecentlyVisitedTitlesArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
                     let nameWithNamespace = item[j].url.replace('https://gitlab.com/', '').split('/-/')[0]
                     if (nameWithNamespace.split('/')[0] != 'groups') {
                         url = 'https://gitlab.com/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
                     } else {
                         url = 'https://gitlab.com/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
                     }
-                    let currentDate = new Date(item[j].utc_time).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone})
-                    if(previousDate != currentDate) {
+                    let currentDate = new Date(item[j].utc_time).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })
+                    if (previousDate != currentDate) {
                         recentlyVisitedString += '</ul><div class=\\"date\\">' + currentDate + '</div><ul class=\\"list-container\\">'
                     }
                     previousDate = currentDate
-                    recentlyVisitedArray.push(item[j].title)
+                    moreRecentlyVisitedArray.push(item[j])
+                    moreRecentlyVisitedTitlesArray.push(item[j].title)
                     recentlyVisitedString += '<li class=\\"history-entry\\">'
                     recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; ' + item[j].title.split('·')[2].trim() + '</span></div></li>'
                 }
@@ -295,6 +307,25 @@ async function getMoreRecentlyVisited() {
             mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + recentlyVisitedString + '"')
         })
     })
+}
+
+function searchRecentlyVisited(searchterm) {
+    let foundArray = moreRecentlyVisitedArray.filter(item => {
+        return item.title.toLowerCase().includes(searchterm)
+    })
+    foundString = '<ul class=\\"list-container\\">'
+    for (item of foundArray) {
+        let nameWithNamespace = item.url.replace('https://gitlab.com/', '').split('/-/')[0]
+        if (nameWithNamespace.split('/')[0] != 'groups') {
+            url = 'https://gitlab.com/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
+        } else {
+            url = 'https://gitlab.com/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
+        }
+        foundString += '<li class=\\"history-entry\\">'
+        foundString += '<a href=\\"' + item.url + '\\" target=\\"_blank\\">' + escapeHtml(item.title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item.utc_time + ' UTC')) + ' ago &middot; ' + item.title.split('·')[2].trim() + '</span></div></li>'
+    }
+    foundString += '</ul>'
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + foundString + '"')
 }
 
 function getRecentComments() {

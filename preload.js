@@ -5,7 +5,8 @@ contextBridge.exposeInMainWorld('electron',{
     goToOverview: () => ipcRenderer.send('go-to-overview'),
     switchIssues: (value) => ipcRenderer.send('switch-issues', value),
     switchMRs: (value) => ipcRenderer.send('switch-mrs', value),
-    switchPage: (value) => ipcRenderer.send('switch-page', value)
+    switchPage: (value) => ipcRenderer.send('switch-page', value),
+    searchRecent: (value) => ipcRenderer.send('search-recent', value)
   }
 )
 
