@@ -9,14 +9,19 @@ function goToDetail(page, object) {
 }
 
 function goToOverview() {
+    window.electron.goToOverview()
     document.getElementById('detail-view').style.left = '100vw'
     document.getElementById('detail-content').innerHTML = ''
     document.getElementById('detail-headline').innerHTML = ''
     document.body.style.overflow = 'auto'
 }
 
-function switchIssues(option) {
-    window.electron.switchIssues(option)
+function switchIssues(url, label) {
+    let value = {
+        url: url,
+        label: label
+    }
+    window.electron.switchIssues(value)
 }
 
 function switchMRs(url, label) {

@@ -12,9 +12,9 @@ let recentlyVisitedString = ''
 let numberOfRecentlyVisited = 3
 let numberOfRecentComments = 3
 let numberOfFavoriteProjects = 5
-let numberOfIssues = 1
-let numberOfMRs = 3
-let numberOfTodos = 1
+let numberOfIssues = 10
+let numberOfMRs = 10
+let numberOfTodos = 10
 let activeIssuesOption = 'assigned_to_me'
 let activeMRsOption = 'assigned_to_me'
 
@@ -55,9 +55,11 @@ if (access_token && user_id && username) {
                 })
             } else {
                 if (arg.page == 'Issues') {
-                    let assigned = "'assigned_to_me'"
-                    let created = "'created_by_me'"
-                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"issues_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchIssues(' + assigned + ')\\">Assigned</div><div id=\\"issues_created_by_me\\" class=\\"option\\" onclick=\\"switchIssues(' + created + ')\\">Created</div></div>"')
+                    let assignedUrl = "'https://gitlab.com/api/v4/issues?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=" + numberOfIssues + "&access_token=" + access_token + "'"
+                    let createdUrl = "'https://gitlab.com/api/v4/issues?scope=created_by_me&state=opened&order_by=updated_at&per_page=" + numberOfIssues + "&access_token=" + access_token + "'"
+                    let assignedLabel = "'assigned_to_me'"
+                    let createdLabel = "'created_by_me'"
+                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"issues_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchIssues(' + assignedUrl + ', ' + assignedLabel + ')\\">Assigned</div><div id=\\"issues_created_by_me\\" class=\\"option\\" onclick=\\"switchIssues(' + createdUrl + ', ' + createdLabel + ')\\">Created</div></div>"')
                     getIssues()
                 } else if (arg.page == 'Merge requests') {
                     let assignedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
@@ -75,13 +77,18 @@ if (access_token && user_id && username) {
             }
         })
 
+        ipcMain.on('detail-page', (event, arg) => {
+            activeIssuesOption = 'assigned_to_me'
+            activeMRsOption = 'assigned_to_me'
+        })
+
         ipcMain.on('switch-issues', (event, arg) => {
-            if (arg != activeIssuesOption) {
+            if (arg.label != activeIssuesOption) {
                 mb.window.webContents.executeJavaScript('document.getElementById("issues_' + activeIssuesOption + '").classList.remove("active")')
-                mb.window.webContents.executeJavaScript('document.getElementById("issues_' + arg + '").classList.add("active")')
-                activeIssuesOption = arg
+                mb.window.webContents.executeJavaScript('document.getElementById("issues_' + arg.label + '").classList.add("active")')
+                activeIssuesOption = arg.label
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
-                getIssues(arg)
+                getIssues(arg.url)
             }
         })
 
@@ -135,7 +142,7 @@ if (access_token && user_id && username) {
 function setupSecondaryMenu() {
     mb.on('ready', () => {
         const contextMenu = Menu.buildFromTemplate([
-            { label: 'Settings', click: () => { mb.app.quit(); } },
+            { label: 'Settings', click: () => { } },
             { label: 'Quit', click: () => { mb.app.quit(); } }
         ])
         mb.tray.on('right-click', () => {
@@ -306,18 +313,20 @@ function getRecentComments() {
     })
 }
 
-function getIssues(scope = 'assigned_to_me') {
-    let assignedIssuesString = '<ul class=\\"list-container\\">'
-    fetch('https://gitlab.com/api/v4/issues?scope=' + scope + '&state=opened&order_by=updated_at&per_page=' + numberOfIssues + '&access_token=' + access_token).then(result => {
+function getIssues(url = 'https://gitlab.com/api/v4/issues?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=' + numberOfIssues + '&access_token=' + access_token) {
+    let issuesString = '<ul class=\\"list-container\\">'
+    let type = "'Issues'"
+    let keysetLinks
+    fetch(url).then(result => {
+        keysetLinks = result.headers.get('Link')
         return result.json()
     }).then(issues => {
         for (issue of issues) {
-            assignedIssuesString += '<li class=\\"history-entry\\">'
-            assignedIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(issue.updated_at)) + ' ago &middot; ' + issue.references.full.split('#')[0] + '</span></div></li>'
-
+            issuesString += '<li class=\\"history-entry\\">'
+            issuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(issue.updated_at)) + ' ago &middot; ' + issue.references.full.split('#')[0] + '</span></div></li>'
         }
-        assignedIssuesString += '</ul>'
-        mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + assignedIssuesString + '"')
+        issuesString += '</ul>' + displayPagination(keysetLinks, type)
+        mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + issuesString + '"')
     })
 }
 
