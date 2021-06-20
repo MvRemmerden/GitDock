@@ -201,6 +201,9 @@ a:hover {
 }
 #detail-view .header {
     display: flex;
+    position: sticky;
+    top: 0;
+    background-color: #090c10;
     align-items: center;
     cursor: pointer;
     padding: 1rem 1.5rem;
@@ -265,6 +268,9 @@ a:hover {
     border-color: #388bfd;
     color: #f0f6fc;
     font-weight: bold;
+}
+#detail-view #detail-content {
+    margin-bottom: 1.5rem;
 }
 #detail-view #detail-content .list-container {
     margin-top: 0.5rem;
