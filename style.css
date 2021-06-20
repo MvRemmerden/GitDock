@@ -208,7 +208,6 @@ a:hover {
     cursor: pointer;
     padding: 1rem 1.5rem;
     border-bottom: 1px solid #21262d;
-    font-weight: bold;
 }
 #detail-view .header svg {
     width: 1rem;

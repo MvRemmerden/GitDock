@@ -12,9 +12,9 @@ let recentlyVisitedString = ''
 let numberOfRecentlyVisited = 3
 let numberOfRecentComments = 3
 let numberOfFavoriteProjects = 5
-let numberOfIssues = 10
-let numberOfMRs = 10
-let numberOfTodos = 10
+let numberOfIssues = 1
+let numberOfMRs = 3
+let numberOfTodos = 1
 let activeIssuesOption = 'assigned_to_me'
 let activeMRsOption = 'assigned_to_me'
 
@@ -60,10 +60,13 @@ if (access_token && user_id && username) {
                     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"issues_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchIssues(' + assigned + ')\\">Assigned</div><div id=\\"issues_created_by_me\\" class=\\"option\\" onclick=\\"switchIssues(' + created + ')\\">Created</div></div>"')
                     getIssues()
                 } else if (arg.page == 'Merge requests') {
-                    let assigned = "'assigned_to_me'"
-                    let created = "'created_by_me'"
-                    let reviewed = "'review_requests_for_me'"
-                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"mrs_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchMRs(' + assigned + ')\\">Assigned</div><div id=\\"mrs_review_requests_for_me\\" class=\\"option\\" onclick=\\"switchMRs(' + reviewed + ')\\">Review requests</div><div id=\\"mrs_created_by_me\\" class=\\"option\\" onclick=\\"switchMRs(' + created + ')\\">Created</div></div>"')
+                    let assignedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
+                    let createdUrl = "'https://gitlab.com/api/v4/merge_requests?scope=created_by_me&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
+                    let reviewedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=all&reviewer_id=" + user_id + "&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
+                    let assignedLabel = "'assigned_to_me'"
+                    let createdLabel = "'created_by_me'"
+                    let reviewedLabel = "'review_requests_for_me'"
+                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"mrs_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchMRs(' + assignedUrl + ', ' + assignedLabel + ')\\">Assigned</div><div id=\\"mrs_review_requests_for_me\\" class=\\"option\\" onclick=\\"switchMRs(' + reviewedUrl + ', ' + reviewedLabel + ')\\">Review requests</div><div id=\\"mrs_created_by_me\\" class=\\"option\\" onclick=\\"switchMRs(' + createdUrl + ', ' + createdLabel + ')\\">Created</div></div>"')
                     getMRs()
                 } else if (arg.page == 'To-Do list') {
                     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
@@ -83,18 +86,24 @@ if (access_token && user_id && username) {
         })
 
         ipcMain.on('switch-mrs', (event, arg) => {
-            if (arg != activeMRsOption) {
+            if (arg.label != activeMRsOption) {
                 mb.window.webContents.executeJavaScript('document.getElementById("mrs_' + activeMRsOption + '").classList.remove("active")')
-                mb.window.webContents.executeJavaScript('document.getElementById("mrs_' + arg + '").classList.add("active")')
-                activeMRsOption = arg
+                mb.window.webContents.executeJavaScript('document.getElementById("mrs_' + arg.label + '").classList.add("active")')
+                activeMRsOption = arg.label
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
-                getMRs(arg)
+                getMRs(arg.url)
             }
         })
 
         ipcMain.on('switch-page', (event, arg) => {
             mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
-            getTodos(arg.url)
+            if(arg.type == 'Todos') {
+                getTodos(arg.url)
+            }else if (arg.type == 'Issues') {
+                getIssues(arg.url)
+            }else if (arg.type == 'MRs') {
+                getMRs(arg.url)
+            }
         })
 
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
@@ -312,23 +321,19 @@ function getIssues(scope = 'assigned_to_me') {
     })
 }
 
-function getMRs(scope = 'assigned_to_me') {
-    let variable = ''
-    if (scope == 'review_requests_for_me') {
-        variable = 'scope=all&reviewer_id=' + user_id
-    } else {
-        variable = 'scope=' + scope
-    }
+function getMRs(url = 'https://gitlab.com/api/v4/merge_requests?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=' + numberOfMRs + '&access_token=' + access_token) {
     let mrsString = '<ul class=\\"list-container\\">'
-    fetch('https://gitlab.com/api/v4/merge_requests?' + variable + '&state=opened&order_by=updated_at&per_page=' + numberOfMRs + '&access_token=' + access_token).then(result => {
+    let type = "'MRs'"
+    let keysetLinks
+    fetch(url).then(result => {
+        keysetLinks = result.headers.get('Link')
         return result.json()
     }).then(mrs => {
         for (mr of mrs) {
             mrsString += '<li class=\\"history-entry\\">'
             mrsString += '<a href=\\"' + mr.web_url + '\\" target=\\"_blank\\">' + escapeHtml(mr.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(mr.updated_at)) + ' ago &middot; ' + mr.references.full.split('#')[0] + '</span></div></li>'
-
         }
-        mrsString += '</ul>'
+        mrsString += '</ul>' + displayPagination(keysetLinks, type)
         mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + mrsString + '"')
     })
 }
@@ -336,11 +341,9 @@ function getMRs(scope = 'assigned_to_me') {
 function getTodos(url = 'https://gitlab.com/api/v4/todos?per_page=' + numberOfTodos + '&access_token=' + access_token) {
     let todosString = '<ul class=\\"list-container\\">'
     let type = "'Todos'"
-    let totalNumber
     let keysetLinks
     fetch(url).then(result => {
         keysetLinks = result.headers.get('Link')
-        totalNumber = result.headers.get('x-total')
         return result.json()
     }).then(todos => {
         for (todo of todos) {
@@ -353,34 +356,41 @@ function getTodos(url = 'https://gitlab.com/api/v4/todos?per_page=' + numberOfTo
             }
             todosString += '<a href=\\"' + todo.target_url + '\\" target=\\"_blank\\">' + escapeHtml(todo.target.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(todo.updated_at)) + ' ago &middot; ' + location + '</span></div></li>'
         }
-        todosString += '</ul>'
-        if(keysetLinks.indexOf('rel="next"') != -1 || keysetLinks.indexOf('rel="prev"') != -1) {
-            todosString += '<div id=\\"pagination\\">'
-            if(keysetLinks.indexOf('rel="prev"') != -1) {
-                let prevLink = ''
-                let icon = '<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\"/></svg>'
-                prevLink = escapeHtml('"' + keysetLinks.split('>; rel="prev"')[0].substring(1) + '"')
-                todosString += '<button onclick=\\"switchPage(' + prevLink + ', ' + type + ')\\" class=\\"prev\\">' + icon + ' Previous</button>'
-            }else{
-                todosString += '<div></div>'
-            }
-            if(keysetLinks.indexOf('rel="next"') != -1) {
-                let nextLink = ''
-                let icon = '<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\"/></svg>'
-                if(keysetLinks.indexOf('rel="prev"') != -1) {
-                    nextLink = escapeHtml('"' + keysetLinks.split('rel="prev", ')[1].split('>; rel="next"')[0].substring(1) + '"')
-                    todosString += '<button onclick=\\"switchPage(' + nextLink + ', ' + type + ')\\" class=\\"next\\">Next ' + icon + '</button>'
-                }else{
-                    nextLink = escapeHtml('"' + keysetLinks.split('>; rel="next"')[0].substring(1) + '"')
-                    todosString += '<button onclick=\\"switchPage(' + nextLink + ', ' + type + ')\\" class=\\"next\\">Next ' + icon + '</button>'
-                }
-            }else{
-                todosString += '<div></div>'
-            }
-            todosString += '</div>'
-        }
+        todosString += '</ul>' + displayPagination(keysetLinks, type) 
         mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + todosString + '"')
     })
+}
+
+function displayPagination(keysetLinks, type) {
+    let paginationString = ''
+    if(keysetLinks.indexOf('rel="next"') != -1 || keysetLinks.indexOf('rel="prev"') != -1) {
+        paginationString += '<div id=\\"pagination\\">'
+        if(keysetLinks.indexOf('rel="prev"') != -1) {
+            let prevLink = ''
+            let icon = '<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\"/></svg>'
+            prevLink = escapeHtml('"' + keysetLinks.split('>; rel="prev"')[0].substring(1) + '"')
+            paginationString += '<button onclick=\\"switchPage(' + prevLink + ', ' + type + ')\\" class=\\"prev\\">' + icon + ' Previous</button>'
+        }else{
+            paginationString += '<div></div>'
+        }
+        if(keysetLinks.indexOf('rel="next"') != -1) {
+            let nextLink = ''
+            let icon = '<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\"/></svg>'
+            if(keysetLinks.indexOf('rel="prev"') != -1) {
+                nextLink = escapeHtml('"' + keysetLinks.split('rel="prev", ')[1].split('>; rel="next"')[0].substring(1) + '"')
+                paginationString += '<button onclick=\\"switchPage(' + nextLink + ', ' + type + ')\\" class=\\"next\\">Next ' + icon + '</button>'
+            }else{
+                nextLink = escapeHtml('"' + keysetLinks.split('>; rel="next"')[0].substring(1) + '"')
+                paginationString += '<button onclick=\\"switchPage(' + nextLink + ', ' + type + ')\\" class=\\"next\\">Next ' + icon + '</button>'
+            }
+        }else{
+            paginationString += '<div></div>'
+        }
+        paginationString += '</div>'
+        return paginationString
+    }else {
+        return ''
+    }
 }
 
 function displayProjectPage(project) {
