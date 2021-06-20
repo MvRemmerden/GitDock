@@ -168,6 +168,17 @@ a:hover {
 .list-container li:last-of-type {
     border-bottom: none;
 }
+.list-container li.more-link a { 
+    display: flex;
+    cursor: pointer;
+    align-items: center;
+    font-weight: normal;
+    font-size: 0.825rem;
+    color: #aaa;
+}
+.list-container li.more-link a svg {
+    margin: 2px 0 0 0;   
+}
 .list-container li svg, .list-container li img {
     width: 1rem;
     height: 1rem;
@@ -237,6 +248,11 @@ a:hover {
     width: 100%;
     box-sizing: border-box;
 }
+#detail-view #detail-headline .date {
+    font-size: 1.125rem;
+    font-weight: bold;
+    color: #c9d1d9;;
+}
 #detail-view #detail-headline .segmented-control {
     display: flex;
     width: 100%;
@@ -274,8 +290,16 @@ a:hover {
 #detail-view #detail-content {
     margin-bottom: 1.5rem;
 }
+#detail-view #detail-content .date {
+    margin: 1.5rem 0 1rem;
+    font-size: 1.125rem;
+    font-weight: bold;
+}
 #detail-view #detail-content .list-container {
     margin-top: 0.5rem;
+}
+#detail-view #detail-content .list-container.history-list-container {
+    margin-top: 0;
 }
 #detail-view #detail-content #pagination {
     display: flex;
