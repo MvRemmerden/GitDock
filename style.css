@@ -269,3 +269,33 @@ a:hover {
 #detail-view #detail-content .list-container {
     margin-top: 0.5rem;
 }
+#detail-view #detail-content #pagination {
+    display: flex;
+    justify-content: space-between;
+}
+#detail-view #detail-content #pagination button {
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    font-size: 1rem;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem 0.5rem 0.5rem;
+    display: flex;
+    align-items: center;
+}
+#detail-view #detail-content #pagination button:hover {
+    cursor: pointer;
+    background-color: #161b22;
+}
+#detail-view #detail-content #pagination button svg {
+    width: 1rem;
+    margin-right: 0.25rem;
+    margin-bottom: 2px;
+}
+#detail-view #detail-content #pagination button.next {
+    padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+}
+#detail-view #detail-content #pagination button.next svg {
+    margin-right: 0;
+    margin-left: 0.25rem;
+}

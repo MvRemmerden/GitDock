@@ -12,9 +12,9 @@ let recentlyVisitedString = ''
 let numberOfRecentlyVisited = 3
 let numberOfRecentComments = 3
 let numberOfFavoriteProjects = 5
-let numberOfIssues = 1
-let numberOfMRs = 1
-let numberOfTodos = 1
+let numberOfIssues = 10
+let numberOfMRs = 10
+let numberOfTodos = 10
 let activeIssuesOption = 'assigned_to_me'
 let activeMRsOption = 'assigned_to_me'
 
@@ -242,7 +242,7 @@ function getUsersProjects() {
         return result.json()
     }).then(projects => {
         let favoriteProjectsString = ''
-        let chevron = '<svg class=\\"chevron\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#fff\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg>'
+        let chevron = '<svg class=\\"chevron\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg>'
         for (project of projects) {
             //TODO Figure out a way to see avatars of private repositories
             /*if(project.visibility == 'public') {
@@ -265,7 +265,7 @@ function getUsersProjects() {
                 forks_count: project.forks_count,
             }
             let projectJson = "'" + escapeHtml(JSON.stringify(projectObject)) + "'"
-            favoriteProjectsString += '<li onclick=\\"goToDetail(' + projectString + ', ' + projectJson + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" fill=\\"#fff\\"/></svg>'
+            favoriteProjectsString += '<li onclick=\\"goToDetail(' + projectString + ', ' + projectJson + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" fill=\\"#c9d1d9\\"/></svg>'
             favoriteProjectsString += '<div class=\\"name-with-namespace\\"><span>' + project.name + '</span><span class=\\"namespace\\">' + project.namespace.name + '</span></div>' + chevron + '</li>'
         }
         mb.window.webContents.executeJavaScript('document.getElementById("projects").innerHTML = "' + favoriteProjectsString + '"')
@@ -335,6 +335,7 @@ function getMRs(scope = 'assigned_to_me') {
 
 function getTodos(url = 'https://gitlab.com/api/v4/todos?per_page=' + numberOfTodos + '&access_token=' + access_token) {
     let todosString = '<ul class=\\"list-container\\">'
+    let type = "'Todos'"
     let totalNumber
     let keysetLinks
     fetch(url).then(result => {
@@ -353,15 +354,30 @@ function getTodos(url = 'https://gitlab.com/api/v4/todos?per_page=' + numberOfTo
             todosString += '<a href=\\"' + todo.target_url + '\\" target=\\"_blank\\">' + escapeHtml(todo.target.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(todo.updated_at)) + ' ago &middot; ' + location + '</span></div></li>'
         }
         todosString += '</ul>'
-        if(totalNumber > numberOfTodos && keysetLinks.indexOf('rel="next"') != -1) {
-            let nextLink
-            if(keysetLinks.indexOf('rel="prev", <') != -1) {
-                nextLink = escapeHtml('"' + keysetLinks.split('rel="prev", ')[1].split('>; rel="next"')[0].substring(1) + '"')
+        if(keysetLinks.indexOf('rel="next"') != -1 || keysetLinks.indexOf('rel="prev"') != -1) {
+            todosString += '<div id=\\"pagination\\">'
+            if(keysetLinks.indexOf('rel="prev"') != -1) {
+                let prevLink = ''
+                let icon = '<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\"/></svg>'
+                prevLink = escapeHtml('"' + keysetLinks.split('>; rel="prev"')[0].substring(1) + '"')
+                todosString += '<button onclick=\\"switchPage(' + prevLink + ', ' + type + ')\\" class=\\"prev\\">' + icon + ' Previous</button>'
             }else{
-                nextLink = escapeHtml('"' + keysetLinks.split('>; rel="next"')[0].substring(1) + '"')
+                todosString += '<div></div>'
             }
-            let type = "'Todos'"
-            todosString += '<div id=\\"pagination\\"><button onclick=\\"switchPage(' + nextLink + ', ' + type + ')\\">Next</button></div>'
+            if(keysetLinks.indexOf('rel="next"') != -1) {
+                let nextLink = ''
+                let icon = '<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\"/></svg>'
+                if(keysetLinks.indexOf('rel="prev"') != -1) {
+                    nextLink = escapeHtml('"' + keysetLinks.split('rel="prev", ')[1].split('>; rel="next"')[0].substring(1) + '"')
+                    todosString += '<button onclick=\\"switchPage(' + nextLink + ', ' + type + ')\\" class=\\"next\\">Next ' + icon + '</button>'
+                }else{
+                    nextLink = escapeHtml('"' + keysetLinks.split('>; rel="next"')[0].substring(1) + '"')
+                    todosString += '<button onclick=\\"switchPage(' + nextLink + ', ' + type + ')\\" class=\\"next\\">Next ' + icon + '</button>'
+                }
+            }else{
+                todosString += '<div></div>'
+            }
+            todosString += '</div>'
         }
         mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + todosString + '"')
     })
@@ -375,9 +391,9 @@ function displayCommit(commit, project) {
     let logo = ''
     if (commit.last_pipeline) {
         if (commit.last_pipeline.status == 'scheduled') {
-            logo = '<svg viewBox=\\"0 0 14 14\\" xmlns=\\"http://www.w3.org/2000/svg\\"><circle cx=\\"7\\" cy=\\"7\\" r=\\"7\\"/><circle fill=\\"#FFF\\" style=\\"fill: var(--svg-status-bg, #fff);\\" cx=\\"7\\" cy=\\"7\\" r=\\"6\\"/><g transform=\\"translate(2.75 2.75)\\" fill-rule=\\"nonzero\\"><path d=\\"M4.165 7.81a3.644 3.644 0 1 1 0-7.29 3.644 3.644 0 0 1 0 7.29zm0-1.042a2.603 2.603 0 1 0 0-5.206 2.603 2.603 0 0 0 0 5.206z\\"/><rect x=\\"3.644\\" y=\\"2.083\\" width=\\"1.041\\" height=\\"2.603\\" rx=\\".488\\"/><rect x=\\"3.644\\" y=\\"3.644\\" width=\\"2.083\\" height=\\"1.041\\" rx=\\".488\\"/></g></svg>'
+            logo = '<svg viewBox=\\"0 0 14 14\\" xmlns=\\"http://www.w3.org/2000/svg\\"><circle cx=\\"7\\" cy=\\"7\\" r=\\"7\\"/><circle fill=\\"#c9d1d9\\" style=\\"fill: var(--svg-status-bg, #c9d1d9);\\" cx=\\"7\\" cy=\\"7\\" r=\\"6\\"/><g transform=\\"translate(2.75 2.75)\\" fill-rule=\\"nonzero\\"><path d=\\"M4.165 7.81a3.644 3.644 0 1 1 0-7.29 3.644 3.644 0 0 1 0 7.29zm0-1.042a2.603 2.603 0 1 0 0-5.206 2.603 2.603 0 0 0 0 5.206z\\"/><rect x=\\"3.644\\" y=\\"2.083\\" width=\\"1.041\\" height=\\"2.603\\" rx=\\".488\\"/><rect x=\\"3.644\\" y=\\"3.644\\" width=\\"2.083\\" height=\\"1.041\\" rx=\\".488\\"/></g></svg>'
         } else {
-            logo = '<svg viewBox=\\"0 0 14 14\\" xmlns=\\"http://www.w3.org/2000/svg\\"><g fill-rule=\\"evenodd\\"><path d=\\"M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z\\"/><path d=\\"M13 7A6 6 0 1 0 1 7a6 6 0 0 0 12 0z\\" fill=\\"#FFF\\" style=\\"fill: var(--svg-status-bg, #fff);\\"/>'
+            logo = '<svg viewBox=\\"0 0 14 14\\" xmlns=\\"http://www.w3.org/2000/svg\\"><g fill-rule=\\"evenodd\\"><path d=\\"M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z\\"/><path d=\\"M13 7A6 6 0 1 0 1 7a6 6 0 0 0 12 0z\\" fill=\\"#c9d1d9\\" style=\\"fill: var(--svg-status-bg, #c9d1d9);\\"/>'
             if (commit.last_pipeline.status == 'running') {
                 logo += '<path d=\\"M7 3c2.2 0 4 1.8 4 4s-1.8 4-4 4c-1.3 0-2.5-.7-3.3-1.7L7 7V3\\"/></g></svg>'
             } else if (commit.last_pipeline.status == 'failed') {
