@@ -10,9 +10,11 @@ let user_id = store.get('user_id')
 let username = store.get('username')
 let recentlyVisitedString = ''
 let moreRecentlyVisitedArray = []
+let recentCommits = []
+let currentCommit
 let numberOfRecentlyVisited = 3
-let numberOfRecentComments = 3
 let numberOfFavoriteProjects = 5
+let numberOfRecentComments = 3
 let numberOfIssues = 10
 let numberOfMRs = 10
 let numberOfTodos = 10
@@ -127,6 +129,10 @@ if (access_token && user_id && username) {
             searchRecentlyVisited(arg)
         })
 
+        ipcMain.on('next-commit', (event, arg) => {
+            getNextCommit()
+        })
+
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
             shell.openExternal(url);
             return { action: 'deny' };
@@ -208,17 +214,33 @@ function getUser() {
 }
 
 function getLastCommits() {
-    fetch('https://gitlab.com/api/v4/events?action=pushed&per_page=1&access_token=' + access_token).then(result => {
+    fetch(url = 'https://gitlab.com/api/v4/events?action=pushed&per_page=20&access_token=' + access_token).then(result => {
+        keysetLinks = result.headers.get('Link')
         return result.json()
     }).then(commits => {
-        fetch('https://gitlab.com/api/v4/projects/' + commits[0].project_id + '?access_token=' + access_token).then(result => {
+        let committedArray = commits.filter(commit => {
+            return (commit.action_name == 'pushed to' || (commit.action_name == 'pushed new' && commit.push_data.commit_to && commit.push_data.commit_count > 0))
+        })
+        currentCommit = committedArray[0]
+        recentCommits = committedArray
+        getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to)
+    })
+}
+
+function getNextCommit() {
+    let nextCommit = recentCommits[recentCommits.findIndex(commit => commit.id == currentCommit.id) + 1]
+    currentCommit = nextCommit
+    getCommitDetails(nextCommit.project_id, nextCommit.push_data.commit_to)
+}
+
+function getCommitDetails(project_id, sha) {
+    fetch('https://gitlab.com/api/v4/projects/' + project_id + '?access_token=' + access_token).then(result => {
+        return result.json()
+    }).then(project => {
+        fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/' + sha + '?access_token=' + access_token).then(result => {
             return result.json()
-        }).then(project => {
-            fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/' + commits[0].push_data.commit_to + '?access_token=' + access_token).then(result => {
-                return result.json()
-            }).then(commit => {
-                mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "' + displayCommit(commit, project) + '"')
-            })
+        }).then(commit => {
+            mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "' + displayCommit(commit, project) + '<button onclick=\\"nextCommit()\\">Next</button>"')
         })
     })
 }
@@ -334,6 +356,41 @@ function searchRecentlyVisited(searchterm) {
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + foundString + '"')
 }
 
+function getUsersProjects() {
+    fetch('https://gitlab.com/api/v4/users/' + user_id + '/starred_projects?min_access_level=30&per_page=' + numberOfFavoriteProjects + '&order_by=updated_at&access_token=' + access_token).then(result => {
+        return result.json()
+    }).then(projects => {
+        let favoriteProjectsString = ''
+        let chevron = '<svg class=\\"chevron\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg>'
+        for (project of projects) {
+            //TODO Figure out a way to see avatars of private repositories
+            /*if(project.visibility == 'public') {
+                favoriteProjectsString += '<li><img src=\\"' + project.avatar_url + '\\">'
+            }else{*/
+            let projectString = "'Project'"
+            let projectObject = {
+                id: project.id,
+                visibility: project.visibility,
+                web_url: project.web_url,
+                name: project.name,
+                namespace: {
+                    name: project.namespace.name
+                },
+                name_with_namespace: project.name_with_namespace,
+                open_issues_count: project.open_issues_count,
+                last_activity_at: project.last_activity_at,
+                avatar_url: project.avatar_url,
+                star_count: project.star_count,
+                forks_count: project.forks_count,
+            }
+            let projectJson = "'" + escapeHtml(JSON.stringify(projectObject)) + "'"
+            favoriteProjectsString += '<li onclick=\\"goToDetail(' + projectString + ', ' + projectJson + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" fill=\\"#c9d1d9\\"/></svg>'
+            favoriteProjectsString += '<div class=\\"name-with-namespace\\"><span>' + project.name + '</span><span class=\\"namespace\\">' + project.namespace.name + '</span></div>' + chevron + '</li>'
+        }
+        mb.window.webContents.executeJavaScript('document.getElementById("projects").innerHTML = "' + favoriteProjectsString + '"')
+    })
+}
+
 function getRecentComments() {
     let recentCommentsString = '<ul class=\\"list-container\\">'
     fetch('https://gitlab.com/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token).then(result => {
@@ -368,7 +425,6 @@ function getMoreRecentComments(url = 'https://gitlab.com/api/v4/events?action=co
         keysetLinks = result.headers.get('Link')
         return result.json()
     }).then(async comments => {
-        console.log(comments[0])
         for (comment of comments) {
             let url = ''
             if (comment.note.noteable_type == 'MergeRequest') {
@@ -386,41 +442,6 @@ function getMoreRecentComments(url = 'https://gitlab.com/api/v4/events?action=co
         }
         recentCommentsString += '</ul>' + displayPagination(keysetLinks, type)
         mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + recentCommentsString + '"')
-    })
-}
-
-function getUsersProjects() {
-    fetch('https://gitlab.com/api/v4/users/' + user_id + '/starred_projects?min_access_level=30&per_page=' + numberOfFavoriteProjects + '&order_by=updated_at&access_token=' + access_token).then(result => {
-        return result.json()
-    }).then(projects => {
-        let favoriteProjectsString = ''
-        let chevron = '<svg class=\\"chevron\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg>'
-        for (project of projects) {
-            //TODO Figure out a way to see avatars of private repositories
-            /*if(project.visibility == 'public') {
-                favoriteProjectsString += '<li><img src=\\"' + project.avatar_url + '\\">'
-            }else{*/
-            let projectString = "'Project'"
-            let projectObject = {
-                id: project.id,
-                visibility: project.visibility,
-                web_url: project.web_url,
-                name: project.name,
-                namespace: {
-                    name: project.namespace.name
-                },
-                name_with_namespace: project.name_with_namespace,
-                open_issues_count: project.open_issues_count,
-                last_activity_at: project.last_activity_at,
-                avatar_url: project.avatar_url,
-                star_count: project.star_count,
-                forks_count: project.forks_count,
-            }
-            let projectJson = "'" + escapeHtml(JSON.stringify(projectObject)) + "'"
-            favoriteProjectsString += '<li onclick=\\"goToDetail(' + projectString + ', ' + projectJson + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" fill=\\"#c9d1d9\\"/></svg>'
-            favoriteProjectsString += '<div class=\\"name-with-namespace\\"><span>' + project.name + '</span><span class=\\"namespace\\">' + project.namespace.name + '</span></div>' + chevron + '</li>'
-        }
-        mb.window.webContents.executeJavaScript('document.getElementById("projects").innerHTML = "' + favoriteProjectsString + '"')
     })
 }
 

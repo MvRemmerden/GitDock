@@ -43,3 +43,7 @@ function switchPage(url, type) {
 function searchRecent(input) {
     window.electron.searchRecent(input.value)
 }
+
+function nextCommit() {
+    window.electron.nextCommit()
+}
