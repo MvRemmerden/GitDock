@@ -16,6 +16,7 @@ let numberOfFavoriteProjects = 5
 let numberOfIssues = 10
 let numberOfMRs = 10
 let numberOfTodos = 10
+let numberOfComments = 5
 let activeIssuesOption = 'assigned_to_me'
 let activeMRsOption = 'assigned_to_me'
 let timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -76,6 +77,9 @@ if (access_token && user_id && username) {
                 getTodos()
             } else if (arg.page == 'Recently viewed') {
                 getMoreRecentlyVisited()
+            } else if (arg.page == 'Comments') {
+                mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
+                getMoreRecentComments()
             }
         })
 
@@ -113,6 +117,8 @@ if (access_token && user_id && username) {
                 getIssues(arg.url)
             } else if (arg.type == 'MRs') {
                 getMRs(arg.url)
+            } else if (arg.type == 'Comments') {
+                getMoreRecentComments(arg.url)
             }
         })
 
@@ -351,6 +357,35 @@ function getRecentComments() {
         let moreString = "'Comments'"
         recentCommentsString += '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' + moreString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#aaa\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
         mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "' + recentCommentsString + '"')
+    })
+}
+
+function getMoreRecentComments(url = 'https://gitlab.com/api/v4/events?action=commented&per_page=' + numberOfComments + '&access_token=' + access_token) {
+    let recentCommentsString = '<ul class=\\"list-container\\">'
+    let type = "'Comments'"
+    let keysetLinks
+    fetch(url).then(result => {
+        keysetLinks = result.headers.get('Link')
+        return result.json()
+    }).then(async comments => {
+        console.log(comments[0])
+        for (comment of comments) {
+            let url = ''
+            if (comment.note.noteable_type == 'MergeRequest') {
+                url = 'https://gitlab.com/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
+            } else if (comment.note.noteable_type == 'Issue') {
+                url = 'https://gitlab.com/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + access_token
+            } else if (comment.noteableType == 'Epic') {
+                break
+            }
+            await fetch(url).then(result => {
+                return result.json()
+            }).then(collabject => {
+                recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; ' + escapeHtml(comment.target_title) + '</span></div></li>'
+            })
+        }
+        recentCommentsString += '</ul>' + displayPagination(keysetLinks, type)
+        mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + recentCommentsString + '"')
     })
 }
 
