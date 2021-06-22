@@ -232,10 +232,20 @@ function changeCommit(forward = true) {
     let nextCommit
     let index = recentCommits.findIndex(commit => commit.id == currentCommit.id) 
     if(forward) {
-        nextCommit = recentCommits[index + 1]
-        index += 2
+        if(index == recentCommits.length -1) {
+            nextCommit = recentCommits[0]
+            index = 1
+        }else{
+            nextCommit = recentCommits[index + 1]
+            index += 2
+        }
     }else{
-        nextCommit = recentCommits[index - 1]
+        if(index == 0) {
+            nextCommit = recentCommits[recentCommits.length -1]
+            index = recentCommits.length
+        }else{
+            nextCommit = recentCommits[index - 1]
+        }
     }
     currentCommit = nextCommit
     getCommitDetails(nextCommit.project_id, nextCommit.push_data.commit_to, index)
@@ -575,7 +585,11 @@ function displayCommit(commit, project) {
             }
         }
     } else {
-        logo = '<img src=\\"' + project.avatar_url + '\\" />'
+        if(project.avatar_url && project.avatar_url != null) {
+            logo = '<img src=\\"' + project.avatar_url + '\\" />'
+        }else{
+            logo = '<div id=\\"project-name\\">' + project.name.charAt(0) + '</div>'
+        }
         //TODO When https://gitlab.com/gitlab-org/gitlab/-/issues/20924 is fixed, get users avatar here
         /*await fetch('https://gitlab.com/api/v4/users?search=' + commit.author_email + '&access_token=' + access_token).then(result => {
             return result.json()
