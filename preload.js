@@ -7,7 +7,7 @@ contextBridge.exposeInMainWorld('electron',{
     switchMRs: (value) => ipcRenderer.send('switch-mrs', value),
     switchPage: (value) => ipcRenderer.send('switch-page', value),
     searchRecent: (value) => ipcRenderer.send('search-recent', value),
-    nextCommit: () => ipcRenderer.send('next-commit')
+    changeCommit: (value) => ipcRenderer.send('change-commit', value)
   }
 )
 

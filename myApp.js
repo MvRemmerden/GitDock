@@ -129,8 +129,9 @@ if (access_token && user_id && username) {
             searchRecentlyVisited(arg)
         })
 
-        ipcMain.on('next-commit', (event, arg) => {
-            getNextCommit()
+        ipcMain.on('change-commit', (event, arg) => {
+            mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = ""')
+            changeCommit(arg)
         })
 
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
@@ -223,24 +224,32 @@ function getLastCommits() {
         })
         currentCommit = committedArray[0]
         recentCommits = committedArray
-        getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to)
+        getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1)
     })
 }
 
-function getNextCommit() {
-    let nextCommit = recentCommits[recentCommits.findIndex(commit => commit.id == currentCommit.id) + 1]
+function changeCommit(forward = true) {
+    let nextCommit
+    let index = recentCommits.findIndex(commit => commit.id == currentCommit.id) 
+    if(forward) {
+        nextCommit = recentCommits[index + 1]
+        index += 2
+    }else{
+        nextCommit = recentCommits[index - 1]
+    }
     currentCommit = nextCommit
-    getCommitDetails(nextCommit.project_id, nextCommit.push_data.commit_to)
+    getCommitDetails(nextCommit.project_id, nextCommit.push_data.commit_to, index)
 }
 
-function getCommitDetails(project_id, sha) {
+function getCommitDetails(project_id, sha, index) {
+    mb.window.webContents.executeJavaScript('document.getElementById("commits-count").innerHTML = "' + index + '/' + recentCommits.length + '"')
     fetch('https://gitlab.com/api/v4/projects/' + project_id + '?access_token=' + access_token).then(result => {
         return result.json()
     }).then(project => {
         fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/' + sha + '?access_token=' + access_token).then(result => {
             return result.json()
         }).then(commit => {
-            mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "' + displayCommit(commit, project) + '<button onclick=\\"nextCommit()\\">Next</button>"')
+            mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "' + displayCommit(commit, project) + '"')
         })
     })
 }

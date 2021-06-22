@@ -44,6 +44,6 @@ function searchRecent(input) {
     window.electron.searchRecent(input.value)
 }
 
-function nextCommit() {
-    window.electron.nextCommit()
+function changeCommit(value) {
+    window.electron.changeCommit(value)
 }

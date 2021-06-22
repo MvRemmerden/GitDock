@@ -92,6 +92,31 @@ a:hover {
 .headline:first-of-type {
     margin-top: 0;
 }
+.headline #commits-pagination {
+    display: flex;
+    align-items: center;
+}
+.headline #commits-pagination button {
+    border: 1px solid #30363d;
+    border-radius: 5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #090c10;
+    color: #c9d1d9;
+    margin-left: 0.25rem;
+    cursor: pointer;
+}
+.headline #commits-pagination button:hover {
+    background-color: #161b22;
+}
+.headline #commits-pagination #commits-count {
+    font-size: 0.825rem;
+    color: #aaa;
+    font-weight: normal;
+}
 .namespace-with-time {
     font-size: 0.825rem;
     color: #aaa;
@@ -288,7 +313,7 @@ a:hover {
     padding: 0.5rem 0.75rem;
     background-color: #161b22;
     border-radius: 0.375rem;
-    color: #aaa;
+    color: #c9d1d9;
     width: 100%;
     box-sizing: border-box;
 }
