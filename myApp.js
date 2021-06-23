@@ -193,7 +193,7 @@ function getUser() {
     fetch('https://gitlab.com/api/v4/user?access_token=' + access_token).then(result => {
         return result.json()
     }).then(user => {
-        let userString = '<a href=\\"' + user.web_url + '\\" target=\\"_blank\\"><img src=\\"' + user.avatar_url + '\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' + user.name + '</span><span class=\\"username\\">@' + user.username + '</span></div></a>'
+        let userString = '<a href=\\"' + user.web_url + '\\" target=\\"_blank\\"><img src=\\"' + user.avatar_url + '?width=64\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' + user.name + '</span><span class=\\"username\\">@' + user.username + '</span></div></a>'
         mb.window.webContents.executeJavaScript('document.getElementById("user").innerHTML = "' + userString + '"')
     })
     fetch('https://gitlab.com/api/v4/issues_statistics?scope=all&assignee_id=' + user_id + '&access_token=' + access_token).then(result => {
@@ -554,7 +554,13 @@ function displayPagination(keysetLinks, type) {
 }
 
 function displayProjectPage(project) {
-    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + project.name + '</span> <span class=\\"namespace\\">' + project.namespace.name + '</span>"')
+    let logo
+    if(project.avatar_url && project.avatar_url != null && project.visibility == 'public') {
+        logo = '<img id=\\"project-detail-avatar\\" src=\\"' + project.avatar_url + '?width=64\\" />'
+    }else{
+        logo = '<div id=\\"project-detail-name-avatar\\">' + project.name.charAt(0).toUpperCase() + '</div>'
+    }
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<div id=\\"project-detail-information\\">' + logo + '<div><span class=\\"namespace\\">' + project.namespace.name + '</span><span class=\\"name\\">' + project.name + '</span></div></div>"')
 }
 
 function displayCommit(commit, project) {
@@ -585,10 +591,10 @@ function displayCommit(commit, project) {
             }
         }
     } else {
-        if(project.avatar_url && project.avatar_url != null) {
-            logo = '<img src=\\"' + project.avatar_url + '\\" />'
+        if(project.avatar_url && project.avatar_url != null && project.visibility == 'public') {
+            logo = '<img src=\\"' + project.avatar_url + '?width=64\\" />'
         }else{
-            logo = '<div id=\\"project-name\\">' + project.name.charAt(0) + '</div>'
+            logo = '<div id=\\"project-name\\">' + project.name.charAt(0).toUpperCase() + '</div>'
         }
         //TODO When https://gitlab.com/gitlab-org/gitlab/-/issues/20924 is fixed, get users avatar here
         /*await fetch('https://gitlab.com/api/v4/users?search=' + commit.author_email + '&access_token=' + access_token).then(result => {

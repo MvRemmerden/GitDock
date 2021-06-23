@@ -122,6 +122,9 @@ a:hover {
     font-size: 0.825rem;
     color: #aaa;
 }
+#project-pipeline {
+    margin-top: 0.5rem;
+}
 #pipeline svg, #project-pipeline svg, #pipeline img, #project-pipeline img, #pipeline #project-name, #project-pipeline #project-name {
     width: 1.5rem;
     height: 1.5rem;
@@ -135,7 +138,6 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 1.5rem;
     border: 1px solid #30363d;
 }
 .commit {
@@ -277,9 +279,23 @@ a:hover {
     font-size: 0.875rem;
     color: #aaa;
 }
+#detail-view .headline .namespace {
+    font-size: 0.825rem;
+}
+#detail-view .headline #project-detail-name-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #30363d;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 3rem;
+    margin-right: 0.75rem;
+    font-size: 1rem;
+}
 #detail-view .headline .name {
-    margin-right: 0.5rem;
-    font-size: 1.25rem;
+    margin: 0.125rem 0.5rem 0 0;
+    font-size: 1rem;
     font-weight: bold;
     color: #c9d1d9;
 }
@@ -335,6 +351,21 @@ a:hover {
 #detail-view #detail-headline input:focus {
     border: none;
     outline: none;
+}
+#detail-view #detail-headline #project-detail-information {
+    display: flex;
+    align-items: center;
+}
+#detail-view #detail-headline #project-detail-information img {
+    width: 2.25rem;
+    height: 2.25rem;
+    background-color: #30363d;
+    border-radius: 3rem;
+    margin-right: 0.75rem;
+}
+#detail-view #detail-headline #project-detail-information div {
+    display: flex;
+    flex-direction: column;
 }
 #detail-view #detail-content {
     margin-bottom: 1.5rem;
