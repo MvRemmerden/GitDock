@@ -28,7 +28,7 @@ const mb = menubar({
     showOnAllWorkspaces: false,
     icon: __dirname + '/assets/gitlab.png',
     browserWindow: {
-        width: 1000,
+        width: 550,
         height: 650,
         webPreferences: {
             preload: __dirname + '/preload.js',
@@ -42,7 +42,7 @@ const mb = menubar({
 if (access_token && user_id && username) {
     setupSecondaryMenu()
     mb.on('after-create-window', () => {
-        mb.window.webContents.openDevTools()
+        //mb.window.webContents.openDevTools()
         ipcMain.on('detail-page', (event, arg) => {
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = ""')
             mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
@@ -69,10 +69,12 @@ if (access_token && user_id && username) {
                 let assignedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
                 let createdUrl = "'https://gitlab.com/api/v4/merge_requests?scope=created_by_me&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
                 let reviewedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=all&reviewer_id=" + user_id + "&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
+                let approvedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=all&approved_by_ids[]=" + user_id + "&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
                 let assignedLabel = "'assigned_to_me'"
                 let createdLabel = "'created_by_me'"
                 let reviewedLabel = "'review_requests_for_me'"
-                mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"mrs_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchMRs(' + assignedUrl + ', ' + assignedLabel + ')\\">Assigned</div><div id=\\"mrs_review_requests_for_me\\" class=\\"option\\" onclick=\\"switchMRs(' + reviewedUrl + ', ' + reviewedLabel + ')\\">Review requests</div><div id=\\"mrs_created_by_me\\" class=\\"option\\" onclick=\\"switchMRs(' + createdUrl + ', ' + createdLabel + ')\\">Created</div></div>"')
+                let approvedLabel = "'approved_by_me'"
+                mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"mrs_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchMRs(' + assignedUrl + ', ' + assignedLabel + ')\\">Assigned</div><div id=\\"mrs_review_requests_for_me\\" class=\\"option\\" onclick=\\"switchMRs(' + reviewedUrl + ', ' + reviewedLabel + ')\\">Review requests</div><div id=\\"mrs_created_by_me\\" class=\\"option\\" onclick=\\"switchMRs(' + createdUrl + ', ' + createdLabel + ')\\">Created</div><div id=\\"mrs_approved_by_me\\" class=\\"option\\" onclick=\\"switchMRs(' + approvedUrl + ', ' + approvedLabel + ')\\">Approved</div></div>"')
                 getMRs()
             } else if (arg.page == 'To-Do list') {
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
@@ -485,6 +487,7 @@ function getMRs(url = 'https://gitlab.com/api/v4/merge_requests?scope=assigned_t
     let mrsString = '<ul class=\\"list-container\\">'
     let type = "'MRs'"
     let keysetLinks
+    console.log(url)
     fetch(url).then(result => {
         keysetLinks = result.headers.get('Link')
         return result.json()
