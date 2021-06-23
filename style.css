@@ -277,7 +277,7 @@ a:hover {
     border: 1px solid #161b22;
     font-size: 0.875rem;
     padding: 0.5rem 0.75rem;
-    background-color: #161b22;
+    background-color: #30363d;
     border-radius: 0.375rem;
     color: #c9d1d9;
     box-sizing: border-box;
@@ -293,6 +293,9 @@ a:hover {
     display: flex;
     align-items: center;
     cursor: pointer;
+}
+#bookmarks #new-bookmark #bookmark-input button:hover {
+    background-color: #161b22;
 }
 #detail-view {
     position: fixed;
