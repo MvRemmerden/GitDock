@@ -28,7 +28,7 @@ const mb = menubar({
     showOnAllWorkspaces: false,
     icon: __dirname + '/assets/gitlab.png',
     browserWindow: {
-        width: 550,
+        width: 600,
         height: 650,
         webPreferences: {
             preload: __dirname + '/preload.js',
@@ -132,8 +132,12 @@ if (access_token && user_id && username) {
         })
 
         ipcMain.on('change-commit', (event, arg) => {
-            mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = ""')
+            mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<div class=\\"commit\\"></div>"')
             changeCommit(arg)
+        })
+
+        ipcMain.on('add-bookmark', (event, arg) => {
+            addBookmark(arg)
         })
 
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
@@ -198,7 +202,7 @@ function getUser() {
         let userString = '<a href=\\"' + user.web_url + '\\" target=\\"_blank\\"><img src=\\"' + user.avatar_url + '?width=64\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' + user.name + '</span><span class=\\"username\\">@' + user.username + '</span></div></a>'
         mb.window.webContents.executeJavaScript('document.getElementById("user").innerHTML = "' + userString + '"')
     })
-    fetch('https://gitlab.com/api/v4/issues_statistics?scope=all&assignee_id=' + user_id + '&access_token=' + access_token).then(result => {
+    /*fetch('https://gitlab.com/api/v4/issues_statistics?scope=all&assignee_id=' + user_id + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(stats => {
         mb.window.webContents.executeJavaScript('document.getElementById("issues-count").innerHTML = "' + stats.statistics.counts.opened + '"')
@@ -212,8 +216,7 @@ function getUser() {
     fetch('https://gitlab.com/api/v4/todos?&per_page=1&pagination=keyset&access_token=' + access_token).then(result => {
         let count = result.headers.get('x-total')
         mb.window.webContents.executeJavaScript('document.getElementById("todos-count").innerHTML = "' + count + '"')
-        return result.json()
-    })
+    })*/
 }
 
 function getLastCommits() {
@@ -232,20 +235,20 @@ function getLastCommits() {
 
 function changeCommit(forward = true) {
     let nextCommit
-    let index = recentCommits.findIndex(commit => commit.id == currentCommit.id) 
-    if(forward) {
-        if(index == recentCommits.length -1) {
+    let index = recentCommits.findIndex(commit => commit.id == currentCommit.id)
+    if (forward) {
+        if (index == recentCommits.length - 1) {
             nextCommit = recentCommits[0]
             index = 1
-        }else{
+        } else {
             nextCommit = recentCommits[index + 1]
             index += 2
         }
-    }else{
-        if(index == 0) {
-            nextCommit = recentCommits[recentCommits.length -1]
+    } else {
+        if (index == 0) {
+            nextCommit = recentCommits[recentCommits.length - 1]
             index = recentCommits.length
-        }else{
+        } else {
             nextCommit = recentCommits[index - 1]
         }
     }
@@ -484,19 +487,24 @@ function getIssues(url = 'https://gitlab.com/api/v4/issues?scope=assigned_to_me&
 }
 
 function getMRs(url = 'https://gitlab.com/api/v4/merge_requests?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=' + numberOfMRs + '&access_token=' + access_token) {
-    let mrsString = '<ul class=\\"list-container\\">'
+    let mrsString = ''
     let type = "'MRs'"
     let keysetLinks
-    console.log(url)
     fetch(url).then(result => {
+        console.log(url)
         keysetLinks = result.headers.get('Link')
         return result.json()
     }).then(mrs => {
-        for (mr of mrs) {
-            mrsString += '<li class=\\"history-entry\\">'
-            mrsString += '<a href=\\"' + mr.web_url + '\\" target=\\"_blank\\">' + escapeHtml(mr.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(mr.updated_at)) + ' ago &middot; ' + mr.references.full.split('#')[0] + '</span></div></li>'
+        if (mrs.length > 0) {
+            mrsString = '<ul class=\\"list-container\\">'
+            for (mr of mrs) {
+                mrsString += '<li class=\\"history-entry\\">'
+                mrsString += '<a href=\\"' + mr.web_url + '\\" target=\\"_blank\\">' + escapeHtml(mr.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(mr.updated_at)) + ' ago &middot; ' + mr.references.full.split('#')[0] + '</span></div></li>'
+            }
+            mrsString += '</ul>' + displayPagination(keysetLinks, type)
+        } else {
+            mrsString = '<div class=\\"empty\\">No merge requests.</div>'
         }
-        mrsString += '</ul>' + displayPagination(keysetLinks, type)
         mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + mrsString + '"')
     })
 }
@@ -558,12 +566,12 @@ function displayPagination(keysetLinks, type) {
 
 function displayProjectPage(project) {
     let logo
-    if(project.avatar_url && project.avatar_url != null && project.visibility == 'public') {
+    if (project.avatar_url && project.avatar_url != null && project.visibility == 'public') {
         logo = '<img id=\\"project-detail-avatar\\" src=\\"' + project.avatar_url + '?width=64\\" />'
-    }else{
+    } else {
         logo = '<div id=\\"project-detail-name-avatar\\">' + project.name.charAt(0).toUpperCase() + '</div>'
     }
-    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<div id=\\"project-detail-information\\">' + logo + '<div><span class=\\"namespace\\">' + project.namespace.name + '</span><span class=\\"name\\">' + project.name + '</span></div></div>"')
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<div id=\\"project-detail-information\\">' + logo + '<div><span class=\\"project-namespace\\">' + project.namespace.name + '</span><span class=\\"project-name\\">' + project.name + '</span></div></div>"')
 }
 
 function displayCommit(commit, project) {
@@ -594,9 +602,9 @@ function displayCommit(commit, project) {
             }
         }
     } else {
-        if(project.avatar_url && project.avatar_url != null && project.visibility == 'public') {
+        if (project.avatar_url && project.avatar_url != null && project.visibility == 'public') {
             logo = '<img src=\\"' + project.avatar_url + '?width=64\\" />'
-        }else{
+        } else {
             logo = '<div id=\\"project-name\\">' + project.name.charAt(0).toUpperCase() + '</div>'
         }
         //TODO When https://gitlab.com/gitlab-org/gitlab/-/issues/20924 is fixed, get users avatar here
@@ -608,6 +616,10 @@ function displayCommit(commit, project) {
         })*/
     }
     return '<div class=\\"commit\\">' + logo + '<div class=\\"commit-information\\"><a href=\\"' + commit.web_url + '\\" target=\\"_blank\\">' + commit.title + '</a><div><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.committed_date.split('.')[0] + 'Z')) + ' ago &middot; ' + project.name_with_namespace + '</span></div></div></div>'
+}
+
+function addBookmark(link) {
+    console.log(link)
 }
 
 function escapeHtml(unsafe) {

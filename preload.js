@@ -1,14 +1,15 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
-contextBridge.exposeInMainWorld('electron',{
-    goToDetail: (value) => ipcRenderer.send('detail-page', value),
-    goToOverview: () => ipcRenderer.send('go-to-overview'),
-    switchIssues: (value) => ipcRenderer.send('switch-issues', value),
-    switchMRs: (value) => ipcRenderer.send('switch-mrs', value),
-    switchPage: (value) => ipcRenderer.send('switch-page', value),
-    searchRecent: (value) => ipcRenderer.send('search-recent', value),
-    changeCommit: (value) => ipcRenderer.send('change-commit', value)
-  }
+contextBridge.exposeInMainWorld('electron', {
+  goToDetail: (value) => ipcRenderer.send('detail-page', value),
+  goToOverview: () => ipcRenderer.send('go-to-overview'),
+  switchIssues: (value) => ipcRenderer.send('switch-issues', value),
+  switchMRs: (value) => ipcRenderer.send('switch-mrs', value),
+  switchPage: (value) => ipcRenderer.send('switch-page', value),
+  searchRecent: (value) => ipcRenderer.send('search-recent', value),
+  changeCommit: (value) => ipcRenderer.send('change-commit', value),
+  addBookmark: (value) => ipcRenderer.send('add-bookmark', value)
+}
 )
 
 window.addEventListener('DOMContentLoaded', () => {

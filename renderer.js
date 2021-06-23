@@ -47,3 +47,7 @@ function searchRecent(input) {
 function changeCommit(value) {
     window.electron.changeCommit(value)
 }
+
+function addBookmark(value) {
+    window.electron.addBookmark(value)
+}
