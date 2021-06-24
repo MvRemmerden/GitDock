@@ -8,7 +8,9 @@ contextBridge.exposeInMainWorld('electron', {
   switchPage: (value) => ipcRenderer.send('switch-page', value),
   searchRecent: (value) => ipcRenderer.send('search-recent', value),
   changeCommit: (value) => ipcRenderer.send('change-commit', value),
-  addBookmark: (value) => ipcRenderer.send('add-bookmark', value)
+  addBookmark: (value) => ipcRenderer.send('add-bookmark', value),
+  startBookmarkDialog: () => ipcRenderer.send('start-bookmark-dialog'),
+  deleteBookmark: (value) => ipcRenderer.send('delete-bookmark', value)
 }
 )
 

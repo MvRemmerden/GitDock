@@ -51,3 +51,11 @@ function changeCommit(value) {
 function addBookmark(value) {
     window.electron.addBookmark(value)
 }
+
+function startBookmarkDialog() {
+    window.electron.startBookmarkDialog()
+}
+
+function deleteBookmark(value) {
+    window.electron.deleteBookmark(value)
+}

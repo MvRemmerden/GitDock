@@ -119,8 +119,9 @@
       <div><span id="cta">Add a new GitLab bookmark</span> 🔖</div>
       <div id="cta-description">Bookmarks are helpful when you have an issue/merge request you will have to come back to
         repeatedly.</div>
-      <div id="bookmark-input"><input id="bookmark-link" placeholder="Enter your link here..." /><button type="submit"
-          onclick="addBookmark(document.getElementById('bookmark-link').value)">Add</button></div>
+      <form id="bookmark-input" action="#"
+        onsubmit="addBookmark(document.getElementById('bookmark-link').value);return false;"><input id="bookmark-link"
+          placeholder="Enter your link here..." /><button type="submit">Add</button></form>
     </div>
   </div>
   <div id="detail-view">

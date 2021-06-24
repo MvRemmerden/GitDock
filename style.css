@@ -166,6 +166,37 @@ a:hover {
     width: calc(100% - 2rem);
     box-sizing: border-box;
 }
+.bookmark-entry {
+    flex-direction: row!important;
+    padding-right: 0!important;
+}
+.bookmark-entry .bookmark-information {
+    display: flex;
+    flex-direction: column;
+    width: calc(100% - 4rem);
+}
+.bookmark-entry .bookmark-delete-wrapper {
+    width: 3.5rem;
+    height: 2.5rem;
+    margin-left: 0.5rem;
+    border-left: 1px solid #21262d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.bookmark-entry .bookmark-delete-wrapper .bookmark-delete svg {
+    width: 1rem;
+    margin: 0;
+}
+.bookmark-entry .bookmark-delete-wrapper .bookmark-delete {
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    line-height: 1;
+}
+.bookmark-entry .bookmark-delete-wrapper .bookmark-delete:hover {
+    background-color: #30363d;
+    cursor: pointer;
+}
 .list-container li.history-entry, .list-container li.comment {
     align-items: flex-start;
     flex-direction: column;
@@ -271,19 +302,24 @@ a:hover {
     align-items: center;
     width: 100%;
 }
-#bookmarks #new-bookmark #bookmark-input input {
+#bookmarks #add-bookmark-dialog #bookmark-input {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+#bookmarks #new-bookmark #bookmark-input input, #bookmarks #add-bookmark-dialog #bookmark-input input {
     width: 100%;
     margin-right: 0.5rem;
     border: 1px solid #161b22;
     font-size: 0.875rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.5rem;
     background-color: #30363d;
     border-radius: 0.375rem;
     color: #c9d1d9;
     box-sizing: border-box;
     outline: none;
 }
-#bookmarks #new-bookmark #bookmark-input button {
+#bookmarks #new-bookmark #bookmark-input button, #bookmarks #add-bookmark-dialog #bookmark-input button {
     background-color: #0d1117;
     border: 1px solid #30363d;
     color: #c9d1d9;
@@ -294,7 +330,7 @@ a:hover {
     align-items: center;
     cursor: pointer;
 }
-#bookmarks #new-bookmark #bookmark-input button:hover {
+#bookmarks #new-bookmark #bookmark-input button:hover, #bookmarks #add-bookmark-dialog #bookmark-input button:hover {
     background-color: #161b22;
 }
 #detail-view {
