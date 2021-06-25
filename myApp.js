@@ -38,7 +38,7 @@ const mb = menubar({
     icon: __dirname + '/assets/gitlab.png',
     preloadWindow: true,
     browserWindow: {
-        width: 1000,
+        width: 600,
         height: 650,
         webPreferences: {
             preload: __dirname + '/preload.js',
@@ -55,24 +55,22 @@ if (access_token && user_id && username) {
 
         //Preloading content
         getUser()
-        /*getLastCommits()
+        getLastCommits()
         getRecentlyVisited()
         getRecentComments()
         getUsersProjects()
-        getBookmarks()*/
+        getBookmarks()
 
         //Regularly relaoading content
-        /*setInterval(function () {
-            getUser()
-            getLastCommits()
+        setInterval(function () {
             getRecentlyVisited()
+            /*getLastCommits()
             getRecentComments()
             getUsersProjects()
-            getBookmarks()
-            console.log('Update')
-        }, 60000);*/
+            getBookmarks()*/
+        }, 120000);
 
-        mb.window.webContents.openDevTools()
+        //mb.window.webContents.openDevTools()
         ipcMain.on('detail-page', (event, arg) => {
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = ""')
             mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
