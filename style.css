@@ -302,25 +302,35 @@ a:hover {
     align-items: center;
     width: 100%;
 }
+#bookmarks #add-bookmark-dialog.opened {
+    background-color: #0d1117;
+} 
 #bookmarks #add-bookmark-dialog #bookmark-input {
     display: flex;
     align-items: center;
     width: 100%;
 }
-#bookmarks #new-bookmark #bookmark-input input, #bookmarks #add-bookmark-dialog #bookmark-input input {
+#bookmarks #new-bookmark #bookmark-input #bookmark-link, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link {
     width: 100%;
     margin-right: 0.5rem;
     border: 1px solid #161b22;
     font-size: 0.875rem;
     padding: 0.5rem;
-    background-color: #30363d;
+    background-color: #21262d;
     border-radius: 0.375rem;
     color: #c9d1d9;
     box-sizing: border-box;
     outline: none;
 }
-#bookmarks #new-bookmark #bookmark-input button, #bookmarks #add-bookmark-dialog #bookmark-input button {
-    background-color: #0d1117;
+#bookmarks #new-bookmark #bookmark-input #bookmark-link::placeholder, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link::placeholder {
+    color: hsla(0,0%,100%,.75);
+}
+#bookmarks #new-bookmark #bookmark-input #bookmark-link:disabled, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link:disabled {
+    color: #484f58;
+    cursor: not-allowed;
+}
+#bookmarks #new-bookmark #bookmark-input button, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button {
+    background-color: #21262d;
     border: 1px solid #30363d;
     color: #c9d1d9;
     font-size: 0.875rem;
@@ -330,8 +340,22 @@ a:hover {
     align-items: center;
     cursor: pointer;
 }
-#bookmarks #new-bookmark #bookmark-input button:hover, #bookmarks #add-bookmark-dialog #bookmark-input button:hover {
-    background-color: #161b22;
+#bookmarks #new-bookmark #bookmark-input button svg, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button svg {
+    width: 1rem;
+    margin-right: 0.5rem;
+    -webkit-animation:spin 2s linear infinite;
+    -moz-animation:spin 2s linear infinite;
+    animation:spin 2s linear infinite;
+}
+#bookmarks #new-bookmark #bookmark-input button:hover, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button:hover {
+    background-color: #30363d;
+    border: 1px solid #8b949e;
+}
+#bookmarks #new-bookmark #bookmark-input button:disabled, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button:disabled {
+    background-color: #21262d;
+    border: 1px solid #30363d;
+    color: #484f58;
+    cursor: not-allowed;
 }
 #detail-view {
     position: fixed;
@@ -517,3 +541,6 @@ a:hover {
     margin-right: 0;
     margin-left: 0.25rem;
 }
+@-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
+@-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
+@keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
