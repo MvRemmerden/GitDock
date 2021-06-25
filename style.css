@@ -129,19 +129,24 @@ a:hover {
 #project-pipeline {
     margin-top: 0.5rem;
 }
-#pipeline svg, #project-pipeline svg, #pipeline img, #project-pipeline img, #pipeline #project-name, #project-pipeline #project-name {
-    width: 1.5rem;
+.commit svg, .commit img, .commit #project-name {
+    min-width: 1.5rem;
     height: 1.5rem;
     margin-right: 0.75rem;
     border-radius: 1.5rem;
+    border: 1px solid transparent;
 }
-#pipeline img, #project-pipeline img {
+.commit img {
     background-color: #30363d;
 }
-#pipeline #project-name, #project-pipeline #project-name {
+.commit #project-name {
     display: flex;
     align-items: center;
     justify-content: center;
+    border: 1px solid #30363d;
+}
+.commit.empty #project-name {
+    background-color: #30363d;
     border: 1px solid #30363d;
 }
 .commit {
@@ -156,9 +161,21 @@ a:hover {
 .commit:hover {
     background-color: #161b22;
 }
+.commit.empty .commit-name {
+    width: 80%;
+    background-color: #30363d;
+    height: 1rem;
+    margin-bottom: 0.5rem;
+}
+.commit.empty .commit-details {
+    width: 65%;
+    background-color: #30363d;
+    height: 0.875rem;
+}
 .commit-information, .todo-information, .history-entry {
     display: flex;
     flex-direction: column;
+    width: 100%;
 }
 .todo, .history-entry, .comment {
     display: flex;
@@ -187,9 +204,10 @@ a:hover {
 .bookmark-entry .bookmark-delete-wrapper .bookmark-delete svg {
     width: 1rem;
     margin: 0;
+    line-height: 1;
 }
 .bookmark-entry .bookmark-delete-wrapper .bookmark-delete {
-    padding: 0.5rem;
+    padding: 0.5rem 0.5rem 0.425rem;
     border-radius: 0.375rem;
     line-height: 1;
 }
@@ -323,7 +341,7 @@ a:hover {
     outline: none;
 }
 #bookmarks #new-bookmark #bookmark-input #bookmark-link::placeholder, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link::placeholder {
-    color: hsla(0,0%,100%,.75);
+    color: rgba(255, 255, 255, .7);
 }
 #bookmarks #new-bookmark #bookmark-input #bookmark-link:disabled, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link:disabled {
     color: #484f58;
@@ -464,7 +482,7 @@ a:hover {
     border: none;
     font-size: 0.875rem;
     padding: 0.5rem 0.75rem;
-    background-color: #161b22;
+    background-color: #21262d;
     border-radius: 0.375rem;
     color: #c9d1d9;
     width: 100%;
@@ -473,6 +491,9 @@ a:hover {
 #detail-view #detail-headline input:focus {
     border: none;
     outline: none;
+}
+#detail-view #detail-headline input::placeholder {
+    color: rgba(255, 255, 255, .7);
 }
 #detail-view #detail-headline #project-detail-information {
     display: flex;

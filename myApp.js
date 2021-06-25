@@ -36,6 +36,7 @@ const mb = menubar({
     showDockIcon: false,
     showOnAllWorkspaces: false,
     icon: __dirname + '/assets/gitlab.png',
+    preloadWindow: true,
     browserWindow: {
         width: 1000,
         height: 650,
@@ -51,6 +52,26 @@ const mb = menubar({
 if (access_token && user_id && username) {
     setupSecondaryMenu()
     mb.on('after-create-window', () => {
+
+        //Preloading content
+        getUser()
+        /*getLastCommits()
+        getRecentlyVisited()
+        getRecentComments()
+        getUsersProjects()
+        getBookmarks()*/
+
+        //Regularly relaoading content
+        /*setInterval(function () {
+            getUser()
+            getLastCommits()
+            getRecentlyVisited()
+            getRecentComments()
+            getUsersProjects()
+            getBookmarks()
+            console.log('Update')
+        }, 60000);*/
+
         mb.window.webContents.openDevTools()
         ipcMain.on('detail-page', (event, arg) => {
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = ""')
@@ -141,7 +162,7 @@ if (access_token && user_id && username) {
         })
 
         ipcMain.on('change-commit', (event, arg) => {
-            mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<div class=\\"commit\\"></div>"')
+            mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<div class=\\"commit empty\\"><div id=\\"project-name\\"></div><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div></div>"')
             changeCommit(arg)
         })
 
@@ -174,7 +195,7 @@ if (access_token && user_id && username) {
     })
 
     mb.on('show', () => {
-        getUser()
+        //getUser()
         getLastCommits()
         getRecentlyVisited()
         getRecentComments()
@@ -565,7 +586,7 @@ function getBookmarks() {
         })
         bookmarksString += '<li id=\\"add-bookmark-dialog\\" class=\\"more-link\\"><a onclick=\\"startBookmarkDialog()\\">Add another bookmark <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#aaa\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
         mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
-    }else{
+    } else {
         let bookmarkLink = "'bookmark-link'"
         bookmarksString = '<div id=\\"new-bookmark\\"><div><span id=\\"cta\\">Add a new GitLab bookmark</span> 🔖</div><div id=\\"cta-description\\">Bookmarks are helpful when you have an issue/merge request you will have to come back to repeatedly.</div><form id=\\"bookmark-input\\" action=\\"#\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter your link here...\\" /><button id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form></div>'
         mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
@@ -678,6 +699,8 @@ function startBookmarkDialog() {
     let bookmarkInput = '<form action=\\"#\\" id=\\"bookmark-input\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter your link here...\\" /><button id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form>'
     mb.window.webContents.executeJavaScript('document.getElementById("add-bookmark-dialog").classList.add("opened")')
     mb.window.webContents.executeJavaScript('document.getElementById("add-bookmark-dialog").innerHTML = "' + bookmarkInput + '"')
+    mb.window.webContents.executeJavaScript('window.scrollBy(0, 14)')
+    mb.window.webContents.executeJavaScript('document.getElementById("bookmark-link").focus()')
 }
 
 async function parseGitLabUrl(link) {
