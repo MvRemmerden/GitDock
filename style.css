@@ -132,6 +132,10 @@ a:hover {
     font-size: 0.825rem;
     color: #aaa;
 }
+.namespace-with-time a {
+    font-weight: normal;
+    color: #aaa;
+}
 #project-pipeline {
     margin-top: 0.5rem;
 }
