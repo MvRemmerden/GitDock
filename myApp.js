@@ -301,6 +301,7 @@ function changeCommit(forward = true) {
 }
 
 function getCommitDetails(project_id, sha, index) {
+    mb.window.webContents.executeJavaScript('document.getElementById("commits-count").classList.remove("empty")')
     mb.window.webContents.executeJavaScript('document.getElementById("commits-count").innerHTML = "' + index + '/' + recentCommits.length + '"')
     fetch('https://gitlab.com/api/v4/projects/' + project_id + '?access_token=' + access_token).then(result => {
         return result.json()

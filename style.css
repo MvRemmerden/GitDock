@@ -122,6 +122,12 @@ a:hover {
     font-weight: normal;
     margin: 0 0.25rem;
 }
+.headline #commits-pagination #commits-count.empty {
+    width: 2rem;
+    height: 0.825rem;
+    background-color: #30363d;
+    margin-top: 2px;
+}
 .namespace-with-time {
     font-size: 0.825rem;
     color: #aaa;
