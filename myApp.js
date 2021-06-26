@@ -56,6 +56,7 @@ if (access_token && user_id && username) {
 
         //Preloading content
         getUser()
+        //getRecentlyVisited()
         getLastCommits()
         getRecentComments()
         getUsersProjects()
@@ -63,7 +64,6 @@ if (access_token && user_id && username) {
 
         //Regularly relaoading content
         setInterval(function () {
-            getRecentlyVisited()
             /*getLastCommits()
             getRecentComments()
             getUsersProjects()
@@ -194,8 +194,8 @@ if (access_token && user_id && username) {
 
     mb.on('show', () => {
         //getUser()
-        getLastCommits()
         getRecentlyVisited()
+        getLastCommits()
         getRecentComments()
         getUsersProjects()
         getBookmarks()
@@ -340,7 +340,7 @@ async function getRecentlyVisited() {
                     }
                     recentlyVisitedArray.push(item[j].title)
                     recentlyVisitedString += '<li class=\\"history-entry\\">'
-                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; ' + item[j].title.split('·')[2].trim() + '</span></div></li>'
+                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item[j].url.split('/-/')[0] + '\\" target=\\"_blank\\">' + item[j].title.split('·')[2].trim() + '</a></span></div></li>'
                     i++
                     if (i == numberOfRecentlyVisited) {
                         break
@@ -475,7 +475,7 @@ function getRecentComments() {
             await fetch(url).then(result => {
                 return result.json()
             }).then(collabject => {
-                recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; ' + escapeHtml(comment.target_title) + '</span></div></li>'
+                recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
             })
         }
         let moreString = "'Comments'"
@@ -681,7 +681,7 @@ function displayCommit(commit, project) {
             logo = '<img src=\\"' + user[0].avatar_url + '\\" />'
         })*/
     }
-    return '<div class=\\"commit\\">' + logo + '<div class=\\"commit-information\\"><a href=\\"' + commit.web_url + '\\" target=\\"_blank\\">' + commit.title + '</a><div><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.committed_date.split('.')[0] + 'Z')) + ' ago &middot; ' + project.name_with_namespace + '</span></div></div></div>'
+    return '<div class=\\"commit\\">' + logo + '<div class=\\"commit-information\\"><a href=\\"' + commit.web_url + '\\" target=\\"_blank\\">' + commit.title + '</a><div><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.committed_date.split('.')[0] + 'Z')) + ' ago &middot; <a href=\\"' + project.web_url + '\\" target=\\_blank\\">' + project.name_with_namespace + '</a></span></div></div></div>'
 }
 
 function addBookmark(link) {
