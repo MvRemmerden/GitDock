@@ -395,7 +395,7 @@ async function getMoreRecentlyVisited() {
                     moreRecentlyVisitedArray.push(item[j])
                     moreRecentlyVisitedTitlesArray.push(item[j].title)
                     recentlyVisitedString += '<li class=\\"history-entry\\">'
-                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; ' + item[j].title.split('·')[2].trim() + '</span></div></li>'
+                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item[j].url.split('/-/')[0] + '\\" target=\\"_blank\\">' + item[j].title.split('·')[2].trim() + '</a></span></div></li>'
                 }
             }
             recentlyVisitedString += '</ul>'
@@ -417,7 +417,7 @@ function searchRecentlyVisited(searchterm) {
             url = 'https://gitlab.com/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
         }
         foundString += '<li class=\\"history-entry\\">'
-        foundString += '<a href=\\"' + item.url + '\\" target=\\"_blank\\">' + escapeHtml(item.title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item.utc_time + ' UTC')) + ' ago &middot; ' + item.title.split('·')[2].trim() + '</span></div></li>'
+        foundString += '<a href=\\"' + item.url + '\\" target=\\"_blank\\">' + escapeHtml(item.title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item.utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item.url.split('/-/')[0] + '\\" target=\\"_blank\\">' + item.title.split('·')[2].trim() + '</a></span></div></li>'
     }
     foundString += '</ul>'
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + foundString + '"')
@@ -504,7 +504,7 @@ function getMoreRecentComments(url = 'https://gitlab.com/api/v4/events?action=co
             await fetch(url).then(result => {
                 return result.json()
             }).then(collabject => {
-                recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; ' + escapeHtml(comment.target_title) + '</span></div></li>'
+                recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
             })
         }
         recentCommentsString += '</ul>' + displayPagination(keysetLinks, type)
@@ -521,8 +521,9 @@ function getIssues(url = 'https://gitlab.com/api/v4/issues?scope=assigned_to_me&
         return result.json()
     }).then(issues => {
         for (issue of issues) {
+            console.log(issue)
             issuesString += '<li class=\\"history-entry\\">'
-            issuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(issue.updated_at)) + ' ago &middot; ' + issue.references.full.split('#')[0] + '</span></div></li>'
+            issuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(issue.updated_at)) + ' ago &middot; <a href=\\"' + issue.web_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + issue.references.full.split('#')[0] + '</a></span></div></li>'
         }
         issuesString += '</ul>' + displayPagination(keysetLinks, type)
         mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + issuesString + '"')
@@ -541,7 +542,7 @@ function getMRs(url = 'https://gitlab.com/api/v4/merge_requests?scope=assigned_t
             mrsString = '<ul class=\\"list-container\\">'
             for (mr of mrs) {
                 mrsString += '<li class=\\"history-entry\\">'
-                mrsString += '<a href=\\"' + mr.web_url + '\\" target=\\"_blank\\">' + escapeHtml(mr.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(mr.updated_at)) + ' ago &middot; ' + mr.references.full.split('#')[0] + '</span></div></li>'
+                mrsString += '<a href=\\"' + mr.web_url + '\\" target=\\"_blank\\">' + escapeHtml(mr.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(mr.updated_at)) + ' ago &middot; <a href=\\"' + mr.web_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + mr.references.full.split('!')[0] + '</a></span></div></li>'
             }
             mrsString += '</ul>' + displayPagination(keysetLinks, type)
         } else {
@@ -567,7 +568,7 @@ function getTodos(url = 'https://gitlab.com/api/v4/todos?per_page=' + numberOfTo
             } else if (todo.group) {
                 location = todo.group.name
             }
-            todosString += '<a href=\\"' + todo.target_url + '\\" target=\\"_blank\\">' + escapeHtml(todo.target.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(todo.updated_at)) + ' ago &middot; ' + location + '</span></div></li>'
+            todosString += '<a href=\\"' + todo.target_url + '\\" target=\\"_blank\\">' + escapeHtml(todo.target.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(todo.updated_at)) + ' ago &middot; <a href=\\"' + todo.target_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + location + '</a></span></div></li>'
         }
         todosString += '</ul>' + displayPagination(keysetLinks, type)
         mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + todosString + '"')
