@@ -1,10 +1,10 @@
 const { menubar } = require('menubar')
-const { Menu, shell, ipcMain } = require("electron")
+const { Menu, Notification, shell, ipcMain, app } = require("electron")
 const fetch = require('node-fetch');
 const Store = require('electron-store');
 const store = new Store()
 const BrowserHistory = require('node-browser-history');
-const { URL } = require('url')
+const { URL } = require('url');
 
 const typeParsers = {
     'merge_requests': merge_requests => ({ merge_requests: parseInt(merge_requests, 10) }),
@@ -31,6 +31,7 @@ let numberOfTodos = 10
 let numberOfComments = 5
 let activeIssuesOption = 'assigned_to_me'
 let activeMRsOption = 'assigned_to_me'
+let runningPipelineSubscriptions = []
 let timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
 const mb = menubar({
@@ -39,7 +40,7 @@ const mb = menubar({
     icon: __dirname + '/assets/gitlab.png',
     preloadWindow: true,
     browserWindow: {
-        width: 1000,
+        width: 600,
         height: 650,
         webPreferences: {
             preload: __dirname + '/preload.js',
@@ -70,7 +71,7 @@ if (access_token && user_id && username) {
             getBookmarks()*/
         }, 120000);
 
-        mb.window.webContents.openDevTools()
+        //mb.window.webContents.openDevTools()
         ipcMain.on('detail-page', (event, arg) => {
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = ""')
             mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
@@ -266,6 +267,7 @@ function getLastCommits() {
         keysetLinks = result.headers.get('Link')
         return result.json()
     }).then(commits => {
+        getLastPipelines(commits)
         let committedArray = commits.filter(commit => {
             return (commit.action_name == 'pushed to' || (commit.action_name == 'pushed new' && commit.push_data.commit_to && commit.push_data.commit_count > 0))
         })
@@ -273,6 +275,59 @@ function getLastCommits() {
         recentCommits = committedArray
         getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1)
     })
+}
+
+async function getLastPipelines(commits) {
+    let projectArray = []
+    for (let commit of commits) {
+        if (!projectArray.includes(commit.project_id)) {
+            projectArray.push(commit.project_id)
+            let result = await fetch('https://gitlab.com/api/v4/projects/' + commit.project_id + '/pipelines?status=success&username=' + username + '&per_page=1&page=1&access_token=' + access_token)
+            let pipelines = await result.json()
+            if (pipelines.length != 0) {
+                mb.tray.setImage(__dirname + '/assets/running.png')
+                for (let pipeline of pipelines) {
+                    console.log(pipeline.id)
+                    if (runningPipelineSubscriptions.findIndex(subscriptionPipeline => subscriptionPipeline.id == pipeline.id) == -1) {
+                        let result = await fetch('https://gitlab.com/api/v4/projects/' + pipeline.project_id + '/repository/commits/' + pipeline.sha + '?access_token=' + access_token)
+                        let commit = await result.json()
+                        pipeline.commit_title = commit.title
+                        runningPipelineSubscriptions.push(pipeline)
+                        let runningNotification = new Notification({ title: 'Pipeline running', subtitle: parse(pipeline.web_url).namespace + ' / ' + parse(pipeline.web_url).project, body: pipeline.commit_title })
+                        runningNotification.on('click', result => {
+                            shell.openExternal(pipeline.web_url)
+                        })
+                        runningNotification.show()
+                    }
+                }
+            }
+        }
+    }
+    subscribeToRunningPipeline()
+}
+
+async function subscribeToRunningPipeline() {
+
+    console.log(runningPipelineSubscriptions)
+
+    let interval = setInterval(async function () {
+        console.log('update')
+        for (let runningPipeline of runningPipelineSubscriptions) {
+            let result = await fetch('https://gitlab.com/api/v4/projects/' + runningPipeline.project_id + '/pipelines/' + runningPipeline.id + '?access_token=' + access_token)
+            let pipeline = await result.json()
+            console.log(pipeline)
+            if (pipeline.status != 'running') {
+                let updateNotification = new Notification({ title: 'Pipeline succeeded', subtitle: parse(pipeline.web_url).namespace + ' / ' + parse(pipeline.web_url).project, body: runningPipeline.commit_title })
+                updateNotification.on('click', () => {
+                    shell.openExternal(pipeline.web_url)
+                })
+                updateNotification.show()
+                runningPipelineSubscriptions = runningPipelineSubscriptions.filter(subscriptionPipeline => subscriptionPipeline.id != pipeline.id)
+                console.log(runningPipelineSubscriptions)
+                //clearInterval(interval)
+            }
+        }
+    }, 2000);
 }
 
 function changeCommit(forward = true) {
@@ -409,7 +464,7 @@ function searchRecentlyVisited(searchterm) {
         return item.title.toLowerCase().includes(searchterm)
     })
     foundString = '<ul class=\\"list-container\\">'
-    for (item of foundArray) {
+    for (let item of foundArray) {
         let nameWithNamespace = item.url.replace('https://gitlab.com/', '').split('/-/')[0]
         if (nameWithNamespace.split('/')[0] != 'groups') {
             url = 'https://gitlab.com/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
@@ -429,7 +484,7 @@ function getUsersProjects() {
     }).then(projects => {
         let favoriteProjectsString = ''
         let chevron = '<svg class=\\"chevron\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg>'
-        for (project of projects) {
+        for (let project of projects) {
             //TODO Figure out a way to see avatars of private repositories
             /*if(project.visibility == 'public') {
                 favoriteProjectsString += '<li><img src=\\"' + project.avatar_url + '\\">'
@@ -463,7 +518,7 @@ function getRecentComments() {
     fetch('https://gitlab.com/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(async comments => {
-        for (comment of comments) {
+        for (let comment of comments) {
             let url = ''
             if (comment.note.noteable_type == 'MergeRequest') {
                 url = 'https://gitlab.com/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
@@ -492,7 +547,7 @@ function getMoreRecentComments(url = 'https://gitlab.com/api/v4/events?action=co
         keysetLinks = result.headers.get('Link')
         return result.json()
     }).then(async comments => {
-        for (comment of comments) {
+        for (let comment of comments) {
             let url = ''
             if (comment.note.noteable_type == 'MergeRequest') {
                 url = 'https://gitlab.com/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
@@ -520,8 +575,7 @@ function getIssues(url = 'https://gitlab.com/api/v4/issues?scope=assigned_to_me&
         keysetLinks = result.headers.get('Link')
         return result.json()
     }).then(issues => {
-        for (issue of issues) {
-            console.log(issue)
+        for (let issue of issues) {
             issuesString += '<li class=\\"history-entry\\">'
             issuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(issue.updated_at)) + ' ago &middot; <a href=\\"' + issue.web_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + issue.references.full.split('#')[0] + '</a></span></div></li>'
         }
@@ -540,7 +594,7 @@ function getMRs(url = 'https://gitlab.com/api/v4/merge_requests?scope=assigned_t
     }).then(mrs => {
         if (mrs.length > 0) {
             mrsString = '<ul class=\\"list-container\\">'
-            for (mr of mrs) {
+            for (let mr of mrs) {
                 mrsString += '<li class=\\"history-entry\\">'
                 mrsString += '<a href=\\"' + mr.web_url + '\\" target=\\"_blank\\">' + escapeHtml(mr.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(mr.updated_at)) + ' ago &middot; <a href=\\"' + mr.web_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + mr.references.full.split('!')[0] + '</a></span></div></li>'
             }
@@ -560,7 +614,7 @@ function getTodos(url = 'https://gitlab.com/api/v4/todos?per_page=' + numberOfTo
         keysetLinks = result.headers.get('Link')
         return result.json()
     }).then(todos => {
-        for (todo of todos) {
+        for (let todo of todos) {
             todosString += '<li class=\\"history-entry\\">'
             let location = ''
             if (todo.project) {
@@ -582,9 +636,9 @@ function getBookmarks() {
         bookmarksString = '<ul class=\\"list-container\\">'
         bookmarks.forEach(bookmark => {
             let namespace = ''
-            if(bookmark.namespace) {
+            if (bookmark.namespace) {
                 namespace = '<a href=\\"' + bookmark.locationUrl + '\\" target=\\"_blank\\">' + bookmark.namespace + ' / ' + bookmark.project + '</a>'
-            }else{
+            } else {
                 namespace = '<a href=\\"' + bookmark.locationUrl + '\\" target=\\"_blank\\">' + bookmark.project + '</a>'
             }
             let bookmarkUrl = "'" + bookmark.url + "'"
@@ -647,25 +701,25 @@ function displayCommit(commit, project) {
         if (commit.last_pipeline.status == 'scheduled') {
             logo = '<svg viewBox=\\"0 0 14 14\\" xmlns=\\"http://www.w3.org/2000/svg\\"><circle cx=\\"7\\" cy=\\"7\\" r=\\"7\\"/><circle fill=\\"#c9d1d9\\" style=\\"fill: var(--svg-status-bg, #c9d1d9);\\" cx=\\"7\\" cy=\\"7\\" r=\\"6\\"/><g transform=\\"translate(2.75 2.75)\\" fill-rule=\\"nonzero\\"><path d=\\"M4.165 7.81a3.644 3.644 0 1 1 0-7.29 3.644 3.644 0 0 1 0 7.29zm0-1.042a2.603 2.603 0 1 0 0-5.206 2.603 2.603 0 0 0 0 5.206z\\"/><rect x=\\"3.644\\" y=\\"2.083\\" width=\\"1.041\\" height=\\"2.603\\" rx=\\".488\\"/><rect x=\\"3.644\\" y=\\"3.644\\" width=\\"2.083\\" height=\\"1.041\\" rx=\\".488\\"/></g></svg>'
         } else {
-            logo = '<svg viewBox=\\"0 0 14 14\\" xmlns=\\"http://www.w3.org/2000/svg\\"><g fill-rule=\\"evenodd\\"><path d=\\"M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z\\"/><path d=\\"M13 7A6 6 0 1 0 1 7a6 6 0 0 0 12 0z\\" fill=\\"#c9d1d9\\" style=\\"fill: var(--svg-status-bg, #c9d1d9);\\"/>'
+            logo = '<svg viewBox=\\"0 0 14 14\\" xmlns=\\"http://www.w3.org/2000/svg\\"><g fill-rule=\\"evenodd\\"><path d=\\"M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z\\" fill=\\"#c9d1d9\\"/><path d=\\"M13 7A6 6 0 1 0 1 7a6 6 0 0 0 12 0z\\" fill=\\"#090c10\\"/>'
             if (commit.last_pipeline.status == 'running') {
-                logo += '<path d=\\"M7 3c2.2 0 4 1.8 4 4s-1.8 4-4 4c-1.3 0-2.5-.7-3.3-1.7L7 7V3\\"/></g></svg>'
+                logo += '<path d=\\"M7 3c2.2 0 4 1.8 4 4s-1.8 4-4 4c-1.3 0-2.5-.7-3.3-1.7L7 7V3\\" fill=\\"#c9d1d9\\"/></g></svg>'
             } else if (commit.last_pipeline.status == 'failed') {
-                logo += '<path d=\\"M7 5.969L5.599 4.568a.29.29 0 0 0-.413.004l-.614.614a.294.294 0 0 0-.004.413L5.968 7l-1.4 1.401a.29.29 0 0 0 .004.413l.614.614c.113.114.3.117.413.004L7 8.032l1.401 1.4a.29.29 0 0 0 .413-.004l.614-.614a.294.294 0 0 0 .004-.413L8.032 7l1.4-1.401a.29.29 0 0 0-.004-.413l-.614-.614a.294.294 0 0 0-.413-.004L7 5.968z\\"/></g></svg>'
+                logo += '<path d=\\"M7 5.969L5.599 4.568a.29.29 0 0 0-.413.004l-.614.614a.294.294 0 0 0-.004.413L5.968 7l-1.4 1.401a.29.29 0 0 0 .004.413l.614.614c.113.114.3.117.413.004L7 8.032l1.401 1.4a.29.29 0 0 0 .413-.004l.614-.614a.294.294 0 0 0 .004-.413L8.032 7l1.4-1.401a.29.29 0 0 0-.004-.413l-.614-.614a.294.294 0 0 0-.413-.004L7 5.968z\\" fill=\\"#c9d1d9\\"/></g></svg>'
             } else if (commit.last_pipeline.status == 'success') {
-                logo += '<path d=\\"M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z\\"/></g></svg>'
+                logo += '<path d=\\"M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z\\" fill=\\"#c9d1d9\\"/></g></svg>'
             } else if (commit.last_pipeline.status == 'pending') {
-                logo += '<path d=\\"M4.7 5.3c0-.2.1-.3.3-.3h.9c.2 0 .3.1.3.3v3.4c0 .2-.1.3-.3.3H5c-.2 0-.3-.1-.3-.3V5.3m3 0c0-.2.1-.3.3-.3h.9c.2 0 .3.1.3.3v3.4c0 .2-.1.3-.3.3H8c-.2 0-.3-.1-.3-.3V5.3\\"/></g></svg>'
+                logo += '<path d=\\"M4.7 5.3c0-.2.1-.3.3-.3h.9c.2 0 .3.1.3.3v3.4c0 .2-.1.3-.3.3H5c-.2 0-.3-.1-.3-.3V5.3m3 0c0-.2.1-.3.3-.3h.9c.2 0 .3.1.3.3v3.4c0 .2-.1.3-.3.3H8c-.2 0-.3-.1-.3-.3V5.3\\" fill=\\"#c9d1d9\\"/></g></svg>'
             } else if (commit.last_pipeline.status == 'canceled') {
-                logo += '<path d=\\"M5.2 3.8l4.9 4.9c.2.2.2.5 0 .7l-.7.7c-.2.2-.5.2-.7 0L3.8 5.2c-.2-.2-.2-.5 0-.7l.7-.7c.2-.2.5-.2.7 0\\"/></g></svg>'
+                logo += '<path d=\\"M5.2 3.8l4.9 4.9c.2.2.2.5 0 .7l-.7.7c-.2.2-.5.2-.7 0L3.8 5.2c-.2-.2-.2-.5 0-.7l.7-.7c.2-.2.5-.2.7 0\\" fill=\\"#c9d1d9\\"/></g></svg>'
             } else if (commit.last_pipeline.status == 'skipped') {
-                logo += '<path d=\\"M6.415 7.04L4.579 5.203a.295.295 0 0 1 .004-.416l.349-.349a.29.29 0 0 1 .416-.004l2.214 2.214a.289.289 0 0 1 .019.021l.132.133c.11.11.108.291 0 .398L5.341 9.573a.282.282 0 0 1-.398 0l-.331-.331a.285.285 0 0 1 0-.399L6.415 7.04zm2.54 0L7.119 5.203a.295.295 0 0 1 .004-.416l.349-.349a.29.29 0 0 1 .416-.004l2.214 2.214a.289.289 0 0 1 .019.021l.132.133c.11.11.108.291 0 .398L7.881 9.573a.282.282 0 0 1-.398 0l-.331-.331a.285.285 0 0 1 0-.399L8.955 7.04z\\"/></svg>'
+                logo += '<path d=\\"M6.415 7.04L4.579 5.203a.295.295 0 0 1 .004-.416l.349-.349a.29.29 0 0 1 .416-.004l2.214 2.214a.289.289 0 0 1 .019.021l.132.133c.11.11.108.291 0 .398L5.341 9.573a.282.282 0 0 1-.398 0l-.331-.331a.285.285 0 0 1 0-.399L6.415 7.04zm2.54 0L7.119 5.203a.295.295 0 0 1 .004-.416l.349-.349a.29.29 0 0 1 .416-.004l2.214 2.214a.289.289 0 0 1 .019.021l.132.133c.11.11.108.291 0 .398L7.881 9.573a.282.282 0 0 1-.398 0l-.331-.331a.285.285 0 0 1 0-.399L8.955 7.04z\\" fill=\\"#c9d1d9\\"/></svg>'
             } else if (commit.last_pipeline.status == 'created') {
-                logo += '<circle cx=\\"7\\" cy=\\"7\\" r=\\"3.25\\"/></g></svg>'
+                logo += '<circle cx=\\"7\\" cy=\\"7\\" r=\\"3.25\\" fill=\\"#c9d1d9\\"/></g></svg>'
             } else if (commit.last_pipeline.status == 'preparing') {
                 logo += '</g><circle cx=\\"7\\" cy=\\"7\\" r=\\"1\\"/><circle cx=\\"10\\" cy=\\"7\\" r=\\"1\\"/><circle cx=\\"4\\" cy=\\"7\\" r=\\"1\\"/></g></svg>'
             } else if (commit.last_pipeline.status == 'manual') {
-                logo += '<path d=\\"M10.5 7.63V6.37l-.787-.13c-.044-.175-.132-.349-.263-.61l.481-.652-.918-.913-.657.478a2.346 2.346 0 0 0-.612-.26L7.656 3.5H6.388l-.132.783c-.219.043-.394.13-.612.26l-.657-.478-.918.913.437.652c-.131.218-.175.392-.262.61l-.744.086v1.261l.787.13c.044.218.132.392.263.61l-.438.651.92.913.655-.434c.175.086.394.173.613.26l.131.783h1.313l.131-.783c.219-.043.394-.13.613-.26l.656.478.918-.913-.48-.652c.13-.218.218-.435.262-.61l.656-.13zM7 8.283a1.285 1.285 0 0 1-1.313-1.305c0-.739.57-1.304 1.313-1.304.744 0 1.313.565 1.313 1.304 0 .74-.57 1.305-1.313 1.305z\\"/></g></svg>'
+                logo += '<path d=\\"M10.5 7.63V6.37l-.787-.13c-.044-.175-.132-.349-.263-.61l.481-.652-.918-.913-.657.478a2.346 2.346 0 0 0-.612-.26L7.656 3.5H6.388l-.132.783c-.219.043-.394.13-.612.26l-.657-.478-.918.913.437.652c-.131.218-.175.392-.262.61l-.744.086v1.261l.787.13c.044.218.132.392.263.61l-.438.651.92.913.655-.434c.175.086.394.173.613.26l.131.783h1.313l.131-.783c.219-.043.394-.13.613-.26l.656.478.918-.913-.48-.652c.13-.218.218-.435.262-.61l.656-.13zM7 8.283a1.285 1.285 0 0 1-1.313-1.305c0-.739.57-1.304 1.313-1.304.744 0 1.313.565 1.313 1.304 0 .74-.57 1.305-1.313 1.305z\\" fill=\\"#c9d1d9\\"/></g></svg>'
             }
         }
     } else {
@@ -711,14 +765,12 @@ function startBookmarkDialog() {
 
 async function parseGitLabUrl(link) {
     let object = parse(link)
-    console.log(object)
-    let issuable 
-    if(object.type == 'issues' || object.type == 'merge_requests') {
+    let issuable
+    if (object.type == 'issues' || object.type == 'merge_requests') {
         let result = await fetch('https://gitlab.com/api/v4/projects/' + encodeURIComponent(object.namespace + '/' + object.project) + '/' + object.type + '/' + object[object.type] + '?access_token=' + access_token)
         issuable = await result.json()
         let result2 = await fetch('https://gitlab.com/api/v4/projects/' + issuable.project_id + '?access_token=' + access_token)
         let project = await result2.json()
-        console.log(project)
         return {
             url: link,
             namespace: project.namespace.name,
@@ -728,12 +780,11 @@ async function parseGitLabUrl(link) {
             type: object.type,
             locationUrl: project.web_url
         }
-    }else if(object.type == 'epics') {
+    } else if (object.type == 'epics') {
         let result = await fetch('https://gitlab.com/api/v4/groups/' + encodeURIComponent(object.project) + '/' + object.type + '/' + object[object.type])
         issuable = await result.json()
         let result2 = await fetch('https://gitlab.com/api/v4/groups/' + issuable.group_id + '?access_token=' + access_token)
         let group = await result2.json()
-        console.log(group)
         return {
             url: link,
             project: group.name,
