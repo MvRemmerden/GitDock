@@ -69,7 +69,7 @@ if (access_token && user_id && username) {
             getRecentComments()
             getUsersProjects()
             getBookmarks()*/
-        }, 120000);
+        }, 12000);
 
         //mb.window.webContents.openDevTools()
         ipcMain.on('detail-page', (event, arg) => {
@@ -198,8 +198,8 @@ if (access_token && user_id && username) {
         getRecentlyVisited()
         getLastCommits()
         getRecentComments()
-        getUsersProjects()
-        getBookmarks()
+        //getUsersProjects()
+        //getBookmarks()
     })
 } else {
     setupSecondaryMenu()
@@ -262,18 +262,20 @@ function getUser() {
     })*/
 }
 
-function getLastCommits() {
-    fetch(url = 'https://gitlab.com/api/v4/events?action=pushed&per_page=20&access_token=' + access_token).then(result => {
+function getLastCommits(count = 20) {
+    fetch(url = 'https://gitlab.com/api/v4/events?action=pushed&per_page=' + count + '&access_token=' + access_token).then(result => {
         keysetLinks = result.headers.get('Link')
         return result.json()
     }).then(commits => {
         getLastPipelines(commits)
-        let committedArray = commits.filter(commit => {
-            return (commit.action_name == 'pushed to' || (commit.action_name == 'pushed new' && commit.push_data.commit_to && commit.push_data.commit_count > 0))
-        })
-        currentCommit = committedArray[0]
-        recentCommits = committedArray
-        getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1)
+        if (count == 20) {
+            let committedArray = commits.filter(commit => {
+                return (commit.action_name == 'pushed to' || (commit.action_name == 'pushed new' && commit.push_data.commit_to && commit.push_data.commit_count > 0))
+            })
+            currentCommit = committedArray[0]
+            recentCommits = committedArray
+            getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1)
+        }
     })
 }
 
@@ -282,12 +284,11 @@ async function getLastPipelines(commits) {
     for (let commit of commits) {
         if (!projectArray.includes(commit.project_id)) {
             projectArray.push(commit.project_id)
-            let result = await fetch('https://gitlab.com/api/v4/projects/' + commit.project_id + '/pipelines?status=success&username=' + username + '&per_page=1&page=1&access_token=' + access_token)
+            let result = await fetch('https://gitlab.com/api/v4/projects/' + commit.project_id + '/pipelines?status=running&username=' + username + '&per_page=1&page=1&access_token=' + access_token)
             let pipelines = await result.json()
             if (pipelines.length != 0) {
                 mb.tray.setImage(__dirname + '/assets/running.png')
                 for (let pipeline of pipelines) {
-                    console.log(pipeline.id)
                     if (runningPipelineSubscriptions.findIndex(subscriptionPipeline => subscriptionPipeline.id == pipeline.id) == -1) {
                         let result = await fetch('https://gitlab.com/api/v4/projects/' + pipeline.project_id + '/repository/commits/' + pipeline.sha + '?access_token=' + access_token)
                         let commit = await result.json()
@@ -300,22 +301,18 @@ async function getLastPipelines(commits) {
                         runningNotification.show()
                     }
                 }
+                subscribeToRunningPipeline()
             }
         }
     }
-    subscribeToRunningPipeline()
 }
 
 async function subscribeToRunningPipeline() {
-
-    console.log(runningPipelineSubscriptions)
-
     let interval = setInterval(async function () {
         console.log('update')
         for (let runningPipeline of runningPipelineSubscriptions) {
             let result = await fetch('https://gitlab.com/api/v4/projects/' + runningPipeline.project_id + '/pipelines/' + runningPipeline.id + '?access_token=' + access_token)
             let pipeline = await result.json()
-            console.log(pipeline)
             if (pipeline.status != 'running') {
                 let updateNotification = new Notification({ title: 'Pipeline succeeded', subtitle: parse(pipeline.web_url).namespace + ' / ' + parse(pipeline.web_url).project, body: runningPipeline.commit_title })
                 updateNotification.on('click', () => {
@@ -323,11 +320,13 @@ async function subscribeToRunningPipeline() {
                 })
                 updateNotification.show()
                 runningPipelineSubscriptions = runningPipelineSubscriptions.filter(subscriptionPipeline => subscriptionPipeline.id != pipeline.id)
-                console.log(runningPipelineSubscriptions)
-                //clearInterval(interval)
+                if (runningPipelineSubscriptions.length == 0) {
+                    clearInterval(interval)
+                    mb.tray.setImage(__dirname + '/assets/gitlab.png')
+                }
             }
         }
-    }, 2000);
+    }, 20000);
 }
 
 function changeCommit(forward = true) {
