@@ -85,6 +85,7 @@ a:hover {
     border-radius: 2.5rem;
     margin-top: 2px;
     line-height: 1rem;
+    white-space: nowrap;
 }
 .headline {
     display: flex;
@@ -171,27 +172,39 @@ a:hover {
 .commit:hover {
     background-color: #161b22;
 }
-.commit.empty .commit-name {
+.commit.empty .commit-name, .history-entry.empty .history-link, .comment.empty .comment-link {
     width: 80%;
     background-color: #30363d;
     height: 1rem;
     margin-bottom: 0.5rem;
 }
-.commit.empty .commit-details {
+.commit.empty .commit-details, .history-entry.empty .history-details, .comment.empty .comment-details  {
     width: 65%;
     background-color: #30363d;
     height: 0.875rem;
+}
+.history-entry.empty .history-details, .comment.empty .comment-details {
+    width: 45%;
 }
 .commit-information, .todo-information, .history-entry {
     display: flex;
     flex-direction: column;
     width: 100%;
+    overflow: hidden;
+}
+.commit-information a {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
 .todo, .history-entry, .comment {
     display: flex;
     align-items: center;
     width: calc(100% - 2rem);
     box-sizing: border-box;
+}
+.todo.empty, .history-entry.empty, .comment.empty {
+    height: 65px;
 }
 .bookmark-entry {
     flex-direction: row!important;
@@ -238,7 +251,7 @@ a:hover {
     width: 100%;
     box-sizing: border-box;
 }
-.todo-information a, .todo-information span, .history-entry a, .history-entry span, .comment a, .comment span {
+.todo-information a, .todo-information span, .history-entry a, .history-entry span, .comment a, .comment span, .commit-information span {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -274,6 +287,12 @@ a:hover {
 .list-container li:last-of-type {
     border-bottom: none;
 }
+.list-container li.more-link {
+    box-sizing: border-box;
+}
+.list-container li.more-link.empty {
+    height: 44px;
+}
 .list-container li.more-link a { 
     display: flex;
     cursor: pointer;
@@ -284,6 +303,11 @@ a:hover {
 }
 .list-container li.more-link a svg {
     margin: 2px 0 0 0;   
+}
+.list-container li.more-link.empty .more-link-button {
+    width: 30%;
+    height: 0.875rem;
+    background-color: #30363d;
 }
 .list-container li svg, .list-container li img {
     width: 1rem;
@@ -537,7 +561,7 @@ a:hover {
 #detail-view #detail-content .list-container.history-list-container {
     margin-top: 0;
 }
-#detail-view #detail-content .empty {
+#detail-view #detail-content .zero {
     display: flex;
     align-items: center;
     justify-content: center;

@@ -40,7 +40,7 @@ const mb = menubar({
     icon: __dirname + '/assets/gitlab.png',
     preloadWindow: true,
     browserWindow: {
-        width: 600,
+        width: 1000,
         height: 650,
         webPreferences: {
             preload: __dirname + '/preload.js',
@@ -65,13 +65,15 @@ if (access_token && user_id && username) {
 
         //Regularly relaoading content
         setInterval(function () {
-            /*getLastCommits()
+            /*console.log('update')
+            getRecentlyVisited()
+            getLastCommits()
             getRecentComments()
             getUsersProjects()
             getBookmarks()*/
-        }, 12000);
+        }, 10000);
 
-        //mb.window.webContents.openDevTools()
+        mb.window.webContents.openDevTools()
         ipcMain.on('detail-page', (event, arg) => {
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = ""')
             mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
@@ -93,6 +95,7 @@ if (access_token && user_id && username) {
                 let assignedLabel = "'assigned_to_me'"
                 let createdLabel = "'created_by_me'"
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"issues_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchIssues(' + assignedUrl + ', ' + assignedLabel + ')\\">Assigned</div><div id=\\"issues_created_by_me\\" class=\\"option\\" onclick=\\"switchIssues(' + createdUrl + ', ' + createdLabel + ')\\">Created</div></div>"')
+                displaySkeleton(numberOfIssues)
                 getIssues()
             } else if (arg.page == 'Merge requests') {
                 let assignedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
@@ -104,14 +107,18 @@ if (access_token && user_id && username) {
                 let reviewedLabel = "'review_requests_for_me'"
                 let approvedLabel = "'approved_by_me'"
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"mrs_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchMRs(' + assignedUrl + ', ' + assignedLabel + ')\\">Assigned</div><div id=\\"mrs_review_requests_for_me\\" class=\\"option\\" onclick=\\"switchMRs(' + reviewedUrl + ', ' + reviewedLabel + ')\\">Review requests</div><div id=\\"mrs_created_by_me\\" class=\\"option\\" onclick=\\"switchMRs(' + createdUrl + ', ' + createdLabel + ')\\">Created</div><div id=\\"mrs_approved_by_me\\" class=\\"option\\" onclick=\\"switchMRs(' + approvedUrl + ', ' + approvedLabel + ')\\">Approved</div></div>"')
+                displaySkeleton(numberOfMRs)
                 getMRs()
             } else if (arg.page == 'To-Do list') {
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
+                displaySkeleton(numberOfTodos)
                 getTodos()
             } else if (arg.page == 'Recently viewed') {
+                displaySkeleton(numberOfRecentlyVisited)
                 getMoreRecentlyVisited()
             } else if (arg.page == 'Comments') {
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
+                displaySkeleton(numberOfComments)
                 getMoreRecentComments()
             }
         })
@@ -599,7 +606,7 @@ function getMRs(url = 'https://gitlab.com/api/v4/merge_requests?scope=assigned_t
             }
             mrsString += '</ul>' + displayPagination(keysetLinks, type)
         } else {
-            mrsString = '<div class=\\"empty\\">No merge requests.</div>'
+            mrsString = '<div class=\\"zero\\">No merge requests.</div>'
         }
         mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + mrsString + '"')
     })
@@ -735,7 +742,7 @@ function displayCommit(commit, project) {
             logo = '<img src=\\"' + user[0].avatar_url + '\\" />'
         })*/
     }
-    return '<div class=\\"commit\\">' + logo + '<div class=\\"commit-information\\"><a href=\\"' + commit.web_url + '\\" target=\\"_blank\\">' + commit.title + '</a><div><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.committed_date.split('.')[0] + 'Z')) + ' ago &middot; <a href=\\"' + project.web_url + '\\" target=\\_blank\\">' + project.name_with_namespace + '</a></span></div></div></div>'
+    return '<div class=\\"commit\\">' + logo + '<div class=\\"commit-information\\"><a href=\\"' + commit.web_url + '\\" target=\\"_blank\\">' + commit.title + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.committed_date.split('.')[0] + 'Z')) + ' ago &middot; <a href=\\"' + project.web_url + '\\" target=\\_blank\\">' + project.name_with_namespace + '</a></span></div></div>'
 }
 
 function addBookmark(link) {
@@ -862,4 +869,13 @@ function timeSince(date) {
         return Math.floor(interval) + " minute";
     }
     return Math.floor(seconds) + " seconds";
+}
+
+function displaySkeleton(count) {
+    let skeletonString = '<ul class=\\"list-container empty\\">'
+    for (let i = 0; i < count; i ++) {
+        skeletonString += '<li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li>'
+    }
+    skeletonString += '</ul>'
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + skeletonString + '"')
 }
