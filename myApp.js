@@ -19,9 +19,12 @@ let access_token = store.get('access_token')
 let user_id = store.get('user_id')
 let username = store.get('username')
 let recentlyVisitedString = ''
+let currentProject
 let moreRecentlyVisitedArray = []
 let recentCommits = []
 let currentCommit
+let recentProjectCommits = []
+let currentProjectCommit
 let numberOfRecentlyVisited = 3
 let numberOfFavoriteProjects = 5
 let numberOfRecentComments = 3
@@ -79,16 +82,9 @@ if (access_token && user_id && username) {
             mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
             if (arg.page == 'Project') {
                 let project = JSON.parse(arg.object)
+                currentProject = project
                 displayProjectPage(project)
-                fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/?per_page=1&access_token=' + access_token).then(result => {
-                    return result.json()
-                }).then(commits => {
-                    fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/' + commits[0].id + '?access_token=' + access_token).then(result => {
-                        return result.json()
-                    }).then(commit => {
-                        mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "<div id=\\"project-pipeline\\">' + displayCommit(commit, project) + '</div>"')
-                    })
-                })
+                getProjectCommits(project)
             } else if (arg.page == 'Issues') {
                 let assignedUrl = "'https://gitlab.com/api/v4/issues?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=" + numberOfIssues + "&access_token=" + access_token + "'"
                 let createdUrl = "'https://gitlab.com/api/v4/issues?scope=created_by_me&state=opened&order_by=updated_at&per_page=" + numberOfIssues + "&access_token=" + access_token + "'"
@@ -134,7 +130,7 @@ if (access_token && user_id && username) {
                 mb.window.webContents.executeJavaScript('document.getElementById("issues_' + activeIssuesOption + '").classList.remove("active")')
                 mb.window.webContents.executeJavaScript('document.getElementById("issues_' + arg.label + '").classList.add("active")')
                 activeIssuesOption = arg.label
-                mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
+                displaySkeleton(numberOfIssues)
                 getIssues(arg.url)
             }
         })
@@ -144,20 +140,23 @@ if (access_token && user_id && username) {
                 mb.window.webContents.executeJavaScript('document.getElementById("mrs_' + activeMRsOption + '").classList.remove("active")')
                 mb.window.webContents.executeJavaScript('document.getElementById("mrs_' + arg.label + '").classList.add("active")')
                 activeMRsOption = arg.label
-                mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
+                displaySkeleton(numberOfMRs)
                 getMRs(arg.url)
             }
         })
 
         ipcMain.on('switch-page', (event, arg) => {
-            mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
             if (arg.type == 'Todos') {
+                displaySkeleton(numberOfTodos, true)
                 getTodos(arg.url)
             } else if (arg.type == 'Issues') {
+                displaySkeleton(numberOfIssues, true)
                 getIssues(arg.url)
             } else if (arg.type == 'MRs') {
+                displaySkeleton(numberOfMRs, true)
                 getMRs(arg.url)
             } else if (arg.type == 'Comments') {
+                displaySkeleton(numberOfComments, true)
                 getMoreRecentComments(arg.url)
             }
         })
@@ -169,7 +168,16 @@ if (access_token && user_id && username) {
 
         ipcMain.on('change-commit', (event, arg) => {
             mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<div class=\\"commit empty\\"><div id=\\"project-name\\"></div><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div></div>"')
-            changeCommit(arg)
+            let nextCommit = changeCommit(arg, recentCommits, currentCommit)
+            currentCommit = nextCommit
+            getCommitDetails(nextCommit.project_id, nextCommit.push_data.commit_to, nextCommit.index)
+        })
+
+        ipcMain.on('change-project-commit', (event, arg) => {
+            mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = "<div class=\\"commit empty\\"><div id=\\"project-name\\"></div><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div></div>"')
+            let nextCommit = changeCommit(arg, recentProjectCommits, currentCommit)
+            currentCommit = nextCommit
+            getProjectCommitDetails(currentProject.id, nextCommit.id, nextCommit.index)
         })
 
         ipcMain.on('add-bookmark', (event, arg) => {
@@ -286,6 +294,21 @@ function getLastCommits(count = 20) {
     })
 }
 
+function getProjectCommits(project, count = 20) {
+    fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/?per_page=' + count + '&access_token=' + access_token).then(result => {
+        return result.json()
+    }).then(commits => {
+        recentProjectCommits = commits
+        currentCommit = commits[0]
+        fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/' + commits[0].id + '?access_token=' + access_token).then(result => {
+            return result.json()
+        }).then(commit => {
+            let pagination = '<div id=\\"project-commits-pagination\\" class=\\"headline\\"><span class=\\"name\\">Commits</span><div id=\\"commits-pagination\\"><span id=\\"project-commits-count\\" class=\\"empty\\"></span><button onclick=\\"changeProjectCommit(false)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\" /></svg></button><button onclick=\\"changeProjectCommit(true)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg></button></div></div>'
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + pagination + '<div id=\\"project-pipeline\\">' + displayCommit(commit, project) + '</div>"')
+        })
+    })
+}
+
 async function getLastPipelines(commits) {
     let projectArray = []
     for (let commit of commits) {
@@ -316,7 +339,6 @@ async function getLastPipelines(commits) {
 
 async function subscribeToRunningPipeline() {
     let interval = setInterval(async function () {
-        console.log('update')
         for (let runningPipeline of runningPipelineSubscriptions) {
             let result = await fetch('https://gitlab.com/api/v4/projects/' + runningPipeline.project_id + '/pipelines/' + runningPipeline.id + '?access_token=' + access_token)
             let pipeline = await result.json()
@@ -336,27 +358,27 @@ async function subscribeToRunningPipeline() {
     }, 20000);
 }
 
-function changeCommit(forward = true) {
+function changeCommit(forward = true, commitArray, chosenCommit) {
     let nextCommit
-    let index = recentCommits.findIndex(commit => commit.id == currentCommit.id)
+    let index = commitArray.findIndex(commit => commit.id == chosenCommit.id)
     if (forward) {
-        if (index == recentCommits.length - 1) {
-            nextCommit = recentCommits[0]
+        if (index == commitArray.length - 1) {
+            nextCommit = commitArray[0]
             index = 1
         } else {
-            nextCommit = recentCommits[index + 1]
+            nextCommit = commitArray[index + 1]
             index += 2
         }
     } else {
         if (index == 0) {
-            nextCommit = recentCommits[recentCommits.length - 1]
-            index = recentCommits.length
+            nextCommit = commitArray[commitArray.length - 1]
+            index = commitArray.length
         } else {
-            nextCommit = recentCommits[index - 1]
+            nextCommit = commitArray[index - 1]
         }
     }
-    currentCommit = nextCommit
-    getCommitDetails(nextCommit.project_id, nextCommit.push_data.commit_to, index)
+    nextCommit.index = index
+    return nextCommit
 }
 
 function getCommitDetails(project_id, sha, index) {
@@ -370,6 +392,16 @@ function getCommitDetails(project_id, sha, index) {
         }).then(commit => {
             mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "' + displayCommit(commit, project) + '"')
         })
+    })
+}
+
+function getProjectCommitDetails(project_id, sha, index) {
+    mb.window.webContents.executeJavaScript('document.getElementById("project-commits-count").classList.remove("empty")')
+    mb.window.webContents.executeJavaScript('document.getElementById("project-commits-count").innerHTML = "' + index + '/' + recentProjectCommits.length + '"')
+    fetch('https://gitlab.com/api/v4/projects/' + project_id + '/repository/commits/' + sha + '?access_token=' + access_token).then(result => {
+        return result.json()
+    }).then(commit => {
+        mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = "' + displayCommit(commit, currentProject) + '"')
     })
 }
 
@@ -871,9 +903,14 @@ function timeSince(date) {
     return Math.floor(seconds) + " seconds";
 }
 
-function displaySkeleton(count) {
-    let skeletonString = '<ul class=\\"list-container empty\\">'
-    for (let i = 0; i < count; i ++) {
+function displaySkeleton(count, pagination = false) {
+    let skeletonString = '<ul class=\\"list-container empty'
+    if (pagination) {
+        skeletonString += ' with-pagination\\">'
+    } else {
+        skeletonString += '\\">'
+    }
+    for (let i = 0; i < count; i++) {
         skeletonString += '<li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li>'
     }
     skeletonString += '</ul>'

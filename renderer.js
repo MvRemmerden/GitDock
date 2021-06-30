@@ -48,6 +48,10 @@ function changeCommit(value) {
     window.electron.changeCommit(value)
 }
 
+function changeProjectCommit(value) {
+    window.electron.changeProjectCommit(value)
+}
+
 function addBookmark(value) {
     window.electron.addBookmark(value)
 }

@@ -101,7 +101,7 @@ a:hover {
     display: flex;
     align-items: center;
 }
-.headline #commits-pagination button {
+.headline #commits-pagination button, #detail-content #project-commits-pagination button {
     border: 1px solid #30363d;
     border-radius: 5rem;
     width: 1.5rem;
@@ -114,20 +114,25 @@ a:hover {
     margin-left: 0.25rem;
     cursor: pointer;
 }
-.headline #commits-pagination button:hover {
+.headline #commits-pagination button:hover, #detail-content #project-commits-pagination button:hover {
     background-color: #161b22;
 }
-.headline #commits-pagination #commits-count {
+.headline #commits-pagination #commits-count, #detail-content #project-commits-pagination #commits-count {
     font-size: 0.825rem;
     color: #aaa;
     font-weight: normal;
     margin: 0 0.25rem;
 }
-.headline #commits-pagination #commits-count.empty {
+.headline #commits-pagination #commits-count.empty, #detail-content #project-commits-pagination #commits-count.empty {
     width: 2rem;
     height: 0.825rem;
     background-color: #30363d;
     margin-top: 2px;
+}
+#detail-content #project-commits-pagination {
+    display: flex;
+    justify-content: space-between;
+    margin: 0.5rem 0 1rem;
 }
 .namespace-with-time {
     font-size: 0.825rem;
@@ -263,6 +268,10 @@ a:hover {
     border: 1px solid #30363d;
     border-radius: 0.375rem;
     overflow: hidden;
+    box-sizing: border-box;
+}
+.list-container.empty.with-pagination {
+    margin-bottom: 73px;
 }
 .list-container li {
     list-style-type: none;
@@ -286,6 +295,9 @@ a:hover {
 }
 .list-container li:last-of-type {
     border-bottom: none;
+}
+.list-container.empty li.empty:last-of-type:not(.more-link) {
+    height: 64px;
 }
 .list-container li.more-link {
     box-sizing: border-box;
