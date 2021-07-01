@@ -121,13 +121,13 @@ a:hover {
 .headline #commits-pagination button:hover, .headline #project-commits-pagination button:hover {
     background-color: #161b22;
 }
-.headline #commits-pagination #commits-count, .headline #project-commits-pagination #commits-count {
+.headline #commits-pagination #commits-count, .headline #project-commits-pagination #project-commits-count {
     font-size: 0.825rem;
     color: #aaa;
     font-weight: normal;
     margin: 0 0.25rem;
 }
-.headline #commits-pagination #commits-count.empty, .headline #project-commits-pagination #commits-count.empty {
+.headline #commits-pagination #commits-count.empty, .headline #project-commits-pagination #project-commits-count.empty {
     width: 2rem;
     height: 0.825rem;
     background-color: #30363d;
@@ -478,7 +478,6 @@ a:hover {
     height: 1.5rem;
     border-radius: 1.5rem;
     margin-right: 0.75rem;
-    font-size: 1rem;
 }
 #detail-view #detail-header .project-name {
     margin-right: 0.5rem;
@@ -616,6 +615,9 @@ a:hover {
 #detail-view #detail-content #pagination button.next svg {
     margin-right: 0;
     margin-left: 0.25rem;
+}
+#detail-view #detail-content #project-pipeline {
+    margin-bottom: 1rem;
 }
 @-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
 @-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }

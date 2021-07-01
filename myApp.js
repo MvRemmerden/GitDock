@@ -81,10 +81,14 @@ if (access_token && user_id && username) {
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = ""')
             mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
             if (arg.page == 'Project') {
+                mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<div id=\\"project-commits-pagination\\"><span class=\\"name\\">Commits</span><div id=\\"commits-pagination\\"><span id=\\"commits-count\\" class=\\"empty\\"></span><button onclick=\\"changeCommit(false)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\" /></svg></button><button onclick=\\"changeCommit(true)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg></button></div></div>"')
+                setupEmptyProjectPage()
                 let project = JSON.parse(arg.object)
                 currentProject = project
                 displayProjectPage(project)
                 getProjectCommits(project)
+                getProjectIssues(project)
+                getProjectMRs(project)
             } else if (arg.page == 'Issues') {
                 let assignedUrl = "'https://gitlab.com/api/v4/issues?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=" + numberOfIssues + "&access_token=" + access_token + "'"
                 let createdUrl = "'https://gitlab.com/api/v4/issues?scope=created_by_me&state=opened&order_by=updated_at&per_page=" + numberOfIssues + "&access_token=" + access_token + "'"
@@ -296,7 +300,6 @@ function getLastCommits(count = 20) {
 }
 
 function getProjectCommits(project, count = 20) {
-    let total
     fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/?per_page=' + count + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(commits => {
@@ -307,7 +310,7 @@ function getProjectCommits(project, count = 20) {
         }).then(commit => {
             let pagination = '<div id=\\"project-commits-pagination\\"><span class=\\"name\\">Commits</span><div id=\\"commits-pagination\\"><span id=\\"project-commits-count\\">1/' + recentProjectCommits.length + '</span><button onclick=\\"changeProjectCommit(false)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\" /></svg></button><button onclick=\\"changeProjectCommit(true)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg></button></div></div>'
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "' + pagination + '"')
-            mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "<div id=\\"project-pipeline\\">' + displayCommit(commit, project, 'author') + '</div>"')
+            mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = "' + displayCommit(commit, project, 'author') + '"')
         })
     })
 }
@@ -726,6 +729,12 @@ function displayPagination(keysetLinks, type) {
     }
 }
 
+function setupEmptyProjectPage() {
+    let emptyPage = '<div id=\\"project-pipeline\\"><div class=\\"commit empty\\"><div id=\\"project-name\\"></div><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div></div></div>'
+    emptyPage += '<div class=\\"headline\\"><span class=\\"name\\">Issues</span></div><div id=\\"project-recent-issues\\"><div id=\\"history\\"><ul class=\\"list-container empty\\"><li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li><li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li><li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li><li class=\\"more-link empty\\"><div class=\\"more-link-button skeleton\\"></div></li></ul></div></div>'
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + emptyPage + '"')
+}
+
 function displayProjectPage(project) {
     let logo
     if (project.avatar_url && project.avatar_url != null && project.visibility == 'public') {
@@ -735,6 +744,49 @@ function displayProjectPage(project) {
     }
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "<div id=\\"project-detail-information\\">' + logo + '<span class=\\"project-name\\">' + project.name + '</span><span class=\\"project-namespace\\">' + project.namespace.name + '</span></div>"')
+}
+
+function getProjectIssues(project) {
+    let projectIssuesString = '<ul class=\\"list-container\\">'
+    let nextPage
+    fetch('https://gitlab.com/api/v4/projects/' + project.id + '/issues?state=opened&order_by=created_at&per_page=3&access_token=' + access_token).then(result => {
+        nextPage = result.headers.get('x-next-page')
+        return result.json()
+    }).then(issues => {
+        for (let issue of issues) {
+            projectIssuesString += '<li class=\\"history-entry\\">'
+            projectIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(issue.created_at)) + ' ago &middot; <a href=\\"' + issue.web_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + issue.references.full.split('#')[0] + '</a></span></div></li>'
+        }
+        if(nextPage) {
+            projectIssuesString += '<li class=\\"more-link\\"><a>View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#aaa\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
+        }
+        projectIssuesString += '</ul>'
+        mb.window.webContents.executeJavaScript('document.getElementById("project-recent-issues").innerHTML = "' + projectIssuesString + '"')
+    })
+}
+
+
+
+function getProjectMRs(project) {
+    let projectMRsString = '<ul class=\\"list-container\\">'
+    let nextPage
+    fetch('https://gitlab.com/api/v4/projects/' + project.id + '/merge_requests?state=opened&order_by=created_at&per_page=3&access_token=' + access_token).then(result => {
+        nextPage = result.headers.get('x-next-page')
+        return result.json()
+    }).then(mrs => {
+        console.log(mrs)
+
+        //TODO Continue here tomorrow
+        /*for (let issue of issues) {
+            projectIssuesString += '<li class=\\"history-entry\\">'
+            projectIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(issue.created_at)) + ' ago &middot; <a href=\\"' + issue.web_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + issue.references.full.split('#')[0] + '</a></span></div></li>'
+        }
+        if(nextPage) {
+            projectIssuesString += '<li class=\\"more-link\\"><a>View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#aaa\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
+        }
+        projectIssuesString += '</ul>'
+        mb.window.webContents.executeJavaScript('document.getElementById("project-recent-issues").innerHTML = "' + projectIssuesString + '"')*/
+    })
 }
 
 function displayCommit(commit, project, focus = 'project') {
