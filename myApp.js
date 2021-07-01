@@ -123,6 +123,8 @@ if (access_token && user_id && username) {
             activeIssuesOption = 'assigned_to_me'
             activeMRsOption = 'assigned_to_me'
             moreRecentlyVisitedArray = []
+            recentProjectCommits = []
+            delete currentProjectCommit
         })
 
         ipcMain.on('switch-issues', (event, arg) => {
@@ -298,15 +300,14 @@ function getProjectCommits(project, count = 20) {
     fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/?per_page=' + count + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(commits => {
-        console.log(commits[0])
         recentProjectCommits = commits
         currentProjectCommit = commits[0]
         fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/' + commits[0].id + '?access_token=' + access_token).then(result => {
             return result.json()
         }).then(commit => {
-            console.log(commit)
-            let pagination = '<div id=\\"project-commits-pagination\\" class=\\"headline\\"><span class=\\"name\\">Commits</span><div id=\\"commits-pagination\\"><span id=\\"project-commits-count\\">1/' + recentProjectCommits.length + '</span><button onclick=\\"changeProjectCommit(false)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\" /></svg></button><button onclick=\\"changeProjectCommit(true)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg></button></div></div>'
-            mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + pagination + '<div id=\\"project-pipeline\\">' + displayCommit(commit, project) + '</div>"')
+            let pagination = '<div id=\\"project-commits-pagination\\"><span class=\\"name\\">Commits</span><div id=\\"commits-pagination\\"><span id=\\"project-commits-count\\">1/' + recentProjectCommits.length + '</span><button onclick=\\"changeProjectCommit(false)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\" /></svg></button><button onclick=\\"changeProjectCommit(true)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg></button></div></div>'
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "' + pagination + '"')
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "<div id=\\"project-pipeline\\">' + displayCommit(commit, project, 'author') + '</div>"')
         })
     })
 }
@@ -403,7 +404,7 @@ function getProjectCommitDetails(project_id, sha, index) {
     fetch('https://gitlab.com/api/v4/projects/' + project_id + '/repository/commits/' + sha + '?access_token=' + access_token).then(result => {
         return result.json()
     }).then(commit => {
-        mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = "' + displayCommit(commit, currentProject) + '"')
+        mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = "' + displayCommit(commit, currentProject, 'author') + '"')
     })
 }
 
@@ -732,10 +733,11 @@ function displayProjectPage(project) {
     } else {
         logo = '<div id=\\"project-detail-name-avatar\\">' + project.name.charAt(0).toUpperCase() + '</div>'
     }
-    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<div id=\\"project-detail-information\\">' + logo + '<div><span class=\\"project-namespace\\">' + project.namespace.name + '</span><span class=\\"project-name\\">' + project.name + '</span></div></div>"')
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "<div id=\\"project-detail-information\\">' + logo + '<span class=\\"project-name\\">' + project.name + '</span><span class=\\"project-namespace\\">' + project.namespace.name + '</span></div>"')
 }
 
-function displayCommit(commit, project) {
+function displayCommit(commit, project, focus = 'project') {
     let logo = ''
     if (commit.last_pipeline) {
         if (commit.last_pipeline.status == 'scheduled') {
@@ -776,7 +778,13 @@ function displayCommit(commit, project) {
             logo = '<img src=\\"' + user[0].avatar_url + '\\" />'
         })*/
     }
-    return '<div class=\\"commit\\">' + logo + '<div class=\\"commit-information\\"><a href=\\"' + commit.web_url + '\\" target=\\"_blank\\">' + commit.title + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.committed_date.split('.')[0] + 'Z')) + ' ago &middot; <a href=\\"' + project.web_url + '\\" target=\\_blank\\">' + project.name_with_namespace + '</a></span></div></div>'
+    let subline
+    if(focus == 'project') {
+        subline = '<a href=\\"' + project.web_url + '\\" target=\\_blank\\">' + project.name_with_namespace + '</a>'
+    }else{
+        subline = commit.author_name
+    }
+    return '<div class=\\"commit\\">' + logo + '<div class=\\"commit-information\\"><a href=\\"' + commit.web_url + '\\" target=\\"_blank\\">' + commit.title + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.committed_date.split('.')[0] + 'Z')) + ' ago &middot; ' + subline + '</span></div></div>'
 }
 
 function addBookmark(link) {

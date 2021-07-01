@@ -101,7 +101,11 @@ a:hover {
     display: flex;
     align-items: center;
 }
-.headline #commits-pagination button, #detail-content #project-commits-pagination button {
+.headline #project-commits-pagination {
+    display: flex;
+    justify-content: space-between;
+}
+.headline #commits-pagination button, .headline #project-commits-pagination button {
     border: 1px solid #30363d;
     border-radius: 5rem;
     width: 1.5rem;
@@ -114,26 +118,20 @@ a:hover {
     margin-left: 0.25rem;
     cursor: pointer;
 }
-.headline #commits-pagination button:hover, #detail-content #project-commits-pagination button:hover {
+.headline #commits-pagination button:hover, .headline #project-commits-pagination button:hover {
     background-color: #161b22;
 }
-.headline #commits-pagination #commits-count, #detail-content #project-commits-pagination #commits-count {
+.headline #commits-pagination #commits-count, .headline #project-commits-pagination #commits-count {
     font-size: 0.825rem;
     color: #aaa;
     font-weight: normal;
     margin: 0 0.25rem;
 }
-.headline #commits-pagination #commits-count.empty, #detail-content #project-commits-pagination #commits-count.empty {
+.headline #commits-pagination #commits-count.empty, .headline #project-commits-pagination #commits-count.empty {
     width: 2rem;
     height: 0.825rem;
     background-color: #30363d;
     margin-top: 2px;
-}
-#detail-content #project-commits-pagination {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin: 0.5rem 0 1rem;
 }
 .namespace-with-time {
     font-size: 0.825rem;
@@ -142,9 +140,6 @@ a:hover {
 .namespace-with-time a {
     font-weight: normal;
     color: #aaa;
-}
-#project-pipeline {
-    margin-top: 0.5rem;
 }
 .commit svg, .commit img, .commit #project-name {
     min-width: 1.5rem;
@@ -434,7 +429,7 @@ a:hover {
     background-color: #090c10;
     transition: 250ms ease-in;
 }
-#detail-view .header {
+#detail-view #detail-header {
     display: flex;
     position: sticky;
     top: 0;
@@ -444,9 +439,62 @@ a:hover {
     padding: 1rem 1.5rem;
     border-bottom: 1px solid #21262d;
 }
-#detail-view .header svg {
+#detail-view #detail-header svg {
     width: 1rem;
     margin-right: 0.125rem;
+}
+#detail-view #detail-header #detail-header-content {
+    display: flex;
+    align-items: center;
+    line-height: 1;
+}
+#detail-view #detail-header #detail-header-content.empty {
+    width: 5rem;
+    height: 1rem;
+    background-color: #30363d;
+}
+#detail-view #detail-header #project-detail-information {
+    display: flex;
+    align-items: center;
+    margin: 0 0.375rem;
+}
+#detail-view #detail-header #project-detail-information img {
+    width: 1.5rem;
+    height: 1.5rem;
+    background-color: #30363d;
+    border-radius: 1rem;
+    margin-right: 0.75rem;
+}
+#detail-view #detail-header #project-detail-information div {
+    display: flex;
+    flex-direction: column;
+}
+#detail-view #detail-header #project-detail-name-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #30363d;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 1.5rem;
+    margin-right: 0.75rem;
+    font-size: 1rem;
+}
+#detail-view #detail-header .project-name {
+    margin-right: 0.5rem;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #c9d1d9;
+}
+#detail-view #detail-header .project-namespace {
+    font-size: 0.825rem;
+    color: #aaa;
+    margin-top: 0.175rem;
+}
+#detail-view #detail-headline, #detail-view #detail-content {
+    padding: 0 1.5rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 #detail-view .headline {
     margin: 1rem 0 0.5rem;
@@ -465,31 +513,6 @@ a:hover {
     font-size: 1.25rem;
     font-weight: bold;
     color: #c9d1d9;
-}
-#detail-view .headline .project-namespace {
-    font-size: 0.825rem;
-}
-#detail-view .headline #project-detail-name-avatar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #30363d;
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 3rem;
-    margin-right: 0.75rem;
-    font-size: 1rem;
-}
-#detail-view .headline .project-name {
-    margin: 0.125rem 0.5rem 0 0;
-    font-size: 1rem;
-    font-weight: bold;
-    color: #c9d1d9;
-}
-#detail-view #detail-headline, #detail-view #detail-content {
-    padding: 0 1.5rem;
-    width: 100%;
-    box-sizing: border-box;
 }
 #detail-view #detail-headline .segmented-control {
     display: flex;
@@ -541,21 +564,6 @@ a:hover {
 }
 #detail-view #detail-headline input::placeholder {
     color: rgba(255, 255, 255, .7);
-}
-#detail-view #detail-headline #project-detail-information {
-    display: flex;
-    align-items: center;
-}
-#detail-view #detail-headline #project-detail-information img {
-    width: 2.25rem;
-    height: 2.25rem;
-    background-color: #30363d;
-    border-radius: 3rem;
-    margin-right: 0.75rem;
-}
-#detail-view #detail-headline #project-detail-information div {
-    display: flex;
-    flex-direction: column;
 }
 #detail-view #detail-content {
     margin-bottom: 1.5rem;
