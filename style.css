@@ -2,6 +2,7 @@
     --background-color: #090c10;
     --text-color: #c9d1d9;
     --muted-text-color: #aaa;
+    --placeholder-text-color: rgba(255, 255, 255, .7);
     --panel-background-color: #0d1117;
     --hover-color: #161b22;
     --border-color: #30363d;
@@ -24,6 +25,15 @@ a {
 }
 a:hover {
     text-decoration: underline;
+}
+.icon {
+    fill: var(--text-color)
+}
+.icon-muted {
+    fill: var(--muted-text-color);
+}
+.icon-inverse {
+    fill: var(--background-color)
 }
 #header {
     display: flex;
@@ -411,7 +421,7 @@ a:hover {
     outline: none;
 }
 #bookmarks #new-bookmark #bookmark-input #bookmark-link::placeholder, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link::placeholder {
-    color: rgba(255, 255, 255, .7);
+    color: var(--placeholder-text-color);
 }
 #bookmarks #new-bookmark #bookmark-input #bookmark-link:disabled, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link:disabled {
     color: var(--disabled-background-color);
@@ -602,7 +612,7 @@ a:hover {
     outline: none;
 }
 #detail-view #detail-headline input::placeholder {
-    color: rgba(255, 255, 255, .7);
+    color: var(--placeholder-text-color);
 }
 #detail-view #detail-content {
     margin-bottom: 1.5rem;
