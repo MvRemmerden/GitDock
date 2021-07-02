@@ -10,7 +10,9 @@ contextBridge.exposeInMainWorld('electron', {
   changeCommit: (value) => ipcRenderer.send('change-commit', value),
   changeProjectCommit: (value) => ipcRenderer.send('change-project-commit', value),
   addBookmark: (value) => ipcRenderer.send('add-bookmark', value),
+  addProject: (value) => ipcRenderer.send('add-project', value),
   startBookmarkDialog: () => ipcRenderer.send('start-bookmark-dialog'),
+  startProjectDialog: () => ipcRenderer.send('start-project-dialog'),
   deleteBookmark: (value) => ipcRenderer.send('delete-bookmark', value),
   deleteProject: (value) => ipcRenderer.send('delete-project', value),
   changeTheme: (value) => ipcRenderer.send('change-theme', value)

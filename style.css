@@ -400,15 +400,15 @@ a:hover {
     align-items: center;
     width: 100%;
 }
-#bookmarks #add-bookmark-dialog.opened {
+#bookmarks #add-bookmark-dialog.opened, #favorite-projects #add-project-dialog.opened {
     background-color: var(--panel-background-color);
 } 
-#bookmarks #add-bookmark-dialog #bookmark-input {
+#bookmarks #add-bookmark-dialog #bookmark-input, #favorite-projects #add-project-dialog #project-input {
     display: flex;
     align-items: center;
     width: 100%;
 }
-#bookmarks #new-bookmark #bookmark-input #bookmark-link, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link {
+#bookmarks #new-bookmark #bookmark-input #bookmark-link, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link, #favorite-projects #add-project-dialog #project-input #project-link {
     width: 100%;
     margin-right: 0.5rem;
     border: 1px solid var(--hover-color);
@@ -420,14 +420,14 @@ a:hover {
     box-sizing: border-box;
     outline: none;
 }
-#bookmarks #new-bookmark #bookmark-input #bookmark-link::placeholder, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link::placeholder {
+#bookmarks #new-bookmark #bookmark-input #bookmark-link::placeholder, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link::placeholder, #favorite-projects #add-project-dialog #project-input #project-link::placeholder {
     color: var(--placeholder-text-color);
 }
-#bookmarks #new-bookmark #bookmark-input #bookmark-link:disabled, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link:disabled {
+#bookmarks #new-bookmark #bookmark-input #bookmark-link:disabled, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link:disabled, #favorite-projects #add-project-dialog #project-input #project-link:disabled {
     color: var(--disabled-background-color);
     cursor: not-allowed;
 }
-#bookmarks #new-bookmark #bookmark-input button, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button {
+#bookmarks #new-bookmark #bookmark-input button, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button, #favorite-projects #add-project-dialog #project-input #project-add-button {
     background-color: var(--lighter-background-color);
     border: 1px solid var(--border-color);
     color: var(--text-color);
@@ -438,18 +438,19 @@ a:hover {
     align-items: center;
     cursor: pointer;
 }
-#bookmarks #new-bookmark #bookmark-input button svg, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button svg {
+#bookmarks #new-bookmark #bookmark-input button svg, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button svg, #favorite-projects #add-project-dialog #project-input #project-add-button svg {
     width: 1rem;
     margin-right: 0.5rem;
+    margin-left: 0;
     -webkit-animation:spin 2s linear infinite;
     -moz-animation:spin 2s linear infinite;
     animation:spin 2s linear infinite;
 }
-#bookmarks #new-bookmark #bookmark-input button:hover, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button:hover {
+#bookmarks #new-bookmark #bookmark-input button:hover, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button:hover, #favorite-projects #add-project-dialog #project-input #project-add-button:hover {
     background-color: var(--border-color);
     border: 1px solid #8b949e;
 }
-#bookmarks #new-bookmark #bookmark-input button:disabled, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button:disabled {
+#bookmarks #new-bookmark #bookmark-input button:disabled, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button:disabled, #favorite-projects #add-project-dialog #project-input #project-add-button:disabled {
     background-color: var(--lighter-background-color);
     border: 1px solid var(--border-color);
     color: var(--disabled-background-color);

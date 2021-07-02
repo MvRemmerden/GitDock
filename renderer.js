@@ -56,8 +56,16 @@ function addBookmark(value) {
     window.electron.addBookmark(value)
 }
 
+function addProject(value) {
+    window.electron.addProject(value)
+}
+
 function startBookmarkDialog() {
     window.electron.startBookmarkDialog()
+}
+
+function startProjectDialog() {
+    window.electron.startProjectDialog()
 }
 
 function deleteBookmark(value) {

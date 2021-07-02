@@ -206,12 +206,16 @@ if (access_token && user_id && username) {
             addBookmark(arg)
         })
 
+        ipcMain.on('add-project', (event, arg) => {
+            addProject(arg)
+        })
+
         ipcMain.on('start-bookmark-dialog', (event, arg) => {
             startBookmarkDialog()
         })
 
-        ipcMain.on('change-theme', (event, arg) => {
-            changeTheme(arg)
+        ipcMain.on('start-project-dialog', (event, arg) => {
+            startProjectDialog()
         })
 
         ipcMain.on('delete-bookmark', (event, arg) => {
@@ -230,7 +234,12 @@ if (access_token && user_id && username) {
             })
             store.set('favorite-projects', newProjects)
             //TODO Implement better way to refresh view after deleting project
+            displayUsersProjects(store.get('favorite-projects'))
             openSettingsPage()
+        })
+
+        ipcMain.on('change-theme', (event, arg) => {
+            changeTheme(arg)
         })
 
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
@@ -284,6 +293,7 @@ function openSettingsPage() {
         favoriteProjects += '<li><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" class=\\"icon\\"/></svg><div class=\\"name-with-namespace\\"><span>' + project.name + '</span><span class=\\"namespace\\">' + project.namespace.name + '</span></div>'
         favoriteProjects += '<div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteProject(' + project.id + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>'
     }
+    favoriteProjects += '<li id=\\"add-project-dialog\\" class=\\"more-link\\"><a onclick=\\"startProjectDialog()\\">Add another project <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + theme + favoriteProjects + '</ul></div>"')
 }
 
@@ -593,6 +603,7 @@ async function getUsersProjects() {
             namespace: {
                 name: project.namespace.name
             },
+            added: Date.now(),
             name_with_namespace: project.name_with_namespace,
             open_issues_count: project.open_issues_count,
             last_activity_at: project.last_activity_at,
@@ -913,6 +924,22 @@ function addBookmark(link) {
     }
 }
 
+function addProject(link) {
+    let spinner = '<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 14 14\\"><g fill=\\"none\\" fill-rule=\\"evenodd\\"><circle cx=\\"7\\" cy=\\"7\\" r=\\"6\\" stroke=\\"#c9d1d9\\" stroke-opacity=\\".4\\" stroke-width=\\"2\\"/><path class=\\"icon\\" fill-opacity=\\".4\\" fill-rule=\\"nonzero\\" d=\\"M7 0a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V0z\\"/></g></svg>'
+    mb.window.webContents.executeJavaScript('document.getElementById("project-add-button").disabled = "disabled"')
+    mb.window.webContents.executeJavaScript('document.getElementById("project-link").disabled = "disabled"')
+    mb.window.webContents.executeJavaScript('document.getElementById("project-add-button").innerHTML = "' + spinner + ' Add"')
+    if (link.indexOf('https://gitlab.com') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
+        parseGitLabUrl(link).then(project => {
+            let projects = store.get('favorite-projects') || []
+            projects.push(project)
+            store.set('favorite-projects', projects)
+            openSettingsPage()
+            displayUsersProjects(projects)
+        })
+    }
+}
+
 function startBookmarkDialog() {
     let bookmarkLink = "'bookmark-link'"
     let bookmarkInput = '<form action=\\"#\\" id=\\"bookmark-input\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter your link here...\\" /><button id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form>'
@@ -920,6 +947,15 @@ function startBookmarkDialog() {
     mb.window.webContents.executeJavaScript('document.getElementById("add-bookmark-dialog").innerHTML = "' + bookmarkInput + '"')
     mb.window.webContents.executeJavaScript('window.scrollBy(0, 14)')
     mb.window.webContents.executeJavaScript('document.getElementById("bookmark-link").focus()')
+}
+
+function startProjectDialog() {
+    let projectLink = "'project-link'"
+    let projectInput = '<form action=\\"#\\" id=\\"project-input\\" onsubmit=\\"addProject(document.getElementById(' + projectLink + ').value);return false;\\"><input id=\\"project-link\\" placeholder=\\"Enter the link to the project here...\\" /><button id=\\"project-add-button\\" type=\\"submit\\">Add</button></form>'
+    mb.window.webContents.executeJavaScript('document.getElementById("add-project-dialog").classList.add("opened")')
+    mb.window.webContents.executeJavaScript('document.getElementById("add-project-dialog").innerHTML = "' + projectInput + '"')
+    mb.window.webContents.executeJavaScript('window.scrollBy(0, 14)')
+    mb.window.webContents.executeJavaScript('document.getElementById("project-link").focus()')
 }
 
 async function parseGitLabUrl(link) {
@@ -952,6 +988,25 @@ async function parseGitLabUrl(link) {
             type: object.type,
             locationUrl: group.web_url
         }
+    } else if (object.type == 'projects') {
+        let result = await fetch('https://gitlab.com/api/v4/projects/' + encodeURIComponent(object.namespace + '/' + object.project) + '?access_token=' + access_token)
+        let project = await result.json()
+        return {
+            id: project.id,
+            visibility: project.visibility,
+            web_url: project.web_url,
+            name: project.name,
+            namespace: {
+                name: project.namespace.name
+            },
+            added: Date.now(),
+            name_with_namespace: project.name_with_namespace,
+            open_issues_count: project.open_issues_count,
+            last_activity_at: project.last_activity_at,
+            avatar_url: project.avatar_url,
+            star_count: project.star_count,
+            forks_count: project.forks_count,
+        }
     }
 }
 
@@ -962,12 +1017,18 @@ function parse(gitlabUrl) {
     const url = new URL(gitlabUrl)
     const path = url.pathname
     const [, namespace, project, deliminator, type, ...rest] = path.split('/')
-    let result = { namespace, project, type }
-    const typeParser = typeParsers[type]
-    if (typeParser) {
-        result = { ...result, ...typeParser(rest.shift()) }
+    if(namespace && project && !deliminator && !type && path.split('/').length == 3) {
+        let result = { namespace, project }
+        result.type = 'projects'
+        return result
+    }else{
+        let result = { namespace, project, type }
+        const typeParser = typeParsers[type]
+        if (typeParser) {
+            result = { ...result, ...typeParser(rest.shift()) }
+        }
+        return result
     }
-    return result
 }
 
 function escapeHtml(unsafe) {
