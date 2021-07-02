@@ -57,13 +57,22 @@ const mb = menubar({
 if (access_token && user_id && username) {
     setupSecondaryMenu()
     mb.on('after-create-window', () => {
+        mb.showWindow()
+
+        /*store.delete('user_id')
+        store.delete('username')
+        store.delete('access_token')
+        mb.window.webContents.session.clearCache()
+        mb.window.webContents.session.clearStorageData()*/
 
         //Preloading content
         getUser()
         //getRecentlyVisited()
         getLastCommits()
         getRecentComments()
-        getUsersProjects()
+        if (store.get('favorite-projects')) {
+            displayUsersProjects(store.get('favorite-projects'))
+        }
         getBookmarks()
 
         //Regularly relaoading content
@@ -213,11 +222,6 @@ if (access_token && user_id && username) {
             shell.openExternal(url);
             return { action: 'deny' };
         });
-        /*store.delete('user_id')
-        store.delete('username')
-        store.delete('access_token')
-        mb.window.webContents.session.clearCache()
-        mb.window.webContents.session.clearStorageData()*/
     })
 
     mb.on('show', () => {
@@ -230,9 +234,10 @@ if (access_token && user_id && username) {
     })
 } else {
     setupSecondaryMenu()
-    mb.on('after-create-window', () => {
-        mb.window.loadURL('https://gitlab.com/oauth/authorize?client_id=99c07cc5466cbc721ef2667acd38d3acf45edd2fc314a955861be783585f4be5&redirect_uri=https://gitlab.com&response_type=token&state=test&scope=api')
+    mb.on('after-create-window', async () => {
+        await mb.window.loadURL('https://gitlab.com/oauth/authorize?client_id=99c07cc5466cbc721ef2667acd38d3acf45edd2fc314a955861be783585f4be5&redirect_uri=https://gitlab.com&response_type=token&state=test&scope=api')
         mb.window.on('page-title-updated', handleLogin)
+        mb.showWindow()
     })
 }
 
@@ -255,10 +260,18 @@ function handleLogin() {
             return result.json()
         }).then(result => {
             store.set('access_token', code)
+            access_token = code
             store.set('user_id', result.id)
+            user_id = result.id
             store.set('username', result.username)
-            mb.window.loadURL(`file://${__dirname}/index.html`)
-            mb.window.removeListener('page-title-updated', handleLogin)
+            username = result.username
+            getUsersProjects().then(async projects => {
+                store.set('favorite-projects', projects)
+                mb.window.removeListener('page-title-updated', handleLogin)
+                await mb.window.loadURL(`file://${__dirname}/index.html`)
+                app.quit()
+                app.relaunch()
+            })
         })
     } else {
         console.log('not loaded')
@@ -528,39 +541,45 @@ function searchRecentlyVisited(searchterm) {
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + foundString + '"')
 }
 
-function getUsersProjects() {
-    fetch('https://gitlab.com/api/v4/users/' + user_id + '/starred_projects?min_access_level=30&per_page=' + numberOfFavoriteProjects + '&order_by=updated_at&access_token=' + access_token).then(result => {
-        return result.json()
-    }).then(projects => {
-        let favoriteProjectsString = ''
-        let chevron = '<svg class=\\"chevron\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg>'
-        for (let project of projects) {
-            //TODO Figure out a way to see avatars of private repositories
-            /*if(project.visibility == 'public') {
-                favoriteProjectsString += '<li><img src=\\"' + project.avatar_url + '\\">'
-            }else{*/
-            let projectString = "'Project'"
-            let projectObject = {
-                id: project.id,
-                visibility: project.visibility,
-                web_url: project.web_url,
-                name: project.name,
-                namespace: {
-                    name: project.namespace.name
-                },
-                name_with_namespace: project.name_with_namespace,
-                open_issues_count: project.open_issues_count,
-                last_activity_at: project.last_activity_at,
-                avatar_url: project.avatar_url,
-                star_count: project.star_count,
-                forks_count: project.forks_count,
-            }
-            let projectJson = "'" + escapeHtml(JSON.stringify(projectObject)) + "'"
-            favoriteProjectsString += '<li onclick=\\"goToDetail(' + projectString + ', ' + projectJson + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" fill=\\"#c9d1d9\\"/></svg>'
-            favoriteProjectsString += '<div class=\\"name-with-namespace\\"><span>' + project.name + '</span><span class=\\"namespace\\">' + project.namespace.name + '</span></div>' + chevron + '</li>'
+async function getUsersProjects() {
+    let result = await fetch('https://gitlab.com/api/v4/users/' + user_id + '/starred_projects?min_access_level=30&per_page=' + numberOfFavoriteProjects + '&order_by=updated_at&access_token=' + access_token)
+    let projects = await result.json()
+    let projectsArray = []
+    for (let project of projects) {
+        //TODO Figure out a way to see avatars of private repositories
+        /*if(project.visibility == 'public') {
+            favoriteProjectsString += '<li><img src=\\"' + project.avatar_url + '\\">'
+        }*/
+        let projectObject = {
+            id: project.id,
+            visibility: project.visibility,
+            web_url: project.web_url,
+            name: project.name,
+            namespace: {
+                name: project.namespace.name
+            },
+            name_with_namespace: project.name_with_namespace,
+            open_issues_count: project.open_issues_count,
+            last_activity_at: project.last_activity_at,
+            avatar_url: project.avatar_url,
+            star_count: project.star_count,
+            forks_count: project.forks_count,
         }
-        mb.window.webContents.executeJavaScript('document.getElementById("projects").innerHTML = "' + favoriteProjectsString + '"')
-    })
+        projectsArray.push(projectObject)
+    }
+    return projectsArray
+}
+
+function displayUsersProjects(projects) {
+    let favoriteProjectsString = ''
+    let chevron = '<svg class=\\"chevron\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#c9d1d9\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg>'
+    for (let projectObject of projects) {
+        let projectString = "'Project'"
+        let projectJson = "'" + escapeHtml(JSON.stringify(projectObject)) + "'"
+        favoriteProjectsString += '<li onclick=\\"goToDetail(' + projectString + ', ' + projectJson + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" fill=\\"#c9d1d9\\"/></svg>'
+        favoriteProjectsString += '<div class=\\"name-with-namespace\\"><span>' + projectObject.name + '</span><span class=\\"namespace\\">' + projectObject.namespace.name + '</span></div>' + chevron + '</li>'
+    }
+    mb.window.webContents.executeJavaScript('document.getElementById("projects").innerHTML = "' + favoriteProjectsString + '"')
 }
 
 function getRecentComments() {
@@ -752,7 +771,7 @@ function displayProjectPage(project) {
         logo = '<div id=\\"project-detail-name-avatar\\">' + project.name.charAt(0).toUpperCase() + '</div>'
     }
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
-    mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "<div id=\\"project-detail-information\\">' + logo + '<span class=\\"project-name\\">' + project.name + '</span><span class=\\"project-namespace\\">' + project.namespace.name + '</span></div>"')
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "<div id=\\"project-detail-information\\">' + logo + '<span class=\\"project-name\\">' + project.name + '</span><span class=\\"project-namespace\\">' + project.namespace.name + '</span></div><div id=\\"project-detail-link\\"><a href=\\"' + project.web_url + '\\" target=\\"_blank\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#aaa\\" fill-rule=\\"evenodd\\" d=\\"M5,2 C5.55228,2 6,2.44772 6,3 C6,3.55228 5.55228,4 5,4 L4,4 L4,12 L12,12 L12,11 C12,10.4477 12.4477,10 13,10 C13.5523,10 14,10.4477 14,11 L14,12 C14,13.1046 13.1046,14 12,14 L4,14 C2.89543,14 2,13.1046 2,12 L2,4 C2,2.89543 2.89543,2 4,2 L5,2 Z M15,1 L15,5.99814453 C15,6.55043453 14.5523,6.99814453 14,6.99814453 C13.4477,6.99814453 13,6.55043453 13,5.99814453 L13,4.41419 L8.71571,8.69846 C8.32519,9.08899 7.69202,9.08899 7.3015,8.69846 C6.91097,8.30794 6.91097,7.67477 7.3015,7.28425 L11.5858,3 L9.99619141,3 C9.44391141,3 8.99619141,2.55228 8.99619141,2 C8.99619141,1.44772 9.44391141,1 9.99619141,1 L15,1 Z\\"/></svg></a></div>"')
 }
 
 function getProjectIssues(project) {

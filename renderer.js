@@ -3,9 +3,9 @@ function goToDetail(page, object) {
         page: page,
         object: object
     }
-    window.electron.goToDetail(value)
     document.getElementById('detail-view').style.left = 0
     document.body.style.overflow = 'hidden'
+    window.electron.goToDetail(value)
 }
 
 function goToOverview() {
