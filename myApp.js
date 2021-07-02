@@ -43,7 +43,7 @@ const mb = menubar({
     icon: __dirname + '/assets/gitlab.png',
     preloadWindow: true,
     browserWindow: {
-        width: 1000,
+        width: 600,
         height: 650,
         webPreferences: {
             preload: __dirname + '/preload.js',
@@ -58,6 +58,7 @@ if (access_token && user_id && username) {
     setupSecondaryMenu()
     mb.on('after-create-window', () => {
         mb.showWindow()
+        changeTheme(store.get('theme'))
 
         /*store.delete('user_id')
         store.delete('username')
@@ -85,7 +86,7 @@ if (access_token && user_id && username) {
             getBookmarks()*/
         }, 10000);
 
-        mb.window.webContents.openDevTools()
+        //mb.window.webContents.openDevTools()
         ipcMain.on('detail-page', (event, arg) => {
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = ""')
             mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
@@ -267,7 +268,12 @@ function openSettingsPage() {
     let lightString = "'light'"
     let darkString = "'dark'"
     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">Theme</span>"')
-    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "<div id=\\"theme-selection\\"><div id=\\"light-mode\\" onclick=\\"changeTheme(' + lightString + ')\\">Light</div><div id=\\"dark-mode\\" onclick=\\"changeTheme(' + darkString + ')\\">Dark</div></div>"')
+    let theme = '<div id=\\"theme-selection\\"><div id=\\"light-mode\\" onclick=\\"changeTheme(' + lightString + ')\\">Light</div><div id=\\"dark-mode\\" onclick=\\"changeTheme(' + darkString + ')\\">Dark</div></div>'
+    let favoriteProjects = '<div class=\\"headline\\"><span class=\\"name\\">Favorite projects</span></div><div id=\\"favorite-projects\\"><ul class=\\"list-container\\">'
+    for(let project of store.get('favorite-projects')) {
+        favoriteProjects += '<li class=\\"history-entry\\">' + project.name + '</li>'
+    }
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + theme + favoriteProjects + '</ul></div>"')
 }
 
 function handleLogin() {
@@ -282,6 +288,7 @@ function handleLogin() {
             user_id = result.id
             store.set('username', result.username)
             username = result.username
+            store.set('theme', 'dark')
             getUsersProjects().then(async projects => {
                 store.set('favorite-projects', projects)
                 mb.window.removeListener('page-title-updated', handleLogin)
@@ -1021,6 +1028,7 @@ function displaySkeleton(count, pagination = false) {
 }
 
 function changeTheme(option = 'light') {
+    store.set('theme', option)
     if(option == 'light') {
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--background-color", "#fff")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--text-color", "#24292f")');
