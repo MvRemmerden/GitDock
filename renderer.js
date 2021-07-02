@@ -64,6 +64,10 @@ function deleteBookmark(value) {
     window.electron.deleteBookmark(value)
 }
 
+function deleteProject(value) {
+    window.electron.deleteProject(value)
+}
+
 function changeTheme(value) {
     window.electron.changeTheme(value)
 }

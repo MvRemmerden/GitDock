@@ -247,33 +247,33 @@ a:hover {
 }
 .bookmark-entry {
     flex-direction: row!important;
-    padding-right: 0!important;
 }
 .bookmark-entry .bookmark-information {
     display: flex;
     flex-direction: column;
     width: calc(100% - 4rem);
 }
-.bookmark-entry .bookmark-delete-wrapper {
+.bookmark-delete-wrapper {
     width: 3.5rem;
     height: 2.5rem;
-    margin-left: 0.5rem;
+    margin-left: auto;
+    margin-right: -0.75rem;
     border-left: 1px solid var(--lighter-background-color);
     display: flex;
     align-items: center;
     justify-content: center;
 }
-.bookmark-entry .bookmark-delete-wrapper .bookmark-delete svg {
+.bookmark-delete-wrapper .bookmark-delete svg {
     width: 1rem;
     margin: 0;
     line-height: 1;
 }
-.bookmark-entry .bookmark-delete-wrapper .bookmark-delete {
+.bookmark-delete-wrapper .bookmark-delete {
     padding: 0.5rem 0.5rem 0.425rem;
     border-radius: 0.375rem;
     line-height: 1;
 }
-.bookmark-entry .bookmark-delete-wrapper .bookmark-delete:hover {
+.bookmark-delete-wrapper .bookmark-delete:hover {
     background-color: var(--border-color);
     cursor: pointer;
 }

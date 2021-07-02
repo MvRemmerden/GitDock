@@ -43,7 +43,7 @@ const mb = menubar({
     icon: __dirname + '/assets/gitlab.png',
     preloadWindow: true,
     browserWindow: {
-        width: 600,
+        width: 1000,
         height: 650,
         webPreferences: {
             preload: __dirname + '/preload.js',
@@ -86,7 +86,7 @@ if (access_token && user_id && username) {
             getBookmarks()*/
         }, 10000);
 
-        //mb.window.webContents.openDevTools()
+        mb.window.webContents.openDevTools()
         ipcMain.on('detail-page', (event, arg) => {
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = ""')
             mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
@@ -223,6 +223,16 @@ if (access_token && user_id && username) {
             getBookmarks()
         })
 
+        ipcMain.on('delete-project', (event, arg) => {
+            let projects = store.get('favorite-projects')
+            let newProjects = projects.filter(project => {
+                return project.id != arg
+            })
+            store.set('favorite-projects', newProjects)
+            //TODO Implement better way to refresh view after deleting project
+            openSettingsPage()
+        })
+
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
             shell.openExternal(url);
             return { action: 'deny' };
@@ -271,7 +281,8 @@ function openSettingsPage() {
     let theme = '<div id=\\"theme-selection\\"><div id=\\"light-mode\\" onclick=\\"changeTheme(' + lightString + ')\\">Light</div><div id=\\"dark-mode\\" onclick=\\"changeTheme(' + darkString + ')\\">Dark</div></div>'
     let favoriteProjects = '<div class=\\"headline\\"><span class=\\"name\\">Favorite projects</span></div><div id=\\"favorite-projects\\"><ul class=\\"list-container\\">'
     for(let project of store.get('favorite-projects')) {
-        favoriteProjects += '<li class=\\"history-entry\\">' + project.name + '</li>'
+        favoriteProjects += '<li><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" class=\\"icon\\"/></svg><div class=\\"name-with-namespace\\"><span>' + project.name + '</span><span class=\\"namespace\\">' + project.namespace.name + '</span></div>'
+        favoriteProjects += '<div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteProject(' + project.id + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>'
     }
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + theme + favoriteProjects + '</ul></div>"')
 }

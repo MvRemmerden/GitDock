@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('electron', {
   addBookmark: (value) => ipcRenderer.send('add-bookmark', value),
   startBookmarkDialog: () => ipcRenderer.send('start-bookmark-dialog'),
   deleteBookmark: (value) => ipcRenderer.send('delete-bookmark', value),
+  deleteProject: (value) => ipcRenderer.send('delete-project', value),
   changeTheme: (value) => ipcRenderer.send('change-theme', value)
 }
 )
