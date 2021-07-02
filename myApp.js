@@ -89,41 +89,47 @@ if (access_token && user_id && username) {
                 getProjectCommits(project)
                 getProjectIssues(project)
                 getProjectMRs(project)
-            } else if (arg.page == 'Issues') {
-                let assignedUrl = "'https://gitlab.com/api/v4/issues?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=" + numberOfIssues + "&access_token=" + access_token + "'"
-                let createdUrl = "'https://gitlab.com/api/v4/issues?scope=created_by_me&state=opened&order_by=updated_at&per_page=" + numberOfIssues + "&access_token=" + access_token + "'"
-                let assignedLabel = "'assigned_to_me'"
-                let createdLabel = "'created_by_me'"
-                mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"issues_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchIssues(' + assignedUrl + ', ' + assignedLabel + ')\\">Assigned</div><div id=\\"issues_created_by_me\\" class=\\"option\\" onclick=\\"switchIssues(' + createdUrl + ', ' + createdLabel + ')\\">Created</div></div>"')
-                displaySkeleton(numberOfIssues)
-                getIssues()
-            } else if (arg.page == 'Merge requests') {
-                let assignedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
-                let createdUrl = "'https://gitlab.com/api/v4/merge_requests?scope=created_by_me&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
-                let reviewedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=all&reviewer_id=" + user_id + "&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
-                let approvedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=all&approved_by_ids[]=" + user_id + "&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
-                let assignedLabel = "'assigned_to_me'"
-                let createdLabel = "'created_by_me'"
-                let reviewedLabel = "'review_requests_for_me'"
-                let approvedLabel = "'approved_by_me'"
-                mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"mrs_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchMRs(' + assignedUrl + ', ' + assignedLabel + ')\\">Assigned</div><div id=\\"mrs_review_requests_for_me\\" class=\\"option\\" onclick=\\"switchMRs(' + reviewedUrl + ', ' + reviewedLabel + ')\\">Review requests</div><div id=\\"mrs_created_by_me\\" class=\\"option\\" onclick=\\"switchMRs(' + createdUrl + ', ' + createdLabel + ')\\">Created</div><div id=\\"mrs_approved_by_me\\" class=\\"option\\" onclick=\\"switchMRs(' + approvedUrl + ', ' + approvedLabel + ')\\">Approved</div></div>"')
-                displaySkeleton(numberOfMRs)
-                getMRs()
-            } else if (arg.page == 'To-Do list') {
-                mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
-                displaySkeleton(numberOfTodos)
-                getTodos()
-            } else if (arg.page == 'Recently viewed') {
-                displaySkeleton(numberOfRecentlyVisited)
-                getMoreRecentlyVisited()
-            } else if (arg.page == 'Comments') {
-                mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
-                displaySkeleton(numberOfComments)
-                getMoreRecentComments()
+            } else {
+                mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
+                mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "' + arg.page + '"')
+                if (arg.page == 'Issues') {
+                    let assignedUrl = "'https://gitlab.com/api/v4/issues?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=" + numberOfIssues + "&access_token=" + access_token + "'"
+                    let createdUrl = "'https://gitlab.com/api/v4/issues?scope=created_by_me&state=opened&order_by=updated_at&per_page=" + numberOfIssues + "&access_token=" + access_token + "'"
+                    let assignedLabel = "'assigned_to_me'"
+                    let createdLabel = "'created_by_me'"
+                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"issues_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchIssues(' + assignedUrl + ', ' + assignedLabel + ')\\">Assigned</div><div id=\\"issues_created_by_me\\" class=\\"option\\" onclick=\\"switchIssues(' + createdUrl + ', ' + createdLabel + ')\\">Created</div></div>"')
+                    displaySkeleton(numberOfIssues)
+                    getIssues()
+                } else if (arg.page == 'Merge requests') {
+                    let assignedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
+                    let createdUrl = "'https://gitlab.com/api/v4/merge_requests?scope=created_by_me&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
+                    let reviewedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=all&reviewer_id=" + user_id + "&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
+                    let approvedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=all&approved_by_ids[]=" + user_id + "&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
+                    let assignedLabel = "'assigned_to_me'"
+                    let createdLabel = "'created_by_me'"
+                    let reviewedLabel = "'review_requests_for_me'"
+                    let approvedLabel = "'approved_by_me'"
+                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"segmented-control\\"><div id=\\"mrs_assigned_to_me\\" class=\\"option active\\" onclick=\\"switchMRs(' + assignedUrl + ', ' + assignedLabel + ')\\">Assigned</div><div id=\\"mrs_review_requests_for_me\\" class=\\"option\\" onclick=\\"switchMRs(' + reviewedUrl + ', ' + reviewedLabel + ')\\">Review requests</div><div id=\\"mrs_created_by_me\\" class=\\"option\\" onclick=\\"switchMRs(' + createdUrl + ', ' + createdLabel + ')\\">Created</div><div id=\\"mrs_approved_by_me\\" class=\\"option\\" onclick=\\"switchMRs(' + approvedUrl + ', ' + approvedLabel + ')\\">Approved</div></div>"')
+                    displaySkeleton(numberOfMRs)
+                    getMRs()
+                } else if (arg.page == 'To-Do list') {
+                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
+                    displaySkeleton(numberOfTodos)
+                    getTodos()
+                } else if (arg.page == 'Recently viewed') {
+                    displaySkeleton(numberOfRecentlyVisited)
+                    getMoreRecentlyVisited()
+                } else if (arg.page == 'Comments') {
+                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
+                    displaySkeleton(numberOfComments)
+                    getMoreRecentComments()
+                }
             }
         })
 
         ipcMain.on('go-to-overview', (event, arg) => {
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.add("empty")')
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = ""')
             activeIssuesOption = 'assigned_to_me'
             activeMRsOption = 'assigned_to_me'
             moreRecentlyVisitedArray = []
@@ -731,7 +737,10 @@ function displayPagination(keysetLinks, type) {
 
 function setupEmptyProjectPage() {
     let emptyPage = '<div id=\\"project-pipeline\\"><div class=\\"commit empty\\"><div id=\\"project-name\\"></div><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div></div></div>'
-    emptyPage += '<div class=\\"headline\\"><span class=\\"name\\">Issues</span></div><div id=\\"project-recent-issues\\"><div id=\\"history\\"><ul class=\\"list-container empty\\"><li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li><li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li><li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li><li class=\\"more-link empty\\"><div class=\\"more-link-button skeleton\\"></div></li></ul></div></div>'
+    emptyPage += '<div class=\\"headline\\"><span class=\\"name\\">Issues</span></div>'
+    emptyPage += '<div id=\\"project-recent-issues\\"><div id=\\"history\\"><ul class=\\"list-container empty\\"><li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li><li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li><li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li><li class=\\"more-link empty\\"><div class=\\"more-link-button skeleton\\"></div></li></ul></div></div>'
+    emptyPage += '<div class=\\"headline\\"><span class=\\"name\\">Merge requests</span></div>'
+    emptyPage += '<div id=\\"project-recent-mrs\\"><div id=\\"history\\"><ul class=\\"list-container empty\\"><li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li><li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li><li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li><li class=\\"more-link empty\\"><div class=\\"more-link-button skeleton\\"></div></li></ul></div></div>'
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + emptyPage + '"')
 }
 
@@ -755,17 +764,15 @@ function getProjectIssues(project) {
     }).then(issues => {
         for (let issue of issues) {
             projectIssuesString += '<li class=\\"history-entry\\">'
-            projectIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(issue.created_at)) + ' ago &middot; <a href=\\"' + issue.web_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + issue.references.full.split('#')[0] + '</a></span></div></li>'
+            projectIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(issue.created_at)) + ' ago &middot; ' + issue.author.name + '</span></div></li>'
         }
-        if(nextPage) {
+        if (nextPage) {
             projectIssuesString += '<li class=\\"more-link\\"><a>View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#aaa\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
         }
         projectIssuesString += '</ul>'
         mb.window.webContents.executeJavaScript('document.getElementById("project-recent-issues").innerHTML = "' + projectIssuesString + '"')
     })
 }
-
-
 
 function getProjectMRs(project) {
     let projectMRsString = '<ul class=\\"list-container\\">'
@@ -774,18 +781,16 @@ function getProjectMRs(project) {
         nextPage = result.headers.get('x-next-page')
         return result.json()
     }).then(mrs => {
-        console.log(mrs)
-
-        //TODO Continue here tomorrow
-        /*for (let issue of issues) {
-            projectIssuesString += '<li class=\\"history-entry\\">'
-            projectIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(issue.created_at)) + ' ago &middot; <a href=\\"' + issue.web_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + issue.references.full.split('#')[0] + '</a></span></div></li>'
+        projectMRsString = '<ul class=\\"list-container\\">'
+        for (let mr of mrs) {
+            projectMRsString += '<li class=\\"history-entry\\">'
+            projectMRsString += '<a href=\\"' + mr.web_url + '\\" target=\\"_blank\\">' + escapeHtml(mr.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(mr.created_at)) + ' ago &middot; ' + mr.author.name + '</span></div></li>'
         }
-        if(nextPage) {
-            projectIssuesString += '<li class=\\"more-link\\"><a>View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#aaa\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
+        if (nextPage) {
+            projectMRsString += '<li class=\\"more-link\\"><a>View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill=\\"#aaa\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
         }
-        projectIssuesString += '</ul>'
-        mb.window.webContents.executeJavaScript('document.getElementById("project-recent-issues").innerHTML = "' + projectIssuesString + '"')*/
+        projectMRsString += '</ul>'
+        mb.window.webContents.executeJavaScript('document.getElementById("project-recent-mrs").innerHTML = "' + projectMRsString + '"')
     })
 }
 
@@ -831,9 +836,9 @@ function displayCommit(commit, project, focus = 'project') {
         })*/
     }
     let subline
-    if(focus == 'project') {
+    if (focus == 'project') {
         subline = '<a href=\\"' + project.web_url + '\\" target=\\_blank\\">' + project.name_with_namespace + '</a>'
-    }else{
+    } else {
         subline = commit.author_name
     }
     return '<div class=\\"commit\\">' + logo + '<div class=\\"commit-information\\"><a href=\\"' + commit.web_url + '\\" target=\\"_blank\\">' + commit.title + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.committed_date.split('.')[0] + 'Z')) + ' ago &middot; ' + subline + '</span></div></div>'
