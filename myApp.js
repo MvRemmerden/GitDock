@@ -58,7 +58,7 @@ if (access_token && user_id && username) {
     setupSecondaryMenu()
     mb.on('after-create-window', () => {
         mb.showWindow()
-        changeTheme(store.get('theme'))
+        changeTheme(store.get('theme'), false)
 
         /*store.delete('user_id')
         store.delete('username')
@@ -239,7 +239,7 @@ if (access_token && user_id && username) {
         })
 
         ipcMain.on('change-theme', (event, arg) => {
-            changeTheme(arg)
+            changeTheme(arg, true)
         })
 
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
@@ -287,14 +287,17 @@ function openSettingsPage() {
     let lightString = "'light'"
     let darkString = "'dark'"
     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">Theme</span>"')
-    let theme = '<div id=\\"theme-selection\\"><div id=\\"light-mode\\" onclick=\\"changeTheme(' + lightString + ')\\">Light</div><div id=\\"dark-mode\\" onclick=\\"changeTheme(' + darkString + ')\\">Dark</div></div>'
+    let theme = '<div id=\\"theme-selection\\"><div id=\\"light-mode\\" class=\\"theme-option\\" onclick=\\"changeTheme(' + lightString + ')\\"><div class=\\"indicator\\"></div>Light</div><div id=\\"dark-mode\\" class=\\"theme-option\\" onclick=\\"changeTheme(' + darkString + ')\\"><div class=\\"indicator\\"></div>Dark</div></div>'
     let favoriteProjects = '<div class=\\"headline\\"><span class=\\"name\\">Favorite projects</span></div><div id=\\"favorite-projects\\"><ul class=\\"list-container\\">'
-    for(let project of store.get('favorite-projects')) {
+    for (let project of store.get('favorite-projects')) {
         favoriteProjects += '<li><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" class=\\"icon\\"/></svg><div class=\\"name-with-namespace\\"><span>' + project.name + '</span><span class=\\"namespace\\">' + project.namespace.name + '</span></div>'
         favoriteProjects += '<div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteProject(' + project.id + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>'
     }
     favoriteProjects += '<li id=\\"add-project-dialog\\" class=\\"more-link\\"><a onclick=\\"startProjectDialog()\\">Add another project <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + theme + favoriteProjects + '</ul></div>"')
+    mb.window.webContents.executeJavaScript('document.getElementById("light-mode").classList.remove("active")')
+    mb.window.webContents.executeJavaScript('document.getElementById("dark-mode").classList.remove("active")')
+    mb.window.webContents.executeJavaScript('document.getElementById("' + store.get('theme') + '-mode").classList.add("active")')
 }
 
 function handleLogin() {
@@ -1017,11 +1020,11 @@ function parse(gitlabUrl) {
     const url = new URL(gitlabUrl)
     const path = url.pathname
     const [, namespace, project, deliminator, type, ...rest] = path.split('/')
-    if(namespace && project && !deliminator && !type && path.split('/').length == 3) {
+    if (namespace && project && !deliminator && !type && path.split('/').length == 3) {
         let result = { namespace, project }
         result.type = 'projects'
         return result
-    }else{
+    } else {
         let result = { namespace, project, type }
         const typeParser = typeParsers[type]
         if (typeParser) {
@@ -1099,9 +1102,9 @@ function displaySkeleton(count, pagination = false) {
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + skeletonString + '"')
 }
 
-function changeTheme(option = 'light') {
+function changeTheme(option = 'light', manual = false) {
     store.set('theme', option)
-    if(option == 'light') {
+    if (option == 'light') {
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--background-color", "#fff")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--text-color", "#24292f")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--muted-text-color", "#57606a")');
@@ -1110,7 +1113,7 @@ function changeTheme(option = 'light') {
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--hover-color", "#f6f8fa")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--border-color", "#d0d7de")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--lighter-background-color", "#d8dee4")');
-    }else if(option == 'dark') {
+    } else if (option == 'dark') {
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--background-color", "#090c10")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--text-color", "#c9d1d9")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--muted-text-color", "#aaa")');
@@ -1119,5 +1122,10 @@ function changeTheme(option = 'light') {
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--hover-color", "#161b22")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--border-color", "#30363d")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--lighter-background-color", "#21262d")');
+    }
+    if (manual) {
+        mb.window.webContents.executeJavaScript('document.getElementById("light-mode").classList.remove("active")')
+        mb.window.webContents.executeJavaScript('document.getElementById("dark-mode").classList.remove("active")')
+        mb.window.webContents.executeJavaScript('document.getElementById("' + option + '-mode").classList.add("active")')
     }
 }
