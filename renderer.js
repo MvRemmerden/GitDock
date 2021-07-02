@@ -63,3 +63,7 @@ function startBookmarkDialog() {
 function deleteBookmark(value) {
     window.electron.deleteBookmark(value)
 }
+
+function changeTheme(value) {
+    window.electron.changeTheme(value)
+}

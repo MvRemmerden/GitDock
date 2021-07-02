@@ -209,6 +209,10 @@ if (access_token && user_id && username) {
             startBookmarkDialog()
         })
 
+        ipcMain.on('change-theme', (event, arg) => {
+            changeTheme(arg)
+        })
+
         ipcMain.on('delete-bookmark', (event, arg) => {
             let bookmarks = store.get('bookmarks')
             let newBookmarks = bookmarks.filter(bookmark => {
@@ -244,13 +248,26 @@ if (access_token && user_id && username) {
 function setupSecondaryMenu() {
     mb.on('ready', () => {
         const contextMenu = Menu.buildFromTemplate([
-            { label: 'Settings', click: () => { changeTheme() } },
+            { label: 'Settings', click: () => { openSettingsPage() } },
             { label: 'Quit', click: () => { mb.app.quit(); } }
         ])
         mb.tray.on('right-click', () => {
             mb.tray.popUpContextMenu(contextMenu)
         })
     });
+}
+
+function openSettingsPage() {
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "Settings"')
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-view").style.left = 0')
+    mb.window.webContents.executeJavaScript('document.body.style.overflow = "hidden"')
+
+    let lightString = "'light'"
+    let darkString = "'dark'"
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">Theme</span>"')
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "<div id=\\"theme-selection\\"><div id=\\"light-mode\\" onclick=\\"changeTheme(' + lightString + ')\\">Light</div><div id=\\"dark-mode\\" onclick=\\"changeTheme(' + darkString + ')\\">Dark</div></div>"')
 }
 
 function handleLogin() {
@@ -1003,13 +1020,24 @@ function displaySkeleton(count, pagination = false) {
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + skeletonString + '"')
 }
 
-function changeTheme() {
-    mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--background-color", "#fff")');
-    mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--text-color", "#24292f")');
-    mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--muted-text-color", "#57606a")');
-    mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--placeholder-text-color", "#6e7781")');
-    mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--border-color", "#d0d7de")');
-    mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--panel-background-color", "#fff")');
-    mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--hover-color", "#f6f8fa")');
-    mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--lighter-background-color", "#d8dee4")');
+function changeTheme(option = 'light') {
+    if(option == 'light') {
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--background-color", "#fff")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--text-color", "#24292f")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--muted-text-color", "#57606a")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--placeholder-text-color", "#6e7781")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--panel-background-color", "#fff")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--hover-color", "#f6f8fa")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--border-color", "#d0d7de")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--lighter-background-color", "#d8dee4")');
+    }else if(option == 'dark') {
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--background-color", "#090c10")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--text-color", "#c9d1d9")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--muted-text-color", "#aaa")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--placeholder-text-color", "rgba(255, 255, 255, .7)")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--panel-background-color", "#0d1117")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--hover-color", "#161b22")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--border-color", "#30363d")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--lighter-background-color", "#21262d")');
+    }
 }
