@@ -400,8 +400,17 @@ a:hover {
     align-items: center;
     width: 100%;
 }
+#bookmarks #add-bookmark-dialog.opened #add-project-error, #favorite-projects #add-project-dialog.opened #add-project-error {
+    margin: 0.5rem auto 0 0;
+    font-weight: normal;
+    color: #f85149;
+    font-size: 0.875rem;
+    display: none;
+}
 #bookmarks #add-bookmark-dialog.opened, #favorite-projects #add-project-dialog.opened {
     background-color: var(--panel-background-color);
+    display: flex;
+    flex-direction: column;
 } 
 #bookmarks #add-bookmark-dialog #bookmark-input, #favorite-projects #add-project-dialog #project-input {
     display: flex;
@@ -531,11 +540,17 @@ a:hover {
     color: var(--muted-text-color);
     margin-top: 0.175rem;
 }
+#detail-view #detail-header #project-detail-link {
+    margin: -0.5rem;
+}
 #detail-view #detail-header #project-detail-link a {
     padding: 0.5rem;
-    margin: -0.5rem;
     display: flex;
     align-items: center;
+    cursor: pointer;
+}
+#detail-view #detail-header #project-detail-link a svg {
+    cursor: pointer;
 }
 #detail-view #detail-header #project-detail-link a:hover {
     background-color: var(--border-color);

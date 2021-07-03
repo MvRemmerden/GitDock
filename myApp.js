@@ -6,15 +6,6 @@ const store = new Store()
 const BrowserHistory = require('node-browser-history');
 const { URL } = require('url');
 
-const typeParsers = {
-    'merge_requests': merge_requests => ({ merge_requests: parseInt(merge_requests, 10) }),
-    'issues': issues => ({ issues: parseInt(issues, 10) }),
-    'epics': epics => ({ epics: parseInt(epics, 10) }),
-    'tree': branch => ({ branch }),
-    'commits': branch => ({ branch }),
-    'commit': commits => ({ commit })
-}
-
 let access_token = store.get('access_token')
 let user_id = store.get('user_id')
 let username = store.get('username')
@@ -59,7 +50,7 @@ if (access_token && user_id && username) {
     mb.on('after-create-window', () => {
         mb.showWindow()
         changeTheme(store.get('theme'), false)
-
+        
         /*store.delete('user_id')
         store.delete('username')
         store.delete('access_token')
@@ -278,12 +269,12 @@ function setupSecondaryMenu() {
 }
 
 function openSettingsPage() {
+    mb.showWindow()
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "Settings"')
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
     mb.window.webContents.executeJavaScript('document.getElementById("detail-view").style.left = 0')
     mb.window.webContents.executeJavaScript('document.body.style.overflow = "hidden"')
-
     let lightString = "'light'"
     let darkString = "'dark'"
     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">Theme</span>"')
@@ -760,7 +751,7 @@ function getBookmarks() {
                 namespace = '<a href=\\"' + bookmark.locationUrl + '\\" target=\\"_blank\\">' + bookmark.project + '</a>'
             }
             let bookmarkUrl = "'" + bookmark.url + "'"
-            bookmarksString += '<li class=\\"history-entry bookmark-entry\\"><div class=\\"bookmark-information\\"><a href=\\"' + bookmark.url + '\\" target=\\"_blank\\">' + bookmark.title + '</a><span class=\\"namespace-with-time\\">Added ' + timeSince(bookmark.added) + ' ago &middot; ' + namespace + '</span></div><div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteBookmark(' + bookmarkUrl + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>'
+            bookmarksString += '<li class=\\"history-entry bookmark-entry\\"><div class=\\"bookmark-information\\"><a href=\\"' + bookmark.url + '\\" target=\\"_blank\\">' + escapeHtml(bookmark.title) + '</a><span class=\\"namespace-with-time\\">Added ' + timeSince(bookmark.added) + ' ago &middot; ' + namespace + '</span></div><div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteBookmark(' + bookmarkUrl + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>'
         })
         bookmarksString += '<li id=\\"add-bookmark-dialog\\" class=\\"more-link\\"><a onclick=\\"startBookmarkDialog()\\">Add another bookmark <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
         mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
@@ -940,6 +931,12 @@ function addProject(link) {
             openSettingsPage()
             displayUsersProjects(projects)
         })
+    } else {
+        mb.window.webContents.executeJavaScript('document.getElementById("add-project-error").style.display = "block"')
+        mb.window.webContents.executeJavaScript('document.getElementById("add-project-error").innerHTML = "This is not a valid GitLab project URL."')
+        mb.window.webContents.executeJavaScript('document.getElementById("project-add-button").disabled = false')
+        mb.window.webContents.executeJavaScript('document.getElementById("project-link").disabled = false')
+        mb.window.webContents.executeJavaScript('document.getElementById("project-add-button").innerHTML = "Add"')
     }
 }
 
@@ -954,7 +951,7 @@ function startBookmarkDialog() {
 
 function startProjectDialog() {
     let projectLink = "'project-link'"
-    let projectInput = '<form action=\\"#\\" id=\\"project-input\\" onsubmit=\\"addProject(document.getElementById(' + projectLink + ').value);return false;\\"><input id=\\"project-link\\" placeholder=\\"Enter the link to the project here...\\" /><button id=\\"project-add-button\\" type=\\"submit\\">Add</button></form>'
+    let projectInput = '<form action=\\"#\\" id=\\"project-input\\" onsubmit=\\"addProject(document.getElementById(' + projectLink + ').value);return false;\\"><input id=\\"project-link\\" placeholder=\\"Enter the link to the project here...\\" /><button id=\\"project-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-project-error\\"></div>'
     mb.window.webContents.executeJavaScript('document.getElementById("add-project-dialog").classList.add("opened")')
     mb.window.webContents.executeJavaScript('document.getElementById("add-project-dialog").innerHTML = "' + projectInput + '"')
     mb.window.webContents.executeJavaScript('window.scrollBy(0, 14)')
@@ -965,7 +962,7 @@ async function parseGitLabUrl(link) {
     let object = parse(link)
     let issuable
     if (object.type == 'issues' || object.type == 'merge_requests') {
-        let result = await fetch('https://gitlab.com/api/v4/projects/' + encodeURIComponent(object.namespace + '/' + object.project) + '/' + object.type + '/' + object[object.type] + '?access_token=' + access_token)
+        let result = await fetch('https://gitlab.com/api/v4/projects/' + encodeURIComponent(object.namespaceWithProject) + '/' + object.type + '/' + object[object.type] + '?access_token=' + access_token)
         issuable = await result.json()
         let result2 = await fetch('https://gitlab.com/api/v4/projects/' + issuable.project_id + '?access_token=' + access_token)
         let project = await result2.json()
@@ -979,7 +976,7 @@ async function parseGitLabUrl(link) {
             locationUrl: project.web_url
         }
     } else if (object.type == 'epics') {
-        let result = await fetch('https://gitlab.com/api/v4/groups/' + encodeURIComponent(object.project) + '/' + object.type + '/' + object[object.type])
+        let result = await fetch('https://gitlab.com/api/v4/groups/' + encodeURIComponent(object.namespaceWithProject) + '/' + object.type + '/' + object[object.type])
         issuable = await result.json()
         let result2 = await fetch('https://gitlab.com/api/v4/groups/' + issuable.group_id + '?access_token=' + access_token)
         let group = await result2.json()
@@ -992,7 +989,7 @@ async function parseGitLabUrl(link) {
             locationUrl: group.web_url
         }
     } else if (object.type == 'projects') {
-        let result = await fetch('https://gitlab.com/api/v4/projects/' + encodeURIComponent(object.namespace + '/' + object.project) + '?access_token=' + access_token)
+        let result = await fetch('https://gitlab.com/api/v4/projects/' + encodeURIComponent(object.namespaceWithProject) + '?access_token=' + access_token)
         let project = await result.json()
         return {
             id: project.id,
@@ -1018,19 +1015,22 @@ function parse(gitlabUrl) {
         throw new Error('Expected gitLabUrl of type string')
     }
     const url = new URL(gitlabUrl)
-    const path = url.pathname
-    const [, namespace, project, deliminator, type, ...rest] = path.split('/')
-    if (namespace && project && !deliminator && !type && path.split('/').length == 3) {
-        let result = { namespace, project }
-        result.type = 'projects'
-        return result
-    } else {
-        let result = { namespace, project, type }
-        const typeParser = typeParsers[type]
-        if (typeParser) {
-            result = { ...result, ...typeParser(rest.shift()) }
+    let path = url.pathname
+    path = path.replace(/^\/|\/$/g, '')
+    if(path.indexOf('/-/') != -1) {
+        let pathArray = path.split('/-/')
+        let object = {
+            namespaceWithProject: pathArray[0],
+            type: pathArray[1].split('/')[0]
+
         }
-        return result
+        object[object.type] = pathArray[1].split('/')[1].split('#')[0]
+        return object
+    }else{
+        return {
+            namespaceWithProject: path,
+            type: 'projects'
+        }
     }
 }
 
