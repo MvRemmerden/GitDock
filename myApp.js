@@ -498,7 +498,7 @@ async function getRecentlyVisited() {
                     }
                     recentlyVisitedArray.push(item[j].title)
                     recentlyVisitedString += '<li class=\\"history-entry\\">'
-                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item[j].url.split('/-/')[0] + '\\" target=\\"_blank\\">' + item[j].title.split('·')[2].trim() + '</a></span></div></li>'
+                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item[j].url.split('/-/')[0] + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[2].trim()) + '</a></span></div></li>'
                     i++
                     if (i == numberOfRecentlyVisited) {
                         break
@@ -553,7 +553,7 @@ async function getMoreRecentlyVisited() {
                     moreRecentlyVisitedArray.push(item[j])
                     moreRecentlyVisitedTitlesArray.push(item[j].title)
                     recentlyVisitedString += '<li class=\\"history-entry\\">'
-                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item[j].url.split('/-/')[0] + '\\" target=\\"_blank\\">' + item[j].title.split('·')[2].trim() + '</a></span></div></li>'
+                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item[j].url.split('/-/')[0] + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[2].trim()) + '</a></span></div></li>'
                 }
             }
             recentlyVisitedString += '</ul>'
@@ -575,7 +575,7 @@ function searchRecentlyVisited(searchterm) {
             url = 'https://gitlab.com/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
         }
         foundString += '<li class=\\"history-entry\\">'
-        foundString += '<a href=\\"' + item.url + '\\" target=\\"_blank\\">' + escapeHtml(item.title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item.utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item.url.split('/-/')[0] + '\\" target=\\"_blank\\">' + item.title.split('·')[2].trim() + '</a></span></div></li>'
+        foundString += '<a href=\\"' + item.url + '\\" target=\\"_blank\\">' + escapeHtml(item.title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item.utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item.url.split('/-/')[0] + '\\" target=\\"_blank\\">' + escapeHtml(item.title.split('·')[2].trim()) + '</a></span></div></li>'
     }
     foundString += '</ul>'
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + foundString + '"')
@@ -901,7 +901,7 @@ function displayCommit(commit, project, focus = 'project') {
     } else {
         subline = commit.author_name
     }
-    return '<div class=\\"commit\\">' + logo + '<div class=\\"commit-information\\"><a href=\\"' + commit.web_url + '\\" target=\\"_blank\\">' + commit.title + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.committed_date.split('.')[0] + 'Z')) + ' ago &middot; ' + subline + '</span></div></div>'
+    return '<div class=\\"commit\\">' + logo + '<div class=\\"commit-information\\"><a href=\\"' + commit.web_url + '\\" target=\\"_blank\\">' + escapeHtml(commit.title) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.committed_date.split('.')[0] + 'Z')) + ' ago &middot; ' + subline + '</span></div></div>'
 }
 
 function addBookmark(link) {
