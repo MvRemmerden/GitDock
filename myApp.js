@@ -5,6 +5,7 @@ const Store = require('electron-store');
 const store = new Store()
 const BrowserHistory = require('node-browser-history');
 const { URL } = require('url');
+process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
 let access_token = store.get('access_token')
 let user_id = store.get('user_id')
@@ -50,7 +51,7 @@ if (access_token && user_id && username) {
     mb.on('after-create-window', () => {
         mb.showWindow()
         changeTheme(store.get('theme'), false)
-        
+
         /*store.delete('user_id')
         store.delete('username')
         store.delete('access_token')
@@ -757,7 +758,7 @@ function getBookmarks() {
         mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
     } else {
         let bookmarkLink = "'bookmark-link'"
-        bookmarksString = '<div id=\\"new-bookmark\\"><div><span id=\\"cta\\">Add a new GitLab bookmark</span> 🔖</div><div id=\\"cta-description\\">Bookmarks are helpful when you have an issue/merge request you will have to come back to repeatedly.</div><form id=\\"bookmark-input\\" action=\\"#\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter your link here...\\" /><button id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form></div>'
+        bookmarksString = '<div id=\\"new-bookmark\\"><div><span id=\\"cta\\">Add a new GitLab bookmark</span> 🔖</div><div id=\\"cta-description\\">Bookmarks are helpful when you have an issue/merge request you will have to come back to repeatedly.</div><form id=\\"bookmark-input\\" action=\\"#\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter your link here...\\" /><button id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-bookmark-error\\"></div></div>'
         mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
     }
 }
@@ -910,11 +911,19 @@ function addBookmark(link) {
     mb.window.webContents.executeJavaScript('document.getElementById("bookmark-add-button").innerHTML = "' + spinner + ' Add"')
     if (link.indexOf('https://gitlab.com') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
         parseGitLabUrl(link).then(bookmark => {
-            let bookmarks = store.get('bookmarks') || []
-            bookmarks.push(bookmark)
-            store.set('bookmarks', bookmarks)
-            getBookmarks()
+            if(!bookmark.type || (bookmark.type != 'issues' && bookmark.type != 'merge_requests' && bookmark.type != 'epics')) {
+                displayAddError('bookmark')
+            }else{
+                let bookmarks = store.get('bookmarks') || []
+                bookmarks.push(bookmark)
+                store.set('bookmarks', bookmarks)
+                getBookmarks()
+            }
+        }).catch(error => {
+            displayAddError('bookmark')
         })
+    } else {
+        displayAddError('bookmark')
     }
 }
 
@@ -925,24 +934,34 @@ function addProject(link) {
     mb.window.webContents.executeJavaScript('document.getElementById("project-add-button").innerHTML = "' + spinner + ' Add"')
     if (link.indexOf('https://gitlab.com') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
         parseGitLabUrl(link).then(project => {
-            let projects = store.get('favorite-projects') || []
-            projects.push(project)
-            store.set('favorite-projects', projects)
-            openSettingsPage()
-            displayUsersProjects(projects)
+            if(project.type && project.type != 'projects') {
+                displayAddError('project')
+            }else{
+                let projects = store.get('favorite-projects') || []
+                projects.push(project)
+                store.set('favorite-projects', projects)
+                openSettingsPage()
+                displayUsersProjects(projects)
+            }
+        }).catch(error => {
+            displayAddError('project')
         })
     } else {
-        mb.window.webContents.executeJavaScript('document.getElementById("add-project-error").style.display = "block"')
-        mb.window.webContents.executeJavaScript('document.getElementById("add-project-error").innerHTML = "This is not a valid GitLab project URL."')
-        mb.window.webContents.executeJavaScript('document.getElementById("project-add-button").disabled = false')
-        mb.window.webContents.executeJavaScript('document.getElementById("project-link").disabled = false')
-        mb.window.webContents.executeJavaScript('document.getElementById("project-add-button").innerHTML = "Add"')
+        displayAddError('project')
     }
+}
+
+function displayAddError(type) {
+    mb.window.webContents.executeJavaScript('document.getElementById("add-' + type + '-error").style.display = "block"')
+    mb.window.webContents.executeJavaScript('document.getElementById("add-' + type + '-error").innerHTML = "This is not a valid GitLab ' + type + ' URL."')
+    mb.window.webContents.executeJavaScript('document.getElementById("' + type + '-add-button").disabled = false')
+    mb.window.webContents.executeJavaScript('document.getElementById("' + type + '-link").disabled = false')
+    mb.window.webContents.executeJavaScript('document.getElementById("' + type + '-add-button").innerHTML = "Add"')
 }
 
 function startBookmarkDialog() {
     let bookmarkLink = "'bookmark-link'"
-    let bookmarkInput = '<form action=\\"#\\" id=\\"bookmark-input\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter your link here...\\" /><button id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form>'
+    let bookmarkInput = '<form action=\\"#\\" id=\\"bookmark-input\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter your link here...\\" /><button id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-bookmark-error\\"></div>'
     mb.window.webContents.executeJavaScript('document.getElementById("add-bookmark-dialog").classList.add("opened")')
     mb.window.webContents.executeJavaScript('document.getElementById("add-bookmark-dialog").innerHTML = "' + bookmarkInput + '"')
     mb.window.webContents.executeJavaScript('window.scrollBy(0, 14)')
@@ -959,6 +978,9 @@ function startProjectDialog() {
 }
 
 async function parseGitLabUrl(link) {
+    if (!/^(?:f|ht)tps?\:\/\//.test(link)) {
+        link = "https://" + link;
+    }
     let object = parse(link)
     let issuable
     if (object.type == 'issues' || object.type == 'merge_requests') {
@@ -966,6 +988,7 @@ async function parseGitLabUrl(link) {
         issuable = await result.json()
         let result2 = await fetch('https://gitlab.com/api/v4/projects/' + issuable.project_id + '?access_token=' + access_token)
         let project = await result2.json()
+        console.log(project)
         return {
             url: link,
             namespace: project.namespace.name,
@@ -1006,6 +1029,7 @@ async function parseGitLabUrl(link) {
             avatar_url: project.avatar_url,
             star_count: project.star_count,
             forks_count: project.forks_count,
+            type: 'projects'
         }
     }
 }
@@ -1017,7 +1041,7 @@ function parse(gitlabUrl) {
     const url = new URL(gitlabUrl)
     let path = url.pathname
     path = path.replace(/^\/|\/$/g, '')
-    if(path.indexOf('/-/') != -1) {
+    if (path.indexOf('/-/') != -1) {
         let pathArray = path.split('/-/')
         let object = {
             namespaceWithProject: pathArray[0],
@@ -1026,7 +1050,7 @@ function parse(gitlabUrl) {
         }
         object[object.type] = pathArray[1].split('/')[1].split('#')[0]
         return object
-    }else{
+    } else {
         return {
             namespaceWithProject: path,
             type: 'projects'

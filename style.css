@@ -400,7 +400,7 @@ a:hover {
     align-items: center;
     width: 100%;
 }
-#bookmarks #add-bookmark-dialog.opened #add-project-error, #favorite-projects #add-project-dialog.opened #add-project-error {
+#bookmarks #add-bookmark-dialog.opened #add-bookmark-error, #favorite-projects #add-project-dialog.opened #add-project-error {
     margin: 0.5rem auto 0 0;
     font-weight: normal;
     color: #f85149;
