@@ -16,18 +16,19 @@ function goToOverview() {
     document.body.style.overflow = 'auto'
 }
 
-function switchIssues(url, label) {
-    let value = {
-        url: url,
-        label: label
+function switchIssues(value, type) {
+    let object = {
+        label: value,
+        type: type
     }
-    window.electron.switchIssues(value)
+    window.electron.switchIssues(object)
 }
 
-function switchMRs(url, label) {
+function switchMRs(url, label, text) {
     let value = {
         url: url,
-        label: label
+        label: label,
+        text: text
     }
     window.electron.switchMRs(value)
 }
