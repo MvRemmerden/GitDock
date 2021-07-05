@@ -25,13 +25,13 @@ function switchIssues(value, type, text) {
     window.electron.switchIssues(object)
 }
 
-function switchMRs(url, label, text) {
-    let value = {
-        url: url,
-        label: label,
+function switchMRs(value, type, text) {
+    let object = {
+        label: value,
+        type: type,
         text: text
     }
-    window.electron.switchMRs(value)
+    window.electron.switchMRs(object)
 }
 
 function switchPage(url, type) {

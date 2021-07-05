@@ -218,6 +218,10 @@ a:hover {
     height: 1.75rem;
     margin-right: 1rem;
 }
+.headline .custom-options-wrapper {
+    position: absolute;
+    top: 2rem;
+}
 .headline .custom-select .custom-option-label {
     padding: 0 1rem 0 0.75rem;
     min-height: 2.5rem;

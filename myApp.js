@@ -5,7 +5,6 @@ const Store = require('electron-store');
 const store = new Store()
 const BrowserHistory = require('node-browser-history');
 const { URL } = require('url');
-const { create } = require('domain');
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
 let access_token = store.get('access_token')
@@ -28,7 +27,9 @@ let numberOfComments = 5
 let activeIssuesQueryOption = 'assigned_to_me'
 let activeIssuesStateOption = 'opened'
 let activeIssuesSortOption = 'updated_at'
-let activeMRsOption = 'assigned_to_me'
+let activeMRsQueryOption = 'assigned_to_me'
+let activeMRsStateOption = 'opened'
+let activeMRsSortOption = 'updated_at'
 let runningPipelineSubscriptions = []
 let timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
@@ -97,39 +98,43 @@ if (access_token && user_id && username) {
             } else {
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "' + arg.page + '"')
+                let query = "'query'"
+                let state = "'state'"
+                let sort = "'sort'"
+                let assignedLabel = "'assigned_to_me'"
+                let assignedText = "'Assigned'"
+                let createdLabel = "'created_by_me'"
+                let createdText = "'Created'"
+                let openedLabel = "'opened'"
+                let openedText = "'Open'"
+                let closedLabel = "'closed'"
+                let closedText = "'Closed'"
+                let recentlyUpdatedLabel = "'updated_at'"
+                let recentlyUpdatedText = "'Sort by recently updated'"
+                let recentlyCreatedLabel = "'created_at'"
+                let recentlyCreatedText = "'Sort by recently created'"
                 if (arg.page == 'Issues') {
-                    let query = "'query'"
-                    let queryActive ="'issues-query-active'"
-                    let state = "'state'"
-                    let sort = "'sort'"
-                    let assignedLabel = "'assigned_to_me'"
-                    let assignedText = "'Assigned'"
-                    let createdLabel = "'created_by_me'"
-                    let createdText = "'Created'"
-                    let openedLabel = "'opened'"
-                    let openedText = "'Open'"
-                    let closedLabel = "'closed'"
-                    let closedText = "'Closed'"
-                    let recentlyUpdatedLabel = "'updated_at'"
-                    let recentlyUpdatedText = "'Sort by recently updated'"
-                    let recentlyCreatedLabel = "'created_at'"
-                    let recentlyCreatedText = "'Sort by recently created'"
-                    let querySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-query-active\\" onclick=\\"isInFocus(' + queryActive + ')\\">Assigned</div><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchIssues(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchIssues(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label></div>'
-                    let stateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-state-active\\">Open</div><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchIssues(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchIssues(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div>'
-                    let sortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-sort-active\\">Sort by recently updated</div><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchIssues(' + recentlyUpdatedLabel + ', ' + sort + ', ' + recentlyUpdatedText + ')\\" checked><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchIssues(' + recentlyCreatedLabel + ', ' + sort + ', ' + recentlyCreatedText + ')\\"><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label></div>'
+                    let querySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchIssues(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchIssues(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label></div></div>'
+                    let stateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-state-active\\">Open</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchIssues(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchIssues(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div></div>'
+                    let sortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-sort-active\\">Sort by recently updated</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchIssues(' + recentlyUpdatedLabel + ', ' + sort + ', ' + recentlyUpdatedText + ')\\" checked><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchIssues(' + recentlyCreatedLabel + ', ' + sort + ', ' + recentlyCreatedText + ')\\"><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label></div></div>'
                     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"filter-sort\\">' + querySelect + stateSelect + sortSelect + '</div>"')
                     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").classList.add("with-overflow")')
                     displaySkeleton(numberOfIssues)
                     getIssues()
                 } else if (arg.page == 'Merge requests') {
-                    let assignedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=assigned_to_me&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
-                    let createdUrl = "'https://gitlab.com/api/v4/merge_requests?scope=created_by_me&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
-                    let reviewedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=all&reviewer_id=" + user_id + "&state=opened&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
-                    let approvedUrl = "'https://gitlab.com/api/v4/merge_requests?scope=all&approved_by_ids[]=" + user_id + "&order_by=updated_at&per_page=" + numberOfMRs + "&access_token=" + access_token + "'"
-                    let assignedLabel = "'assigned_to_me'"
-                    let createdLabel = "'created_by_me'"
                     let reviewedLabel = "'review_requests_for_me'"
+                    let reviewedText = "'Reviewed'"
                     let approvedLabel = "'approved_by_me'"
+                    let approvedText = "'Approved'"
+                    let mergedLabel = "'merged'"
+                    let mergedText = "'Merged'"
+                    let approvalLabel = "'approval_rule_for_me'"
+                    let approvalText = "'Approval rules'"
+                    let querySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchMRs(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchMRs(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + reviewedLabel + '\\" onchange=\\"switchMRs(' + reviewedLabel + ', ' + query + ', ' + reviewedText + ')\\"><label for=\\"' + reviewedLabel + '\\" class=\\"custom-option-label\\">Review requests</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvedLabel + '\\" onchange=\\"switchMRs(' + approvedLabel + ', ' + query + ', ' + approvedText + ')\\"><label for=\\"' + approvedLabel + '\\" class=\\"custom-option-label\\">Approved</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvalLabel + '\\" onchange=\\"switchMRs(' + approvalLabel + ', ' + query + ', ' + approvalText + ')\\"><label for=\\"' + approvalLabel + '\\" class=\\"custom-option-label\\">Approval rule</label></div></div>'
+                    let stateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-state-active\\">Open</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchMRs(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + mergedLabel + '\\" onchange=\\"switchMRs(' + mergedLabel + ', ' + state + ', ' + mergedText + ')\\"><label for=\\"' + mergedLabel + '\\" class=\\"custom-option-label\\">Merged</label><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchMRs(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div></div>'
+                    let sortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-sort-active\\">Sort by recently updated</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchMRs(' + recentlyUpdatedLabel + ', ' + sort + ', ' + recentlyUpdatedText + ')\\" checked><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label><input class=\\"custom-option\\" name=\\"mrs-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchMRs(' + recentlyCreatedLabel + ', ' + sort + ', ' + recentlyCreatedText + ')\\"><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label></div></div>'
+                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"filter-sort\\">' + querySelect + stateSelect + sortSelect + '</div>"')
+                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").classList.add("with-overflow")')
                     displaySkeleton(numberOfMRs)
                     getMRs()
                 } else if (arg.page == 'To-Do list') {
@@ -152,57 +157,91 @@ if (access_token && user_id && username) {
             mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.add("empty")')
             mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = ""')
             activeIssuesQueryOption = 'assigned_to_me'
-            activeMRsOption = 'assigned_to_me'
+            activeIssuesStateOption = 'opened'
+            activeIssuesSortOption = 'updated_at'
+            activeMRsQueryOption = 'assigned_to_me'
+            activeMRsStateOption = 'opened'
+            activeMRsSortOption = 'updated_at'
             moreRecentlyVisitedArray = []
             recentProjectCommits = []
             delete currentProjectCommit
         })
 
         ipcMain.on('switch-issues', (event, arg) => {
-            if(arg.type == 'query' && arg.label != activeIssuesQueryOption) {
+            if (arg.type == 'query' && arg.label != activeIssuesQueryOption) {
                 activeIssuesQueryOption = arg.label
                 displaySkeleton(numberOfIssues)
-                let url = 'https://gitlab.com/api/v4/issues?scope=' + activeIssuesQueryOption + '&state=' + activeIssuesStateOption + '&order_by=' + activeIssuesSortOption + '&per_page=' + numberOfIssues + '&access_token=' + access_token
                 mb.window.webContents.executeJavaScript('document.getElementById("issues-query-active").innerHTML = "' + arg.text + '"')
-                if(arg.label != 'assigned_to_me') {
+                if (arg.label != 'assigned_to_me') {
                     mb.window.webContents.executeJavaScript('document.getElementById("issues-query-active").classList.add("changed")')
-                }else{
+                } else {
                     mb.window.webContents.executeJavaScript('document.getElementById("issues-query-active").classList.remove("changed")')
                 }
-                getIssues(url)
-            }else if(arg.type == 'state' && arg.label != activeIssuesStateOption) {
+            } else if (arg.type == 'state' && arg.label != activeIssuesStateOption) {
                 activeIssuesStateOption = arg.label
                 displaySkeleton(numberOfIssues)
-                let url = 'https://gitlab.com/api/v4/issues?scope=' + activeIssuesQueryOption + '&state=' + activeIssuesStateOption + '&order_by=' + activeIssuesSortOption + '&per_page=' + numberOfIssues + '&access_token=' + access_token
                 mb.window.webContents.executeJavaScript('document.getElementById("issues-state-active").innerHTML = "' + arg.text + '"')
-                if(arg.label != 'opened') {
+                if (arg.label != 'opened') {
                     mb.window.webContents.executeJavaScript('document.getElementById("issues-state-active").classList.add("changed")')
-                }else{
+                } else {
                     mb.window.webContents.executeJavaScript('document.getElementById("issues-state-active").classList.remove("changed")')
                 }
-                getIssues(url)
-            }else if(arg.type == 'sort' && arg.label != activeIssuesSortOption) {
+            } else if (arg.type == 'sort' && arg.label != activeIssuesSortOption) {
                 activeIssuesSortOption = arg.label
                 displaySkeleton(numberOfIssues)
                 mb.window.webContents.executeJavaScript('document.getElementById("issues-sort-active").innerHTML = "' + arg.text + '"')
-                if(arg.label != 'updated_at') {
+                if (arg.label != 'updated_at') {
                     mb.window.webContents.executeJavaScript('document.getElementById("issues-sort-active").classList.add("changed")')
-                }else{
+                } else {
                     mb.window.webContents.executeJavaScript('document.getElementById("issues-sort-active").classList.remove("changed")')
                 }
-                let url = 'https://gitlab.com/api/v4/issues?scope=' + activeIssuesQueryOption + '&state=' + activeIssuesStateOption + '&order_by=' + activeIssuesSortOption + '&per_page=' + numberOfIssues + '&access_token=' + access_token
-                getIssues(url)
             }
+            let url = 'https://gitlab.com/api/v4/issues?scope=' + activeIssuesQueryOption + '&state=' + activeIssuesStateOption + '&order_by=' + activeIssuesSortOption + '&per_page=' + numberOfIssues + '&access_token=' + access_token
+            getIssues(url)
         })
 
         ipcMain.on('switch-mrs', (event, arg) => {
-            if (arg.label != activeMRsOption) {
-                mb.window.webContents.executeJavaScript('document.getElementById("mrs_' + activeMRsOption + '").classList.remove("active")')
-                mb.window.webContents.executeJavaScript('document.getElementById("mrs_' + arg.label + '").classList.add("active")')
-                activeMRsOption = arg.label
+            if (arg.type == 'query' && arg.label != activeMRsQueryOption) {
+                activeMRsQueryOption = arg.label
                 displaySkeleton(numberOfMRs)
-                getMRs(arg.url)
+                mb.window.webContents.executeJavaScript('document.getElementById("mrs-query-active").innerHTML = "' + arg.text + '"')
+                if (arg.label != 'assigned_to_me') {
+                    mb.window.webContents.executeJavaScript('document.getElementById("mrs-query-active").classList.add("changed")')
+                } else {
+                    mb.window.webContents.executeJavaScript('document.getElementById("mrs-query-active").classList.remove("changed")')
+                }
+            } if (arg.type == 'state' && arg.label != activeMRsStateOption) {
+                activeMRsStateOption = arg.label
+                displaySkeleton(numberOfMRs)
+                mb.window.webContents.executeJavaScript('document.getElementById("mrs-state-active").innerHTML = "' + arg.text + '"')
+                if (arg.label != 'opened') {
+                    mb.window.webContents.executeJavaScript('document.getElementById("mrs-state-active").classList.add("changed")')
+                } else {
+                    mb.window.webContents.executeJavaScript('document.getElementById("mrs-state-active").classList.remove("changed")')
+                }
+            } else if (arg.type == 'sort' && arg.label != activeMRsSortOption) {
+                activeMRsSortOption = arg.label
+                displaySkeleton(numberOfMRs)
+                mb.window.webContents.executeJavaScript('document.getElementById("mrs-sort-active").innerHTML = "' + arg.text + '"')
+                if (arg.label != 'updated_at') {
+                    mb.window.webContents.executeJavaScript('document.getElementById("mrs-sort-active").classList.add("changed")')
+                } else {
+                    mb.window.webContents.executeJavaScript('document.getElementById("mrs-sort-active").classList.remove("changed")')
+                }
             }
+            let url
+            if (activeMRsQueryOption == 'assigned_to_me' || activeMRsQueryOption == 'created_by_me') {
+                url = 'https://gitlab.com/api/v4/merge_requests?scope=' + activeMRsQueryOption
+            } else if (activeMRsQueryOption == 'approved_by_me') {
+                url = 'https://gitlab.com/api/v4/merge_requests?scope=all&approved_by_ids[]=' + user_id
+            } else if (activeMRsQueryOption == 'review_requests_for_me') {
+                url = 'https://gitlab.com/api/v4/merge_requests?scope=all&reviewer_id=' + user_id
+            } else if (activeMRsQueryOption == 'approval_rule_for_me') {
+                url = 'https://gitlab.com/api/v4/merge_requests?scope=all&approver_ids[]=' + user_id
+            }
+            url += '&state=' + activeMRsStateOption + '&order_by=' + activeMRsSortOption + '&per_page=' + numberOfMRs + '&access_token=' + access_token
+            console.log(url)
+            getMRs(url)
         })
 
         ipcMain.on('switch-page', (event, arg) => {
@@ -743,9 +782,9 @@ function getIssues(url = 'https://gitlab.com/api/v4/issues?scope=assigned_to_me&
     }).then(issues => {
         for (let issue of issues) {
             let timestamp
-            if(activeIssuesSortOption == 'updated_at') {
+            if (activeIssuesSortOption == 'updated_at') {
                 timestamp = 'Updated ' + timeSince(new Date(issue.updated_at)) + ' ago'
-            }else if(activeIssuesSortOption == 'created_at') {
+            } else if (activeIssuesSortOption == 'created_at') {
                 timestamp = 'Created ' + timeSince(new Date(issue.created_at)) + ' ago'
             }
             issuesString += '<li class=\\"history-entry\\">'
@@ -767,8 +806,14 @@ function getMRs(url = 'https://gitlab.com/api/v4/merge_requests?scope=assigned_t
         if (mrs.length > 0) {
             mrsString = '<ul class=\\"list-container\\">'
             for (let mr of mrs) {
+                let timestamp
+                if (activeMRsSortOption == 'updated_at') {
+                    timestamp = 'Updated ' + timeSince(new Date(mr.updated_at)) + ' ago'
+                } else if (activeMRsSortOption == 'created_at') {
+                    timestamp = 'Created ' + timeSince(new Date(mr.created_at)) + ' ago'
+                }
                 mrsString += '<li class=\\"history-entry\\">'
-                mrsString += '<a href=\\"' + mr.web_url + '\\" target=\\"_blank\\">' + escapeHtml(mr.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(mr.updated_at)) + ' ago &middot; <a href=\\"' + mr.web_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + mr.references.full.split('!')[0] + '</a></span></div></li>'
+                mrsString += '<a href=\\"' + mr.web_url + '\\" target=\\"_blank\\">' + escapeHtml(mr.title) + '</a><span class=\\"namespace-with-time\\">' + timestamp + ' &middot; <a href=\\"' + mr.web_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + mr.references.full.split('!')[0] + '</a></span></div></li>'
             }
             mrsString += '</ul>' + displayPagination(keysetLinks, type)
         } else {
@@ -973,9 +1018,9 @@ function addBookmark(link) {
     mb.window.webContents.executeJavaScript('document.getElementById("bookmark-add-button").innerHTML = "' + spinner + ' Add"')
     if (link.indexOf('https://gitlab.com') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
         parseGitLabUrl(link).then(bookmark => {
-            if(!bookmark.type || (bookmark.type != 'issues' && bookmark.type != 'merge_requests' && bookmark.type != 'epics')) {
+            if (!bookmark.type || (bookmark.type != 'issues' && bookmark.type != 'merge_requests' && bookmark.type != 'epics')) {
                 displayAddError('bookmark')
-            }else{
+            } else {
                 let bookmarks = store.get('bookmarks') || []
                 bookmarks.push(bookmark)
                 store.set('bookmarks', bookmarks)
@@ -996,9 +1041,9 @@ function addProject(link) {
     mb.window.webContents.executeJavaScript('document.getElementById("project-add-button").innerHTML = "' + spinner + ' Add"')
     if (link.indexOf('https://gitlab.com') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
         parseGitLabUrl(link).then(project => {
-            if(project.type && project.type != 'projects') {
+            if (project.type && project.type != 'projects') {
                 displayAddError('project')
-            }else{
+            } else {
                 let projects = store.get('favorite-projects') || []
                 projects.push(project)
                 store.set('favorite-projects', projects)
