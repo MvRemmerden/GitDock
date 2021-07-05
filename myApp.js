@@ -99,17 +99,24 @@ if (access_token && user_id && username) {
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "' + arg.page + '"')
                 if (arg.page == 'Issues') {
                     let query = "'query'"
+                    let queryActive ="'issues-query-active'"
                     let state = "'state'"
                     let sort = "'sort'"
                     let assignedLabel = "'assigned_to_me'"
+                    let assignedText = "'Assigned'"
                     let createdLabel = "'created_by_me'"
+                    let createdText = "'Created'"
                     let openedLabel = "'opened'"
+                    let openedText = "'Open'"
                     let closedLabel = "'closed'"
+                    let closedText = "'Closed'"
                     let recentlyUpdatedLabel = "'updated_at'"
+                    let recentlyUpdatedText = "'Sort by recently updated'"
                     let recentlyCreatedLabel = "'created_at'"
-                    let querySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-query-active\\">Assigned</div><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchIssues(' + assignedLabel + ', ' + query + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchIssues(' + createdLabel + ', ' + query + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label></div>'
-                    let stateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-state-active\\">Open</div><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchIssues(' + openedLabel + ', ' + state + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchIssues(' + closedLabel + ', ' + state + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div>'
-                    let sortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-sort-active\\">Sort by recently updated</div><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchIssues(' + recentlyUpdatedLabel + ', ' + sort + ')\\" checked><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchIssues(' + recentlyCreatedLabel + ', ' + sort + ')\\"><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label></div>'
+                    let recentlyCreatedText = "'Sort by recently created'"
+                    let querySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-query-active\\" onclick=\\"isInFocus(' + queryActive + ')\\">Assigned</div><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchIssues(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchIssues(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label></div>'
+                    let stateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-state-active\\">Open</div><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchIssues(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchIssues(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div>'
+                    let sortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-sort-active\\">Sort by recently updated</div><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchIssues(' + recentlyUpdatedLabel + ', ' + sort + ', ' + recentlyUpdatedText + ')\\" checked><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchIssues(' + recentlyCreatedLabel + ', ' + sort + ', ' + recentlyCreatedText + ')\\"><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label></div>'
                     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"filter-sort\\">' + querySelect + stateSelect + sortSelect + '</div>"')
                     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").classList.add("with-overflow")')
                     displaySkeleton(numberOfIssues)
@@ -156,15 +163,33 @@ if (access_token && user_id && username) {
                 activeIssuesQueryOption = arg.label
                 displaySkeleton(numberOfIssues)
                 let url = 'https://gitlab.com/api/v4/issues?scope=' + activeIssuesQueryOption + '&state=' + activeIssuesStateOption + '&order_by=' + activeIssuesSortOption + '&per_page=' + numberOfIssues + '&access_token=' + access_token
+                mb.window.webContents.executeJavaScript('document.getElementById("issues-query-active").innerHTML = "' + arg.text + '"')
+                if(arg.label != 'assigned_to_me') {
+                    mb.window.webContents.executeJavaScript('document.getElementById("issues-query-active").classList.add("changed")')
+                }else{
+                    mb.window.webContents.executeJavaScript('document.getElementById("issues-query-active").classList.remove("changed")')
+                }
                 getIssues(url)
             }else if(arg.type == 'state' && arg.label != activeIssuesStateOption) {
                 activeIssuesStateOption = arg.label
                 displaySkeleton(numberOfIssues)
                 let url = 'https://gitlab.com/api/v4/issues?scope=' + activeIssuesQueryOption + '&state=' + activeIssuesStateOption + '&order_by=' + activeIssuesSortOption + '&per_page=' + numberOfIssues + '&access_token=' + access_token
+                mb.window.webContents.executeJavaScript('document.getElementById("issues-state-active").innerHTML = "' + arg.text + '"')
+                if(arg.label != 'opened') {
+                    mb.window.webContents.executeJavaScript('document.getElementById("issues-state-active").classList.add("changed")')
+                }else{
+                    mb.window.webContents.executeJavaScript('document.getElementById("issues-state-active").classList.remove("changed")')
+                }
                 getIssues(url)
             }else if(arg.type == 'sort' && arg.label != activeIssuesSortOption) {
                 activeIssuesSortOption = arg.label
                 displaySkeleton(numberOfIssues)
+                mb.window.webContents.executeJavaScript('document.getElementById("issues-sort-active").innerHTML = "' + arg.text + '"')
+                if(arg.label != 'updated_at') {
+                    mb.window.webContents.executeJavaScript('document.getElementById("issues-sort-active").classList.add("changed")')
+                }else{
+                    mb.window.webContents.executeJavaScript('document.getElementById("issues-sort-active").classList.remove("changed")')
+                }
                 let url = 'https://gitlab.com/api/v4/issues?scope=' + activeIssuesQueryOption + '&state=' + activeIssuesStateOption + '&order_by=' + activeIssuesSortOption + '&per_page=' + numberOfIssues + '&access_token=' + access_token
                 getIssues(url)
             }
@@ -257,6 +282,12 @@ if (access_token && user_id && username) {
 
         ipcMain.on('show-modal', (event, arg) => {
             mb.window.webContents.executeJavaScript('document.getElementById("' + arg + '").style.display = "flex"')
+        })
+
+        ipcMain.on('is-in-focus', (event, arg) => {
+            mb.window.webContents.executeJavaScript('console.log(document.activeElement)')
+            mb.window.webContents.executeJavaScript('console.log(document.getElementById("' + arg + '"))')
+            mb.window.webContents.executeJavaScript('console.log(document.getElementById("' + arg + '") === document.activeElement)')
         })
 
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
@@ -711,8 +742,14 @@ function getIssues(url = 'https://gitlab.com/api/v4/issues?scope=assigned_to_me&
         return result.json()
     }).then(issues => {
         for (let issue of issues) {
+            let timestamp
+            if(activeIssuesSortOption == 'updated_at') {
+                timestamp = 'Updated ' + timeSince(new Date(issue.updated_at)) + ' ago'
+            }else if(activeIssuesSortOption == 'created_at') {
+                timestamp = 'Created ' + timeSince(new Date(issue.created_at)) + ' ago'
+            }
             issuesString += '<li class=\\"history-entry\\">'
-            issuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(issue.updated_at)) + ' ago &middot; <a href=\\"' + issue.web_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + issue.references.full.split('#')[0] + '</a></span></div></li>'
+            issuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">' + timestamp + ' &middot; <a href=\\"' + issue.web_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + issue.references.full.split('#')[0] + '</a></span></div></li>'
         }
         issuesString += '</ul>' + displayPagination(keysetLinks, type)
         mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + issuesString + '"')
@@ -1159,6 +1196,7 @@ function changeTheme(option = 'light', manual = false) {
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--placeholder-text-color", "#6e7781")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--panel-background-color", "#fff")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--hover-color", "#f6f8fa")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--dropdown-hover-color", "#f0f2f4")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--border-color", "#d0d7de")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--lighter-background-color", "#d8dee4")');
     } else if (option == 'dark') {
@@ -1168,6 +1206,7 @@ function changeTheme(option = 'light', manual = false) {
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--placeholder-text-color", "rgba(255, 255, 255, .7)")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--panel-background-color", "#0d1117")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--hover-color", "#161b22")');
+        mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--dropdown-hover-color", "#1f242c")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--border-color", "#30363d")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--lighter-background-color", "#21262d")');
     }

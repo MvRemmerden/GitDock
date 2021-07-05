@@ -5,6 +5,9 @@
     --placeholder-text-color: rgba(255, 255, 255, .7);
     --panel-background-color: #0d1117;
     --hover-color: #161b22;
+    --dropdown-hover-color: #1f242c;
+    --dropdown-active-color: #1f6feb;
+    --dropdown-active-text-color: #c9d1d9;
     --border-color: #30363d;
     --lighter-background-color: #21262d;
     --disabled-background-color: #484f58;
@@ -180,7 +183,7 @@ a:hover {
 }
 .headline .custom-select-active {
     cursor: pointer;
-    background-color: var(--hover-color);
+    background-color: var(--background-color);
     border: 1px solid var(--border-color);
     border-radius: 2rem;
     padding: 0.25rem 2rem 0.25rem 0.75rem;
@@ -188,13 +191,20 @@ a:hover {
     position: relative;
     color: var(--text-color);
 }
+.headline .custom-select-active.changed {
+    background-color: var(--dropdown-active-color);
+    color: white
+}
+.headline .custom-select-active.changed:after {
+    border-top-color: white;
+}
 .headline .custom-select-active:after {
     content:'';
     width: 0; 
     height: 0; 
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
-    border-top: 5px solid white;
+    border-top: 5px solid var(--text-color);
     position:absolute;
     right:0.75rem;
     top:calc(50% - 2.5px);
@@ -221,7 +231,7 @@ a:hover {
     top: 0.5rem;
     width: 115%;
     pointer-events:none;
-    z-index:1;
+    z-index:99;
     box-sizing:border-box;
     overflow:hidden;
     white-space:nowrap;
@@ -239,10 +249,16 @@ a:hover {
 .headline .custom-select .custom-option-label:hover {
     cursor: pointer;
 }
+.headline .custom-select:focus {
+    pointer-events: none;
+}
 .headline .custom-select:focus .custom-option-label {
     position:relative;
     pointer-events:all;
     display: flex;
+}
+.headline .custom-select:focus .custom-option-label:hover {
+    background-color: var(--dropdown-hover-color);
 }
 .headline .custom-select input[type=radio] {
     opacity:0;
@@ -252,8 +268,8 @@ a:hover {
 .headline .custom-select input[type=radio]:checked + label:after {
     content:'✓';
     position:absolute;
-    right:10px;
-    top:8px;
+    right: 0.625rem;
+    top: 0.625rem;
     pointer-events:none;
     z-index:3;
     color: var(--text-color);

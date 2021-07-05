@@ -16,10 +16,11 @@ function goToOverview() {
     document.body.style.overflow = 'auto'
 }
 
-function switchIssues(value, type) {
+function switchIssues(value, type, text) {
     let object = {
         label: value,
-        type: type
+        type: type,
+        text: text
     }
     window.electron.switchIssues(object)
 }
@@ -79,4 +80,8 @@ function deleteProject(value) {
 
 function changeTheme(value) {
     window.electron.changeTheme(value)
+}
+
+function isInFocus(value) {
+    window.electron.isInFocus(value)
 }
