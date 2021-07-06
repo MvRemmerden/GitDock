@@ -216,7 +216,7 @@ a:hover {
     flex-direction: column;
     position:relative;
     height: 1.75rem;
-    margin-right: 1rem;
+    margin-right: 0.75rem;
 }
 .headline .custom-options-wrapper {
     position: absolute;
@@ -569,7 +569,7 @@ a:hover {
     color: var(--disabled-background-color);
     cursor: not-allowed;
 }
-#detail-view {
+.detail-view {
     position: fixed;
     width: 100vw;
     height: 100vh;
@@ -581,7 +581,7 @@ a:hover {
     background-color: var(--background-color);
     transition: 250ms ease-in;
 }
-#detail-view #detail-header {
+.detail-view .detail-header {
     display: flex;
     position: sticky;
     top: 0;
@@ -591,39 +591,39 @@ a:hover {
     padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--border-color);
 }
-#detail-view #detail-header svg {
+.detail-view .detail-header svg {
     width: 1rem;
     margin-right: 0.125rem;
 }
-#detail-view #detail-header #detail-header-content {
+.detail-view .detail-header .detail-header-content {
     display: flex;
     align-items: center;
     line-height: 1;
     width: 100%;
     justify-content: space-between;
 }
-#detail-view #detail-header #detail-header-content.empty {
+.detail-view .detail-header .detail-header-content.empty {
     width: 5rem;
     height: 1rem;
     background-color: var(--border-color);
 }
-#detail-view #detail-header #project-detail-information {
+.detail-view .detail-header #project-detail-information {
     display: flex;
     align-items: center;
     margin: 0 0.375rem;
 }
-#detail-view #detail-header #project-detail-information img {
+.detail-view .detail-header #project-detail-information img {
     width: 1.5rem;
     height: 1.5rem;
     background-color: var(--border-color);
     border-radius: 1rem;
     margin-right: 0.75rem;
 }
-#detail-view #detail-header #project-detail-information div {
+.detail-view .detail-header #project-detail-information div {
     display: flex;
     flex-direction: column;
 }
-#detail-view #detail-header #project-detail-name-avatar {
+.detail-view .detail-header #project-detail-name-avatar {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -633,39 +633,39 @@ a:hover {
     border-radius: 1.5rem;
     margin-right: 0.75rem;
 }
-#detail-view #detail-header .project-name {
+.detail-view .detail-header .project-name {
     margin-right: 0.5rem;
     font-size: 1rem;
     font-weight: bold;
     color: var(--text-color);
 }
-#detail-view #detail-header .project-namespace {
+.detail-view .detail-header .project-namespace {
     font-size: 0.825rem;
     color: var(--muted-text-color);
     margin-top: 0.175rem;
 }
-#detail-view #detail-header #project-detail-link {
+.detail-view .detail-header #project-detail-link {
     margin: -0.5rem;
 }
-#detail-view #detail-header #project-detail-link a {
+.detail-view .detail-header #project-detail-link a {
     padding: 0.5rem;
     display: flex;
     align-items: center;
     cursor: pointer;
 }
-#detail-view #detail-header #project-detail-link a svg {
+.detail-view .detail-header #project-detail-link a svg {
     cursor: pointer;
 }
-#detail-view #detail-header #project-detail-link a:hover {
+.detail-view .detail-header #project-detail-link a:hover {
     background-color: var(--border-color);
     border-radius: 0.375rem;
 }
-#detail-view #detail-headline, #detail-view #detail-content {
+.detail-view .detail-headline, .detail-view .detail-content {
     padding: 0 1.5rem;
     width: 100%;
     box-sizing: border-box;
 }
-#detail-view .headline {
+.detail-view .headline {
     margin: 1rem 0 0.5rem;
     display: inline-block;
     justify-content: flex-start;
@@ -678,12 +678,12 @@ a:hover {
     font-size: 0.875rem;
     color: var(--muted-text-color);
 }
-#detail-view .headline .name {
+.detail-view .headline .name {
     font-size: 1.25rem;
     font-weight: bold;
     color: var(--text-color);
 }
-#detail-view #detail-headline input[type=text] {
+.detail-view .detail-headline input[type=text] {
     border: none;
     font-size: 0.875rem;
     padding: 0.5rem 0.75rem;
@@ -693,41 +693,41 @@ a:hover {
     width: 100%;
     box-sizing: border-box;
 }
-#detail-view #detail-headline input[type=text]:focus {
+.detail-view .detail-headline input[type=text]:focus {
     border: none;
     outline: none;
 }
-#detail-view #detail-headline input[type=text]::placeholder {
+.detail-view .detail-headline input[type=text]::placeholder {
     color: var(--placeholder-text-color);
 }
-#detail-view #detail-content {
+.detail-view .detail-content {
     margin-bottom: 1.5rem;
 }
-#detail-view #detail-content .date {
+.detail-view .detail-content .date {
     margin: 1.5rem 0 1rem;
     font-size: 1.125rem;
     font-weight: bold;
 }
-#detail-view #detail-content .date:first-of-type {
+.detail-view .detail-content .date:first-of-type {
     margin-top: 0.5rem;
 }
-#detail-view #detail-content .list-container {
+.detail-view .detail-content .list-container {
     margin-top: 0;
 }
-#detail-view #detail-content .list-container.history-list-container {
+.detail-view .detail-content .list-container.history-list-container {
     margin-top: 0;
 }
-#detail-view #detail-content .zero {
+.detail-view .detail-content .zero {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 3rem;
 }
-#detail-view #detail-content #pagination {
+.detail-view .detail-content #pagination {
     display: flex;
     justify-content: space-between;
 }
-#detail-view #detail-content #pagination button {
+.detail-view .detail-content #pagination button {
     background-color: var(--panel-background-color);
     border: 1px solid var(--border-color);
     color: var(--text-color);
@@ -737,30 +737,30 @@ a:hover {
     display: flex;
     align-items: center;
 }
-#detail-view #detail-content #pagination button:hover {
+.detail-view .detail-content #pagination button:hover {
     cursor: pointer;
     background-color: var(--hover-color);
 }
-#detail-view #detail-content #pagination button svg {
+.detail-view .detail-content #pagination button svg {
     width: 0.875rem;
     margin-right: 0.25rem;
 }
-#detail-view #detail-content #pagination button.next {
+.detail-view .detail-content #pagination button.next {
     padding: 0.5rem 0.5rem 0.5rem 0.75rem;
 }
-#detail-view #detail-content #pagination button.next svg {
+.detail-view .detail-content #pagination button.next svg {
     margin-right: 0;
     margin-left: 0.25rem;
 }
-#detail-view #detail-content #project-pipeline {
+.detail-view .detail-content #project-pipeline {
     margin-bottom: 1rem;
 }
-#detail-view #detail-content #theme-selection {
+.detail-view .detail-content #theme-selection {
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
 }
-#detail-view #detail-content #theme-selection .theme-option {
+.detail-view .detail-content #theme-selection .theme-option {
     padding: 0.75rem 1.5rem 0.75rem 1.25rem;
     margin-right: 1rem;
     border-radius: 0.375rem;
@@ -769,10 +769,10 @@ a:hover {
     align-items: center;
     box-sizing: border-box;
 }
-#detail-view #detail-content #theme-selection .theme-option.active {
+.detail-view .detail-content #theme-selection .theme-option.active {
     border: 2px solid #1f6feb!important;
 }
-#detail-view #detail-content #theme-selection .theme-option .indicator {
+.detail-view .detail-content #theme-selection .theme-option .indicator {
     width: 1rem;
     height: 1rem;
     border: 1px solid #30363d;
@@ -783,23 +783,23 @@ a:hover {
     background-position: center;
     background-repeat: no-repeat;
 }
-#detail-view #detail-content #theme-selection .theme-option#light-mode {
+.detail-view .detail-content #theme-selection .theme-option#light-mode {
     background-color: #fff;
     color: #24292f;
     border: 1px solid #d0d7de;
 }
-#detail-view #detail-content #theme-selection .theme-option#light-mode .indicator {
+.detail-view .detail-content #theme-selection .theme-option#light-mode .indicator {
     border-color: #d0d7de;
 }
-#detail-view #detail-content #theme-selection .theme-option#dark-mode {
+.detail-view .detail-content #theme-selection .theme-option#dark-mode {
     background-color: #090c10;
     color: #c9d1d9;
     border: 1px solid #30363d;
 }
-#detail-view #detail-content #theme-selection .theme-option#dark-mode .indicator {
+.detail-view .detail-content #theme-selection .theme-option#dark-mode .indicator {
     border-color: #30363d;
 }
-#detail-view #detail-content #theme-selection .theme-option.active .indicator {
+.detail-view .detail-content #theme-selection .theme-option.active .indicator {
     background-color: #1f6feb;
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16"><path fill="white" fill-rule="evenodd" d="M13.7071,4.29289 C14.0976,4.68342 14.0976,5.31658 13.7071,5.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 L3.29289,8.70711 C2.90237,8.31658 2.90237,7.68342 3.29289,7.29289 C3.68342,6.90237 4.31658,6.90237 4.70711,7.29289 L7,9.58579 L12.2929,4.29289 C12.6834,3.90237 13.3166,3.90237 13.7071,4.29289 Z"/></svg>');
 }
