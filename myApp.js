@@ -152,6 +152,13 @@ if (access_token && user_id && username) {
             }
         })
 
+
+        ipcMain.on('sub-detail-page', (event, arg) => {
+            mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").innerHTML = ""')
+            mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-content").innerHTML = "Test"')
+            console.log(arg)
+        })
+
         ipcMain.on('go-to-overview', (event, arg) => {
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").classList.remove("with-overflow")')
             mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.add("empty")')
@@ -924,6 +931,7 @@ function displayProjectPage(project) {
 
 function getProjectIssues(project) {
     let projectIssuesString = '<ul class=\\"list-container\\">'
+    let projectString = "'" + escapeHtml(JSON.stringify(project)) + "'"
     let nextPage
     fetch('https://gitlab.com/api/v4/projects/' + project.id + '/issues?state=opened&order_by=created_at&per_page=3&access_token=' + access_token).then(result => {
         nextPage = result.headers.get('x-next-page')
@@ -934,7 +942,8 @@ function getProjectIssues(project) {
             projectIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(issue.created_at)) + ' ago &middot; ' + issue.author.name + '</span></div></li>'
         }
         if (nextPage) {
-            projectIssuesString += '<li class=\\"more-link\\"><a>View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
+            let issues = "'Issues'"
+            projectIssuesString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + issues + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
         }
         projectIssuesString += '</ul>'
         mb.window.webContents.executeJavaScript('document.getElementById("project-recent-issues").innerHTML = "' + projectIssuesString + '"')

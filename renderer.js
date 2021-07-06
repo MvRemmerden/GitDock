@@ -8,6 +8,20 @@ function goToDetail(page, object) {
     window.electron.goToDetail(value)
 }
 
+function goBackToDetail() {
+    document.getElementById('sub-detail-view').style.left = '100vw'
+}
+
+function goToSubDetail(page, object) {
+    let value = {
+        page: page,
+        object: object
+    }
+    document.getElementById('sub-detail-view').style.left = 0
+    document.body.style.overflow = 'hidden'
+    window.electron.goToSubDetail(value)
+}
+
 function goToOverview() {
     window.electron.goToOverview()
     document.getElementById('detail-view').style.left = '100vw'
