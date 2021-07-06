@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('electron', {
   goToDetail: (value) => ipcRenderer.send('detail-page', value),
   goToSubDetail: (value) => ipcRenderer.send('sub-detail-page', value),
+  goBackToDetail: () => ipcRenderer.send('back-to-detail-page'),
   goToOverview: () => ipcRenderer.send('go-to-overview'),
   switchIssues: (value) => ipcRenderer.send('switch-issues', value),
   switchMRs: (value) => ipcRenderer.send('switch-mrs', value),

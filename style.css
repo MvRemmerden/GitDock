@@ -590,6 +590,7 @@ a:hover {
     cursor: pointer;
     padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--border-color);
+    z-index: 999;
 }
 .detail-view .detail-header svg {
     width: 1rem;

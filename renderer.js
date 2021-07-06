@@ -10,15 +10,15 @@ function goToDetail(page, object) {
 
 function goBackToDetail() {
     document.getElementById('sub-detail-view').style.left = '100vw'
+    window.electron.goBackToDetail()
 }
 
-function goToSubDetail(page, object) {
+function goToSubDetail(page, project) {
     let value = {
         page: page,
-        object: object
+        project: project
     }
     document.getElementById('sub-detail-view').style.left = 0
-    document.body.style.overflow = 'hidden'
     window.electron.goToSubDetail(value)
 }
 
