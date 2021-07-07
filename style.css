@@ -29,6 +29,28 @@ a {
 a:hover {
     text-decoration: underline;
 }
+#login-page {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 1.5rem 1.5rem;
+}
+#login-page svg {
+    max-width: 100%;
+}
+#login-page #instance-checkbox ~ #instance-details {
+    display: none;
+    margin-top: 1rem;
+}
+#login-page #instance-checkbox:checked ~ #instance-details {
+    display: flex;
+    flex-direction: column;
+}
+#login-page #instance-checkbox:checked ~ #instance-details .instance-details-input {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+}
 .icon {
     fill: var(--text-color)
 }

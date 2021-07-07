@@ -10,6 +10,7 @@ process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 let access_token = store.get('access_token')
 let user_id = store.get('user_id')
 let username = store.get('username')
+let host = store.get('host') || 'https://gitlab.freedesktop.org'
 let recentlyVisitedString = ''
 let currentProject
 let moreRecentlyVisitedArray = []
@@ -67,8 +68,8 @@ const mb = menubar({
     icon: __dirname + '/assets/gitlab.png',
     preloadWindow: true,
     browserWindow: {
-        width: 1000,
-        height: 650,
+        width: 550,
+        height: 700,
         webPreferences: {
             preload: __dirname + '/preload.js',
             nodeIntegration: false,
@@ -78,17 +79,285 @@ const mb = menubar({
     }
 });
 
+ipcMain.on('detail-page', (event, arg) => {
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = ""')
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
+    if (arg.page == 'Project') {
+        mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<div id=\\"project-commits-pagination\\"><span class=\\"name\\">Commits</span><div id=\\"commits-pagination\\"><span id=\\"commits-count\\" class=\\"empty\\"></span><button onclick=\\"changeCommit(false)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\" /></svg></button><button onclick=\\"changeCommit(true)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg></button></div></div>"')
+        setupEmptyProjectPage()
+        let project = JSON.parse(arg.object)
+        currentProject = project
+        displayProjectPage(project)
+        getProjectCommits(project)
+        getProjectIssues(project)
+        getProjectMRs(project)
+    } else {
+        mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
+        mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "' + arg.page + '"')
+        if (arg.page == 'Issues') {
+            let issuesQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchIssues(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchIssues(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label></div></div>'
+            let issuesStateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-state-active\\">Open</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchIssues(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchIssues(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div></div>'
+            let issuesSortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-sort-active\\">Sort by recently created</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchIssues(' + recentlyCreatedLabel + ', ' + sort + ', ' + recentlyCreatedText + ')\\" checked><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchIssues(' + recentlyUpdatedLabel + ', ' + sort + ', ' + recentlyUpdatedText + ')\\"><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label></div></div>'
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"filter-sort\\">' + issuesQuerySelect + issuesStateSelect + issuesSortSelect + '</div>"')
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").classList.add("with-overflow")')
+            displaySkeleton(numberOfIssues)
+            getIssues()
+        } else if (arg.page == 'Merge requests') {
+            let mrsQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchMRs(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchMRs(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + reviewedLabel + '\\" onchange=\\"switchMRs(' + reviewedLabel + ', ' + query + ', ' + reviewedText + ')\\"><label for=\\"' + reviewedLabel + '\\" class=\\"custom-option-label\\">Review requests</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvedLabel + '\\" onchange=\\"switchMRs(' + approvedLabel + ', ' + query + ', ' + approvedText + ')\\"><label for=\\"' + approvedLabel + '\\" class=\\"custom-option-label\\">Approved</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvalLabel + '\\" onchange=\\"switchMRs(' + approvalLabel + ', ' + query + ', ' + approvalText + ')\\"><label for=\\"' + approvalLabel + '\\" class=\\"custom-option-label\\">Approval rule</label></div></div>'
+            let mrsStateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-state-active\\">Open</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchMRs(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + mergedLabel + '\\" onchange=\\"switchMRs(' + mergedLabel + ', ' + state + ', ' + mergedText + ')\\"><label for=\\"' + mergedLabel + '\\" class=\\"custom-option-label\\">Merged</label><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchMRs(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div></div>'
+            let mrsSortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-sort-active\\">Sort by recently created</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchMRs(' + recentlyCreatedLabel + ', ' + sort + ', ' + recentlyCreatedText + ')\\" checked><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label><input class=\\"custom-option\\" name=\\"mrs-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchMRs(' + recentlyUpdatedLabel + ', ' + sort + ', ' + recentlyUpdatedText + ')\\"><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label></div></div>'
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"filter-sort\\">' + mrsQuerySelect + mrsStateSelect + mrsSortSelect + '</div>"')
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").classList.add("with-overflow")')
+            displaySkeleton(numberOfMRs)
+            getMRs()
+        } else if (arg.page == 'To-Do list') {
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
+            displaySkeleton(numberOfTodos)
+            getTodos()
+        } else if (arg.page == 'Recently viewed') {
+            displaySkeleton(numberOfRecentlyVisited)
+            getMoreRecentlyVisited()
+        } else if (arg.page == 'Comments') {
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
+            displaySkeleton(numberOfComments)
+            getMoreRecentComments()
+        }
+    }
+})
+
+
+ipcMain.on('sub-detail-page', (event, arg) => {
+    isOnSubPage = true
+    activeIssuesQueryOption = 'all'
+    activeMRsQueryOption = 'all'
+    let project = JSON.parse(arg.project)
+    mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").innerHTML = ""')
+    mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-content").innerHTML = ""')
+    mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-header-content").classList.remove("empty")')
+    mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-header-content").innerHTML = "' + arg.page + '"')
+    if (arg.page == 'Issues') {
+        let issuesQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-query-active\\">All</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + allLabel + '\\" onchange=\\"switchIssues(' + allLabel + ', ' + query + ', ' + allText + ')\\" checked><label for=\\"' + allLabel + '\\" class=\\"custom-option-label\\">All</label><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchIssues(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\"><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchIssues(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label></div></div>'
+        let issuesStateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-state-active\\">Open</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchIssues(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchIssues(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div></div>'
+        let issuesSortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-sort-active\\">Sort by recently created</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchIssues(' + recentlyCreatedLabel + ', ' + sort + ', ' + recentlyCreatedText + ')\\" checked><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchIssues(' + recentlyUpdatedLabel + ', ' + sort + ', ' + recentlyUpdatedText + ')\\"><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label></div></div>'
+        mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"filter-sort\\">' + issuesQuerySelect + issuesStateSelect + issuesSortSelect + '</div>"')
+        mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").classList.add("with-overflow")')
+        displaySkeleton(numberOfIssues, undefined, 'sub-detail-content')
+        getIssues(host + 'api/v4/projects/' + project.id + '/issues?scope=all&state=opened&order_by=created_at&per_page=' + numberOfIssues + '&access_token=' + access_token, 'sub-detail-content')
+    } else if (arg.page == 'Merge Requests') {
+        let mrsQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-query-active\\">All</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + allLabel + '\\" onchange=\\"switchMRs(' + allLabel + ', ' + query + ', ' + allText + ')\\" checked><label for=\\"' + allLabel + '\\" class=\\"custom-option-label\\">All</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchMRs(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\"><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchMRs(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + reviewedLabel + '\\" onchange=\\"switchMRs(' + reviewedLabel + ', ' + query + ', ' + reviewedText + ')\\"><label for=\\"' + reviewedLabel + '\\" class=\\"custom-option-label\\">Review requests</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvedLabel + '\\" onchange=\\"switchMRs(' + approvedLabel + ', ' + query + ', ' + approvedText + ')\\"><label for=\\"' + approvedLabel + '\\" class=\\"custom-option-label\\">Approved</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvalLabel + '\\" onchange=\\"switchMRs(' + approvalLabel + ', ' + query + ', ' + approvalText + ')\\"><label for=\\"' + approvalLabel + '\\" class=\\"custom-option-label\\">Approval rule</label></div></div>'
+        let mrsStateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-state-active\\">Open</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchMRs(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + mergedLabel + '\\" onchange=\\"switchMRs(' + mergedLabel + ', ' + state + ', ' + mergedText + ')\\"><label for=\\"' + mergedLabel + '\\" class=\\"custom-option-label\\">Merged</label><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchMRs(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div></div>'
+        let mrsSortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-sort-active\\">Sort by recently created</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchMRs(' + recentlyCreatedLabel + ', ' + sort + ', ' + recentlyCreatedText + ')\\"><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label><input class=\\"custom-option\\" name=\\"mrs-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchMRs(' + recentlyUpdatedLabel + ', ' + sort + ', ' + recentlyUpdatedText + ')\\" checked><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label></div></div>'
+        mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"filter-sort\\">' + mrsQuerySelect + mrsStateSelect + mrsSortSelect + '</div>"')
+        mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").classList.add("with-overflow")')
+        displaySkeleton(numberOfMRs, undefined, 'sub-detail-content')
+        getMRs(host + '/api/v4/projects/' + project.id + '/merge_requests?scope=all&state=opened&order_by=created_at&per_page=' + numberOfMRs + '&access_token=' + access_token, 'sub-detail-content')
+    }
+})
+
+ipcMain.on('back-to-detail-page', (event, arg) => {
+    isOnSubPage = false
+    activeIssuesQueryOption = 'assigned_to_me'
+    activeMRsQueryOption = 'assigned_to_me'
+})
+
+ipcMain.on('go-to-overview', (event, arg) => {
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").classList.remove("with-overflow")')
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.add("empty")')
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = ""')
+    activeIssuesQueryOption = 'assigned_to_me'
+    activeIssuesStateOption = 'opened'
+    activeIssuesSortOption = 'created_at'
+    activeMRsQueryOption = 'assigned_to_me'
+    activeMRsStateOption = 'opened'
+    activeMRsSortOption = 'created_at'
+    moreRecentlyVisitedArray = []
+    recentProjectCommits = []
+    delete currentProjectCommit
+    delete currentProject
+})
+
+ipcMain.on('switch-issues', (event, arg) => {
+    let url = host + '/api/v4/'
+    let id = 'detail-content'
+    if (isOnSubPage && currentProject) {
+        url += 'projects/' + currentProject.id + '/'
+        id = 'sub-detail-content'
+    }
+    if (arg.type == 'query' && arg.label != activeIssuesQueryOption) {
+        activeIssuesQueryOption = arg.label
+        displaySkeleton(numberOfIssues, undefined, id)
+        mb.window.webContents.executeJavaScript('document.getElementById("issues-query-active").innerHTML = "' + arg.text + '"')
+        if ((isOnSubPage == false && arg.label != 'assigned_to_me') || (isOnSubPage == true && arg.label != 'all')) {
+            mb.window.webContents.executeJavaScript('document.getElementById("issues-query-active").classList.add("changed")')
+        } else {
+            mb.window.webContents.executeJavaScript('document.getElementById("issues-query-active").classList.remove("changed")')
+        }
+    } else if (arg.type == 'state' && arg.label != activeIssuesStateOption) {
+        activeIssuesStateOption = arg.label
+        displaySkeleton(numberOfIssues, undefined, id)
+        mb.window.webContents.executeJavaScript('document.getElementById("issues-state-active").innerHTML = "' + arg.text + '"')
+        if (arg.label != 'opened') {
+            mb.window.webContents.executeJavaScript('document.getElementById("issues-state-active").classList.add("changed")')
+        } else {
+            mb.window.webContents.executeJavaScript('document.getElementById("issues-state-active").classList.remove("changed")')
+        }
+    } else if (arg.type == 'sort' && arg.label != activeIssuesSortOption) {
+        activeIssuesSortOption = arg.label
+        displaySkeleton(numberOfIssues, undefined, id)
+        mb.window.webContents.executeJavaScript('document.getElementById("issues-sort-active").innerHTML = "' + arg.text + '"')
+        if (arg.label != 'created_at') {
+            mb.window.webContents.executeJavaScript('document.getElementById("issues-sort-active").classList.add("changed")')
+        } else {
+            mb.window.webContents.executeJavaScript('document.getElementById("issues-sort-active").classList.remove("changed")')
+        }
+    }
+    url += 'issues?scope=' + activeIssuesQueryOption + '&state=' + activeIssuesStateOption + '&order_by=' + activeIssuesSortOption + '&per_page=' + numberOfIssues + '&access_token=' + access_token
+    getIssues(url, id)
+})
+
+ipcMain.on('switch-mrs', (event, arg) => {
+    let url = host + '/api/v4/'
+    let id = 'detail-content'
+    if (isOnSubPage && currentProject) {
+        url += 'projects/' + currentProject.id + '/'
+        id = 'sub-detail-content'
+    }
+    if (arg.type == 'query' && arg.label != activeMRsQueryOption) {
+        activeMRsQueryOption = arg.label
+        displaySkeleton(numberOfMRs, undefined, id)
+        mb.window.webContents.executeJavaScript('document.getElementById("mrs-query-active").innerHTML = "' + arg.text + '"')
+        if (arg.label != 'all') {
+            mb.window.webContents.executeJavaScript('document.getElementById("mrs-query-active").classList.add("changed")')
+        } else {
+            mb.window.webContents.executeJavaScript('document.getElementById("mrs-query-active").classList.remove("changed")')
+        }
+    } if (arg.type == 'state' && arg.label != activeMRsStateOption) {
+        activeMRsStateOption = arg.label
+        displaySkeleton(numberOfMRs, undefined, id)
+        mb.window.webContents.executeJavaScript('document.getElementById("mrs-state-active").innerHTML = "' + arg.text + '"')
+        if (arg.label != 'opened') {
+            mb.window.webContents.executeJavaScript('document.getElementById("mrs-state-active").classList.add("changed")')
+        } else {
+            mb.window.webContents.executeJavaScript('document.getElementById("mrs-state-active").classList.remove("changed")')
+        }
+    } else if (arg.type == 'sort' && arg.label != activeMRsSortOption) {
+        activeMRsSortOption = arg.label
+        displaySkeleton(numberOfMRs, undefined, id)
+        mb.window.webContents.executeJavaScript('document.getElementById("mrs-sort-active").innerHTML = "' + arg.text + '"')
+        if (arg.label != 'created_at') {
+            mb.window.webContents.executeJavaScript('document.getElementById("mrs-sort-active").classList.add("changed")')
+        } else {
+            mb.window.webContents.executeJavaScript('document.getElementById("mrs-sort-active").classList.remove("changed")')
+        }
+    }
+    url += 'merge_requests?scope='
+    if (activeMRsQueryOption == 'assigned_to_me' || activeMRsQueryOption == 'created_by_me') {
+        url += activeMRsQueryOption
+    } else if (activeMRsQueryOption == 'approved_by_me') {
+        url += 'all&approved_by_ids[]=' + user_id
+    } else if (activeMRsQueryOption == 'review_requests_for_me') {
+        url += 'all&reviewer_id=' + user_id
+    } else if (activeMRsQueryOption == 'approval_rule_for_me') {
+        url += 'all&approver_ids[]=' + user_id
+    }
+    url += '&state=' + activeMRsStateOption + '&order_by=' + activeMRsSortOption + '&per_page=' + numberOfMRs + '&access_token=' + access_token
+    getMRs(url, id)
+})
+
+ipcMain.on('switch-page', (event, arg) => {
+    let id
+    if (isOnSubPage) {
+        id = 'sub-detail-content'
+    } else {
+        id = 'detail-content'
+    }
+    if (arg.type == 'Todos') {
+        displaySkeleton(numberOfTodos, true)
+        getTodos(arg.url)
+    } else if (arg.type == 'Issues') {
+        displaySkeleton(numberOfIssues, true, id)
+        getIssues(arg.url, id)
+    } else if (arg.type == 'MRs') {
+        displaySkeleton(numberOfMRs, true, id)
+        getMRs(arg.url, id)
+    } else if (arg.type == 'Comments') {
+        displaySkeleton(numberOfComments, true)
+        getMoreRecentComments(arg.url)
+    }
+})
+
+ipcMain.on('search-recent', (event, arg) => {
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
+    searchRecentlyVisited(arg)
+})
+
+ipcMain.on('change-commit', (event, arg) => {
+    mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<div class=\\"commit empty\\"><div id=\\"project-name\\"></div><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div></div>"')
+    let nextCommit = changeCommit(arg, recentCommits, currentCommit)
+    currentCommit = nextCommit
+    getCommitDetails(nextCommit.project_id, nextCommit.push_data.commit_to, nextCommit.index)
+})
+
+ipcMain.on('change-project-commit', (event, arg) => {
+    mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = "<div class=\\"commit empty\\"><div id=\\"project-name\\"></div><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div></div>"')
+    let nextCommit = changeCommit(arg, recentProjectCommits, currentProjectCommit)
+    currentProjectCommit = nextCommit
+    getProjectCommitDetails(currentProject.id, nextCommit.id, nextCommit.index)
+})
+
+ipcMain.on('add-bookmark', (event, arg) => {
+    addBookmark(arg)
+})
+
+ipcMain.on('add-project', (event, arg) => {
+    addProject(arg)
+})
+
+ipcMain.on('start-bookmark-dialog', (event, arg) => {
+    startBookmarkDialog()
+})
+
+ipcMain.on('start-project-dialog', (event, arg) => {
+    startProjectDialog()
+})
+
+ipcMain.on('delete-bookmark', (event, arg) => {
+    let bookmarks = store.get('bookmarks')
+    let newBookmarks = bookmarks.filter(bookmark => {
+        return bookmark.url != arg
+    })
+    store.set('bookmarks', newBookmarks)
+    getBookmarks()
+})
+
+ipcMain.on('delete-project', (event, arg) => {
+    let projects = store.get('favorite-projects')
+    let newProjects = projects.filter(project => {
+        return project.id != arg
+    })
+    store.set('favorite-projects', newProjects)
+    //TODO Implement better way to refresh view after deleting project
+    displayUsersProjects(store.get('favorite-projects'))
+    openSettingsPage()
+})
+
+ipcMain.on('change-theme', (event, arg) => {
+    changeTheme(arg, true)
+})
+
+ipcMain.on('start-login', (event, arg) => {
+    startLogin()
+})
+
+ipcMain.on('start-manual-login', (event, arg) => {
+    saveUser(arg.access_token, arg.host) 
+})
+
 if (access_token && user_id && username) {
     setupSecondaryMenu()
     mb.on('after-create-window', () => {
         mb.showWindow()
         changeTheme(store.get('theme'), false)
-
-        /*store.delete('user_id')
-        store.delete('username')
-        store.delete('access_token')
-        mb.window.webContents.session.clearCache()
-        mb.window.webContents.session.clearStorageData()*/
 
         //Preloading content
         getUser()
@@ -109,276 +378,6 @@ if (access_token && user_id && username) {
         }, 10000);
 
         mb.window.webContents.openDevTools()
-        ipcMain.on('detail-page', (event, arg) => {
-            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = ""')
-            mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
-            if (arg.page == 'Project') {
-                mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<div id=\\"project-commits-pagination\\"><span class=\\"name\\">Commits</span><div id=\\"commits-pagination\\"><span id=\\"commits-count\\" class=\\"empty\\"></span><button onclick=\\"changeCommit(false)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\" /></svg></button><button onclick=\\"changeCommit(true)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg></button></div></div>"')
-                setupEmptyProjectPage()
-                let project = JSON.parse(arg.object)
-                currentProject = project
-                displayProjectPage(project)
-                getProjectCommits(project)
-                getProjectIssues(project)
-                getProjectMRs(project)
-            } else {
-                mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
-                mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "' + arg.page + '"')
-                if (arg.page == 'Issues') {
-                    let issuesQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchIssues(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchIssues(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label></div></div>'
-                    let issuesStateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-state-active\\">Open</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchIssues(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchIssues(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div></div>'
-                    let issuesSortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-sort-active\\">Sort by recently created</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchIssues(' + recentlyCreatedLabel + ', ' + sort + ', ' + recentlyCreatedText + ')\\" checked><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchIssues(' + recentlyUpdatedLabel + ', ' + sort + ', ' + recentlyUpdatedText + ')\\"><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label></div></div>'
-                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"filter-sort\\">' + issuesQuerySelect + issuesStateSelect + issuesSortSelect + '</div>"')
-                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").classList.add("with-overflow")')
-                    displaySkeleton(numberOfIssues)
-                    getIssues()
-                } else if (arg.page == 'Merge requests') {
-                    let mrsQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchMRs(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchMRs(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + reviewedLabel + '\\" onchange=\\"switchMRs(' + reviewedLabel + ', ' + query + ', ' + reviewedText + ')\\"><label for=\\"' + reviewedLabel + '\\" class=\\"custom-option-label\\">Review requests</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvedLabel + '\\" onchange=\\"switchMRs(' + approvedLabel + ', ' + query + ', ' + approvedText + ')\\"><label for=\\"' + approvedLabel + '\\" class=\\"custom-option-label\\">Approved</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvalLabel + '\\" onchange=\\"switchMRs(' + approvalLabel + ', ' + query + ', ' + approvalText + ')\\"><label for=\\"' + approvalLabel + '\\" class=\\"custom-option-label\\">Approval rule</label></div></div>'
-                    let mrsStateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-state-active\\">Open</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchMRs(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + mergedLabel + '\\" onchange=\\"switchMRs(' + mergedLabel + ', ' + state + ', ' + mergedText + ')\\"><label for=\\"' + mergedLabel + '\\" class=\\"custom-option-label\\">Merged</label><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchMRs(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div></div>'
-                    let mrsSortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-sort-active\\">Sort by recently created</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchMRs(' + recentlyCreatedLabel + ', ' + sort + ', ' + recentlyCreatedText + ')\\" checked><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label><input class=\\"custom-option\\" name=\\"mrs-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchMRs(' + recentlyUpdatedLabel + ', ' + sort + ', ' + recentlyUpdatedText + ')\\"><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label></div></div>'
-                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"filter-sort\\">' + mrsQuerySelect + mrsStateSelect + mrsSortSelect + '</div>"')
-                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").classList.add("with-overflow")')
-                    displaySkeleton(numberOfMRs)
-                    getMRs()
-                } else if (arg.page == 'To-Do list') {
-                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
-                    displaySkeleton(numberOfTodos)
-                    getTodos()
-                } else if (arg.page == 'Recently viewed') {
-                    displaySkeleton(numberOfRecentlyVisited)
-                    getMoreRecentlyVisited()
-                } else if (arg.page == 'Comments') {
-                    mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
-                    displaySkeleton(numberOfComments)
-                    getMoreRecentComments()
-                }
-            }
-        })
-
-
-        ipcMain.on('sub-detail-page', (event, arg) => {
-            isOnSubPage = true
-            activeIssuesQueryOption = 'all'
-            activeMRsQueryOption = 'all'
-            let project = JSON.parse(arg.project)
-            mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").innerHTML = ""')
-            mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-content").innerHTML = ""')
-            mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-header-content").classList.remove("empty")')
-            mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-header-content").innerHTML = "' + arg.page + '"')
-            if (arg.page == 'Issues') {
-                let issuesQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-query-active\\">All</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + allLabel + '\\" onchange=\\"switchIssues(' + allLabel + ', ' + query + ', ' + allText + ')\\" checked><label for=\\"' + allLabel + '\\" class=\\"custom-option-label\\">All</label><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchIssues(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\"><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchIssues(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label></div></div>'
-                let issuesStateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-state-active\\">Open</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchIssues(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchIssues(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div></div>'
-                let issuesSortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-sort-active\\">Sort by recently created</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchIssues(' + recentlyCreatedLabel + ', ' + sort + ', ' + recentlyCreatedText + ')\\" checked><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchIssues(' + recentlyUpdatedLabel + ', ' + sort + ', ' + recentlyUpdatedText + ')\\"><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label></div></div>'
-                mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"filter-sort\\">' + issuesQuerySelect + issuesStateSelect + issuesSortSelect + '</div>"')
-                mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").classList.add("with-overflow")')
-                displaySkeleton(numberOfIssues, undefined, 'sub-detail-content')
-                getIssues('https://gitlab.com/api/v4/projects/' + project.id + '/issues?scope=all&state=opened&order_by=created_at&per_page=' + numberOfIssues + '&access_token=' + access_token, 'sub-detail-content')
-            } else if (arg.page == 'Merge Requests') {
-                let mrsQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-query-active\\">All</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + allLabel + '\\" onchange=\\"switchMRs(' + allLabel + ', ' + query + ', ' + allText + ')\\" checked><label for=\\"' + allLabel + '\\" class=\\"custom-option-label\\">All</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchMRs(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\"><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchMRs(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + reviewedLabel + '\\" onchange=\\"switchMRs(' + reviewedLabel + ', ' + query + ', ' + reviewedText + ')\\"><label for=\\"' + reviewedLabel + '\\" class=\\"custom-option-label\\">Review requests</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvedLabel + '\\" onchange=\\"switchMRs(' + approvedLabel + ', ' + query + ', ' + approvedText + ')\\"><label for=\\"' + approvedLabel + '\\" class=\\"custom-option-label\\">Approved</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvalLabel + '\\" onchange=\\"switchMRs(' + approvalLabel + ', ' + query + ', ' + approvalText + ')\\"><label for=\\"' + approvalLabel + '\\" class=\\"custom-option-label\\">Approval rule</label></div></div>'
-                let mrsStateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-state-active\\">Open</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchMRs(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + mergedLabel + '\\" onchange=\\"switchMRs(' + mergedLabel + ', ' + state + ', ' + mergedText + ')\\"><label for=\\"' + mergedLabel + '\\" class=\\"custom-option-label\\">Merged</label><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchMRs(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div></div>'
-                let mrsSortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-sort-active\\">Sort by recently created</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchMRs(' + recentlyCreatedLabel + ', ' + sort + ', ' + recentlyCreatedText + ')\\"><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label><input class=\\"custom-option\\" name=\\"mrs-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchMRs(' + recentlyUpdatedLabel + ', ' + sort + ', ' + recentlyUpdatedText + ')\\" checked><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label></div></div>'
-                mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"filter-sort\\">' + mrsQuerySelect + mrsStateSelect + mrsSortSelect + '</div>"')
-                mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").classList.add("with-overflow")')
-                displaySkeleton(numberOfMRs, undefined, 'sub-detail-content')
-                getMRs('https://gitlab.com/api/v4/projects/' + project.id + '/merge_requests?scope=all&state=opened&order_by=created_at&per_page=' + numberOfMRs + '&access_token=' + access_token, 'sub-detail-content')
-            }
-        })
-
-        ipcMain.on('back-to-detail-page', (event, arg) => {
-            isOnSubPage = false
-            activeIssuesQueryOption = 'assigned_to_me'
-            activeMRsQueryOption = 'assigned_to_me'
-        })
-
-        ipcMain.on('go-to-overview', (event, arg) => {
-            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").classList.remove("with-overflow")')
-            mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.add("empty")')
-            mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = ""')
-            activeIssuesQueryOption = 'assigned_to_me'
-            activeIssuesStateOption = 'opened'
-            activeIssuesSortOption = 'created_at'
-            activeMRsQueryOption = 'assigned_to_me'
-            activeMRsStateOption = 'opened'
-            activeMRsSortOption = 'created_at'
-            moreRecentlyVisitedArray = []
-            recentProjectCommits = []
-            delete currentProjectCommit
-            delete currentProject
-        })
-
-        ipcMain.on('switch-issues', (event, arg) => {
-            let url = 'https://gitlab.com/api/v4/'
-            let id = 'detail-content'
-            if(isOnSubPage && currentProject) {
-                url += 'projects/' + currentProject.id + '/'
-                id = 'sub-detail-content'
-            }
-            if (arg.type == 'query' && arg.label != activeIssuesQueryOption) {
-                activeIssuesQueryOption = arg.label
-                displaySkeleton(numberOfIssues, undefined, id)
-                mb.window.webContents.executeJavaScript('document.getElementById("issues-query-active").innerHTML = "' + arg.text + '"')
-                if ((isOnSubPage == false && arg.label != 'assigned_to_me') || (isOnSubPage == true && arg.label != 'all')) {
-                    mb.window.webContents.executeJavaScript('document.getElementById("issues-query-active").classList.add("changed")')
-                } else {
-                    mb.window.webContents.executeJavaScript('document.getElementById("issues-query-active").classList.remove("changed")')
-                }
-            } else if (arg.type == 'state' && arg.label != activeIssuesStateOption) {
-                activeIssuesStateOption = arg.label
-                displaySkeleton(numberOfIssues, undefined, id)
-                mb.window.webContents.executeJavaScript('document.getElementById("issues-state-active").innerHTML = "' + arg.text + '"')
-                if (arg.label != 'opened') {
-                    mb.window.webContents.executeJavaScript('document.getElementById("issues-state-active").classList.add("changed")')
-                } else {
-                    mb.window.webContents.executeJavaScript('document.getElementById("issues-state-active").classList.remove("changed")')
-                }
-            } else if (arg.type == 'sort' && arg.label != activeIssuesSortOption) {
-                activeIssuesSortOption = arg.label
-                displaySkeleton(numberOfIssues, undefined, id)
-                mb.window.webContents.executeJavaScript('document.getElementById("issues-sort-active").innerHTML = "' + arg.text + '"')
-                if (arg.label != 'created_at') {
-                    mb.window.webContents.executeJavaScript('document.getElementById("issues-sort-active").classList.add("changed")')
-                } else {
-                    mb.window.webContents.executeJavaScript('document.getElementById("issues-sort-active").classList.remove("changed")')
-                }
-            }
-            url += 'issues?scope=' + activeIssuesQueryOption + '&state=' + activeIssuesStateOption + '&order_by=' + activeIssuesSortOption + '&per_page=' + numberOfIssues + '&access_token=' + access_token
-            getIssues(url, id)
-        })
-
-        ipcMain.on('switch-mrs', (event, arg) => {
-            let url = 'https://gitlab.com/api/v4/'
-            let id = 'detail-content'
-            if(isOnSubPage && currentProject) {
-                url += 'projects/' + currentProject.id + '/'
-                id = 'sub-detail-content'
-            }
-            if (arg.type == 'query' && arg.label != activeMRsQueryOption) {
-                activeMRsQueryOption = arg.label
-                displaySkeleton(numberOfMRs, undefined, id)
-                mb.window.webContents.executeJavaScript('document.getElementById("mrs-query-active").innerHTML = "' + arg.text + '"')
-                if (arg.label != 'all') {
-                    mb.window.webContents.executeJavaScript('document.getElementById("mrs-query-active").classList.add("changed")')
-                } else {
-                    mb.window.webContents.executeJavaScript('document.getElementById("mrs-query-active").classList.remove("changed")')
-                }
-            } if (arg.type == 'state' && arg.label != activeMRsStateOption) {
-                activeMRsStateOption = arg.label
-                displaySkeleton(numberOfMRs, undefined, id)
-                mb.window.webContents.executeJavaScript('document.getElementById("mrs-state-active").innerHTML = "' + arg.text + '"')
-                if (arg.label != 'opened') {
-                    mb.window.webContents.executeJavaScript('document.getElementById("mrs-state-active").classList.add("changed")')
-                } else {
-                    mb.window.webContents.executeJavaScript('document.getElementById("mrs-state-active").classList.remove("changed")')
-                }
-            } else if (arg.type == 'sort' && arg.label != activeMRsSortOption) {
-                activeMRsSortOption = arg.label
-                displaySkeleton(numberOfMRs, undefined, id)
-                mb.window.webContents.executeJavaScript('document.getElementById("mrs-sort-active").innerHTML = "' + arg.text + '"')
-                if (arg.label != 'created_at') {
-                    mb.window.webContents.executeJavaScript('document.getElementById("mrs-sort-active").classList.add("changed")')
-                } else {
-                    mb.window.webContents.executeJavaScript('document.getElementById("mrs-sort-active").classList.remove("changed")')
-                }
-            }
-            url += 'merge_requests?scope='
-            if (activeMRsQueryOption == 'assigned_to_me' || activeMRsQueryOption == 'created_by_me') {
-                url += activeMRsQueryOption
-            } else if (activeMRsQueryOption == 'approved_by_me') {
-                url += 'all&approved_by_ids[]=' + user_id
-            } else if (activeMRsQueryOption == 'review_requests_for_me') {
-                url += 'all&reviewer_id=' + user_id
-            } else if (activeMRsQueryOption == 'approval_rule_for_me') {
-                url += 'all&approver_ids[]=' + user_id
-            }
-            url += '&state=' + activeMRsStateOption + '&order_by=' + activeMRsSortOption + '&per_page=' + numberOfMRs + '&access_token=' + access_token
-            getMRs(url, id)
-        })
-
-        ipcMain.on('switch-page', (event, arg) => {
-            let id
-            if(isOnSubPage) {
-                id = 'sub-detail-content'
-            }else {
-                id = 'detail-content'
-            }
-            if (arg.type == 'Todos') {
-                displaySkeleton(numberOfTodos, true)
-                getTodos(arg.url)
-            } else if (arg.type == 'Issues') {
-                displaySkeleton(numberOfIssues, true, id)
-                getIssues(arg.url, id)
-            } else if (arg.type == 'MRs') {
-                displaySkeleton(numberOfMRs, true, id)
-                getMRs(arg.url, id)
-            } else if (arg.type == 'Comments') {
-                displaySkeleton(numberOfComments, true)
-                getMoreRecentComments(arg.url)
-            }
-        })
-
-        ipcMain.on('search-recent', (event, arg) => {
-            mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
-            searchRecentlyVisited(arg)
-        })
-
-        ipcMain.on('change-commit', (event, arg) => {
-            mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<div class=\\"commit empty\\"><div id=\\"project-name\\"></div><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div></div>"')
-            let nextCommit = changeCommit(arg, recentCommits, currentCommit)
-            currentCommit = nextCommit
-            getCommitDetails(nextCommit.project_id, nextCommit.push_data.commit_to, nextCommit.index)
-        })
-
-        ipcMain.on('change-project-commit', (event, arg) => {
-            mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = "<div class=\\"commit empty\\"><div id=\\"project-name\\"></div><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div></div>"')
-            let nextCommit = changeCommit(arg, recentProjectCommits, currentProjectCommit)
-            currentProjectCommit = nextCommit
-            getProjectCommitDetails(currentProject.id, nextCommit.id, nextCommit.index)
-        })
-
-        ipcMain.on('add-bookmark', (event, arg) => {
-            addBookmark(arg)
-        })
-
-        ipcMain.on('add-project', (event, arg) => {
-            addProject(arg)
-        })
-
-        ipcMain.on('start-bookmark-dialog', (event, arg) => {
-            startBookmarkDialog()
-        })
-
-        ipcMain.on('start-project-dialog', (event, arg) => {
-            startProjectDialog()
-        })
-
-        ipcMain.on('delete-bookmark', (event, arg) => {
-            let bookmarks = store.get('bookmarks')
-            let newBookmarks = bookmarks.filter(bookmark => {
-                return bookmark.url != arg
-            })
-            store.set('bookmarks', newBookmarks)
-            getBookmarks()
-        })
-
-        ipcMain.on('delete-project', (event, arg) => {
-            let projects = store.get('favorite-projects')
-            let newProjects = projects.filter(project => {
-                return project.id != arg
-            })
-            store.set('favorite-projects', newProjects)
-            //TODO Implement better way to refresh view after deleting project
-            displayUsersProjects(store.get('favorite-projects'))
-            openSettingsPage()
-        })
-
-        ipcMain.on('change-theme', (event, arg) => {
-            changeTheme(arg, true)
-        })
-
-        ipcMain.on('show-modal', (event, arg) => {
-            mb.window.webContents.executeJavaScript('document.getElementById("' + arg + '").style.display = "flex"')
-        })
-
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
             shell.openExternal(url);
             return { action: 'deny' };
@@ -395,10 +394,12 @@ if (access_token && user_id && username) {
     })
 } else {
     setupSecondaryMenu()
-    mb.on('after-create-window', async () => {
-        await mb.window.loadURL('https://gitlab.com/oauth/authorize?client_id=99c07cc5466cbc721ef2667acd38d3acf45edd2fc314a955861be783585f4be5&redirect_uri=https://gitlab.com&response_type=token&state=test&scope=api')
-        mb.window.on('page-title-updated', handleLogin)
-        mb.showWindow()
+    mb.on('after-create-window', () => {
+        mb.window.loadURL(`file://${__dirname}/login.html`).then(() => {
+            changeTheme(store.get('theme'), false)
+            mb.showWindow()
+            mb.window.webContents.openDevTools()
+        })
     })
 }
 
@@ -406,6 +407,7 @@ function setupSecondaryMenu() {
     mb.on('ready', () => {
         const contextMenu = Menu.buildFromTemplate([
             { label: 'Settings', click: () => { openSettingsPage() } },
+            { label: 'Log out', click: () => { logout() } },
             { label: 'Quit', click: () => { mb.app.quit(); } }
         ])
         mb.tray.on('right-click', () => {
@@ -437,79 +439,94 @@ function openSettingsPage() {
     mb.window.webContents.executeJavaScript('document.getElementById("' + store.get('theme') + '-mode").classList.add("active")')
 }
 
+async function startLogin() {
+    await mb.window.loadURL(host + '/oauth/authorize?client_id=8bcaf7f5331bcb81b6f231d2f82e20a75112a20ef58744f5c73b02d9df025fe4&redirect_uri=' + host + '&response_type=token&state=test&scope=read_api')
+    mb.window.on('page-title-updated', handleLogin)
+    mb.showWindow()
+}
+
 function handleLogin() {
     if (mb.window.webContents.getURL().indexOf('#access_token=') != '-1') {
         const code = mb.window.webContents.getURL().split('#access_token=')[1].replace('&token_type=Bearer&state=test', '')
-        fetch('https://gitlab.com/api/v4/user?access_token=' + code).then(result => {
-            return result.json()
-        }).then(result => {
-            store.set('access_token', code)
-            access_token = code
-            store.set('user_id', result.id)
-            user_id = result.id
-            store.set('username', result.username)
-            username = result.username
-            store.set('theme', 'dark')
-            getUsersProjects().then(async projects => {
-                store.set('favorite-projects', projects)
-                mb.window.removeListener('page-title-updated', handleLogin)
-                await mb.window.loadURL(`file://${__dirname}/index.html`)
-                app.quit()
-                app.relaunch()
-            })
-        })
+        saveUser(code)
     } else {
         console.log('not loaded')
     }
 }
 
+function saveUser(code, url = host) {
+    let temp_access_token = code
+    fetch(url + '/api/v4/user?access_token=' + temp_access_token).then(result => {
+        return result.json()
+    }).then(result => {
+        store.set('access_token', temp_access_token)
+        access_token = temp_access_token
+        store.set('user_id', result.id)
+        user_id = result.id
+        store.set('username', result.username)
+        username = result.username
+        store.set('host', host)
+        host = host
+        store.set('theme', 'dark')
+        getUsersProjects().then(async projects => {
+            store.set('favorite-projects', projects)
+            mb.window.removeListener('page-title-updated', handleLogin)
+            await mb.window.loadURL(`file://${__dirname}/index.html`)
+            app.quit()
+            app.relaunch()
+        })
+    })
+}
+
 function getUser() {
-    fetch('https://gitlab.com/api/v4/user?access_token=' + access_token).then(result => {
+    fetch(host + '/api/v4/user?access_token=' + access_token).then(result => {
         return result.json()
     }).then(user => {
         let userString = '<a href=\\"' + user.web_url + '\\" target=\\"_blank\\"><img src=\\"' + user.avatar_url + '?width=64\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' + user.name + '</span><span class=\\"username\\">@' + user.username + '</span></div></a>'
         mb.window.webContents.executeJavaScript('document.getElementById("user").innerHTML = "' + userString + '"')
     })
-    /*fetch('https://gitlab.com/api/v4/issues_statistics?scope=all&assignee_id=' + user_id + '&access_token=' + access_token).then(result => {
+    /*fetch(host + '/api/v4/issues_statistics?scope=all&assignee_id=' + user_id + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(stats => {
         mb.window.webContents.executeJavaScript('document.getElementById("issues-count").innerHTML = "' + stats.statistics.counts.opened + '"')
     })
-    fetch('https://gitlab.com/api/v4/user_counts?&access_token=' + access_token).then(result => {
+    fetch(host + '/api/v4/user_counts?&access_token=' + access_token).then(result => {
         return result.json()
     }).then(stats => {
         let count = Number(stats.assigned_merge_requests) + Number(stats.review_requested_merge_requests)
         mb.window.webContents.executeJavaScript('document.getElementById("mrs-count").innerHTML = "' + count + '"')
     })
-    fetch('https://gitlab.com/api/v4/todos?&per_page=1&pagination=keyset&access_token=' + access_token).then(result => {
+    fetch(host + '/api/v4/todos?&per_page=1&pagination=keyset&access_token=' + access_token).then(result => {
         let count = result.headers.get('x-total')
         mb.window.webContents.executeJavaScript('document.getElementById("todos-count").innerHTML = "' + count + '"')
     })*/
 }
 
 function getLastCommits(count = 20) {
-    fetch(url = 'https://gitlab.com/api/v4/events?action=pushed&per_page=' + count + '&access_token=' + access_token).then(result => {
+    fetch(url = host + '/api/v4/events?action=pushed&per_page=' + count + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(commits => {
-        getLastPipelines(commits)
-        if (count == 20) {
-            let committedArray = commits.filter(commit => {
-                return (commit.action_name == 'pushed to' || (commit.action_name == 'pushed new' && commit.push_data.commit_to && commit.push_data.commit_count > 0))
-            })
-            currentCommit = committedArray[0]
-            recentCommits = committedArray
-            getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1)
+        if (commits && commits.length > 0) {
+            getLastPipelines(commits)
+            if (count == 20) {
+                let committedArray = commits.filter(commit => {
+                    return (commit.action_name == 'pushed to' || (commit.action_name == 'pushed new' && commit.push_data.commit_to && commit.push_data.commit_count > 0))
+                })
+                currentCommit = committedArray[0]
+                recentCommits = committedArray
+                getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1)
+            }
         }
     })
 }
 
 function getProjectCommits(project, count = 20) {
-    fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/?per_page=' + count + '&access_token=' + access_token).then(result => {
+    fetch(host + '/api/v4/projects/' + project.id + '/repository/commits/?per_page=' + count + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(commits => {
         recentProjectCommits = commits
         currentProjectCommit = commits[0]
-        fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/' + commits[0].id + '?access_token=' + access_token).then(result => {
+        fetch(host + '/api/v4/projects/' + project.id + '/repository/commits/' + commits[0].id + '?access_token=' + access_token).then(result => {
             return result.json()
         }).then(commit => {
             let pagination = '<div id=\\"project-commits-pagination\\"><span class=\\"name\\">Commits</span><div id=\\"commits-pagination\\"><span id=\\"project-commits-count\\">1/' + recentProjectCommits.length + '</span><button onclick=\\"changeProjectCommit(false)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\" /></svg></button><button onclick=\\"changeProjectCommit(true)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg></button></div></div>'
@@ -521,27 +538,29 @@ function getProjectCommits(project, count = 20) {
 
 async function getLastPipelines(commits) {
     let projectArray = []
-    for (let commit of commits) {
-        if (!projectArray.includes(commit.project_id)) {
-            projectArray.push(commit.project_id)
-            let result = await fetch('https://gitlab.com/api/v4/projects/' + commit.project_id + '/pipelines?status=running&username=' + username + '&per_page=1&page=1&access_token=' + access_token)
-            let pipelines = await result.json()
-            if (pipelines.length != 0) {
-                mb.tray.setImage(__dirname + '/assets/running.png')
-                for (let pipeline of pipelines) {
-                    if (runningPipelineSubscriptions.findIndex(subscriptionPipeline => subscriptionPipeline.id == pipeline.id) == -1) {
-                        let result = await fetch('https://gitlab.com/api/v4/projects/' + pipeline.project_id + '/repository/commits/' + pipeline.sha + '?access_token=' + access_token)
-                        let commit = await result.json()
-                        pipeline.commit_title = commit.title
-                        runningPipelineSubscriptions.push(pipeline)
-                        let runningNotification = new Notification({ title: 'Pipeline running', subtitle: parse(pipeline.web_url).namespaceWithProject, body: pipeline.commit_title })
-                        runningNotification.on('click', result => {
-                            shell.openExternal(pipeline.web_url)
-                        })
-                        runningNotification.show()
+    if (commits && commits.length > 0) {
+        for (let commit of commits) {
+            if (!projectArray.includes(commit.project_id)) {
+                projectArray.push(commit.project_id)
+                let result = await fetch(host + '/api/v4/projects/' + commit.project_id + '/pipelines?status=running&username=' + username + '&per_page=1&page=1&access_token=' + access_token)
+                let pipelines = await result.json()
+                if (pipelines.length != 0) {
+                    mb.tray.setImage(__dirname + '/assets/running.png')
+                    for (let pipeline of pipelines) {
+                        if (runningPipelineSubscriptions.findIndex(subscriptionPipeline => subscriptionPipeline.id == pipeline.id) == -1) {
+                            let result = await fetch(host + '/api/v4/projects/' + pipeline.project_id + '/repository/commits/' + pipeline.sha + '?access_token=' + access_token)
+                            let commit = await result.json()
+                            pipeline.commit_title = commit.title
+                            runningPipelineSubscriptions.push(pipeline)
+                            let runningNotification = new Notification({ title: 'Pipeline running', subtitle: parse(pipeline.web_url).namespaceWithProject, body: pipeline.commit_title })
+                            runningNotification.on('click', result => {
+                                shell.openExternal(pipeline.web_url)
+                            })
+                            runningNotification.show()
+                        }
                     }
+                    subscribeToRunningPipeline()
                 }
-                subscribeToRunningPipeline()
             }
         }
     }
@@ -550,7 +569,7 @@ async function getLastPipelines(commits) {
 async function subscribeToRunningPipeline() {
     let interval = setInterval(async function () {
         for (let runningPipeline of runningPipelineSubscriptions) {
-            let result = await fetch('https://gitlab.com/api/v4/projects/' + runningPipeline.project_id + '/pipelines/' + runningPipeline.id + '?access_token=' + access_token)
+            let result = await fetch(host + '/api/v4/projects/' + runningPipeline.project_id + '/pipelines/' + runningPipeline.id + '?access_token=' + access_token)
             let pipeline = await result.json()
             if (pipeline.status != 'running') {
                 let updateNotification = new Notification({ title: 'Pipeline succeeded', subtitle: parse(pipeline.web_url).namespace + ' / ' + parse(pipeline.web_url).project, body: runningPipeline.commit_title })
@@ -594,10 +613,10 @@ function changeCommit(forward = true, commitArray, chosenCommit) {
 function getCommitDetails(project_id, sha, index) {
     mb.window.webContents.executeJavaScript('document.getElementById("commits-count").classList.remove("empty")')
     mb.window.webContents.executeJavaScript('document.getElementById("commits-count").innerHTML = "' + index + '/' + recentCommits.length + '"')
-    fetch('https://gitlab.com/api/v4/projects/' + project_id + '?access_token=' + access_token).then(result => {
+    fetch(host + '/api/v4/projects/' + project_id + '?access_token=' + access_token).then(result => {
         return result.json()
     }).then(project => {
-        fetch('https://gitlab.com/api/v4/projects/' + project.id + '/repository/commits/' + sha + '?access_token=' + access_token).then(result => {
+        fetch(host + '/api/v4/projects/' + project.id + '/repository/commits/' + sha + '?access_token=' + access_token).then(result => {
             return result.json()
         }).then(commit => {
             mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "' + displayCommit(commit, project) + '"')
@@ -608,7 +627,7 @@ function getCommitDetails(project_id, sha, index) {
 function getProjectCommitDetails(project_id, sha, index) {
     mb.window.webContents.executeJavaScript('document.getElementById("project-commits-count").classList.remove("empty")')
     mb.window.webContents.executeJavaScript('document.getElementById("project-commits-count").innerHTML = "' + index + '/' + recentProjectCommits.length + '"')
-    fetch('https://gitlab.com/api/v4/projects/' + project_id + '/repository/commits/' + sha + '?access_token=' + access_token).then(result => {
+    fetch(host + '/api/v4/projects/' + project_id + '/repository/commits/' + sha + '?access_token=' + access_token).then(result => {
         return result.json()
     }).then(commit => {
         mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = "' + displayCommit(commit, currentProject, 'author') + '"')
@@ -634,12 +653,12 @@ async function getRecentlyVisited() {
             });
             let i = 0
             for (let j = 0; j < item.length; j++) {
-                if (item[j].title && item[j].url.indexOf('https://gitlab.com/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !recentlyVisitedArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
-                    let nameWithNamespace = item[j].url.replace('https://gitlab.com/', '').split('/-/')[0]
+                if (item[j].title && item[j].url.indexOf(host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !recentlyVisitedArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
+                    let nameWithNamespace = item[j].url.replace(host + '/', '').split('/-/')[0]
                     if (nameWithNamespace.split('/')[0] != 'groups') {
-                        url = 'https://gitlab.com/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
+                        url = host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
                     } else {
-                        url = 'https://gitlab.com/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
+                        url = host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
                     }
                     recentlyVisitedArray.push(item[j].title)
                     recentlyVisitedString += '<li class=\\"history-entry\\">'
@@ -683,12 +702,12 @@ async function getMoreRecentlyVisited() {
             }
             recentlyVisitedString += '<ul class=\\"list-container history-list-container\\">'
             for (let j = 0; j < item.length; j++) {
-                if (item[j].title && item[j].url.indexOf('https://gitlab.com/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !moreRecentlyVisitedTitlesArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
-                    let nameWithNamespace = item[j].url.replace('https://gitlab.com/', '').split('/-/')[0]
+                if (item[j].title && item[j].url.indexOf(host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !moreRecentlyVisitedTitlesArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
+                    let nameWithNamespace = item[j].url.replace(host + '/', '').split('/-/')[0]
                     if (nameWithNamespace.split('/')[0] != 'groups') {
-                        url = 'https://gitlab.com/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
+                        url = host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
                     } else {
-                        url = 'https://gitlab.com/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
+                        url = host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
                     }
                     let currentDate = new Date(item[j].utc_time).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })
                     if (previousDate != currentDate) {
@@ -713,11 +732,11 @@ function searchRecentlyVisited(searchterm) {
     })
     foundString = '<ul class=\\"list-container\\">'
     for (let item of foundArray) {
-        let nameWithNamespace = item.url.replace('https://gitlab.com/', '').split('/-/')[0]
+        let nameWithNamespace = item.url.replace(host + '/', '').split('/-/')[0]
         if (nameWithNamespace.split('/')[0] != 'groups') {
-            url = 'https://gitlab.com/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
+            url = host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
         } else {
-            url = 'https://gitlab.com/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
+            url = host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
         }
         foundString += '<li class=\\"history-entry\\">'
         foundString += '<a href=\\"' + item.url + '\\" target=\\"_blank\\">' + escapeHtml(item.title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item.utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item.url.split('/-/')[0] + '\\" target=\\"_blank\\">' + escapeHtml(item.title.split('·')[2].trim()) + '</a></span></div></li>'
@@ -727,31 +746,35 @@ function searchRecentlyVisited(searchterm) {
 }
 
 async function getUsersProjects() {
-    let result = await fetch('https://gitlab.com/api/v4/users/' + user_id + '/starred_projects?min_access_level=30&per_page=' + numberOfFavoriteProjects + '&order_by=updated_at&access_token=' + access_token)
+    let result = await fetch(host + '/api/v4/users/' + user_id + '/starred_projects?min_access_level=30&per_page=' + numberOfFavoriteProjects + '&order_by=updated_at&access_token=' + access_token)
     let projects = await result.json()
     let projectsArray = []
-    for (let project of projects) {
-        //TODO Figure out a way to see avatars of private repositories
-        /*if(project.visibility == 'public') {
-            favoriteProjectsString += '<li><img src=\\"' + project.avatar_url + '\\">'
-        }*/
-        let projectObject = {
-            id: project.id,
-            visibility: project.visibility,
-            web_url: project.web_url,
-            name: project.name,
-            namespace: {
-                name: project.namespace.name
-            },
-            added: Date.now(),
-            name_with_namespace: project.name_with_namespace,
-            open_issues_count: project.open_issues_count,
-            last_activity_at: project.last_activity_at,
-            avatar_url: project.avatar_url,
-            star_count: project.star_count,
-            forks_count: project.forks_count,
+    if (projects && projects.length > 0) {
+        for (let project of projects) {
+            //TODO Figure out a way to see avatars of private repositories
+            /*if(project.visibility == 'public') {
+                favoriteProjectsString += '<li><img src=\\"' + project.avatar_url + '\\">'
+            }*/
+            let projectObject = {
+                id: project.id,
+                visibility: project.visibility,
+                web_url: project.web_url,
+                name: project.name,
+                namespace: {
+                    name: project.namespace.name
+                },
+                added: Date.now(),
+                name_with_namespace: project.name_with_namespace,
+                open_issues_count: project.open_issues_count,
+                last_activity_at: project.last_activity_at,
+                avatar_url: project.avatar_url,
+                star_count: project.star_count,
+                forks_count: project.forks_count,
+            }
+            projectsArray.push(projectObject)
         }
-        projectsArray.push(projectObject)
+    }else{
+        console.log('no projects')
     }
     return projectsArray
 }
@@ -770,31 +793,33 @@ function displayUsersProjects(projects) {
 
 function getRecentComments() {
     let recentCommentsString = '<ul class=\\"list-container\\">'
-    fetch('https://gitlab.com/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token).then(result => {
+    fetch(host + '/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(async comments => {
-        for (let comment of comments) {
-            let url = ''
-            if (comment.note.noteable_type == 'MergeRequest') {
-                url = 'https://gitlab.com/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
-            } else if (comment.note.noteable_type == 'Issue') {
-                url = 'https://gitlab.com/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + access_token
-            } else if (comment.noteableType == 'Epic') {
-                break
+        if (comments && comments.length > 0) {
+            for (let comment of comments) {
+                let url = ''
+                if (comment.note.noteable_type == 'MergeRequest') {
+                    url = host + '/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
+                } else if (comment.note.noteable_type == 'Issue') {
+                    url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + access_token
+                } else if (comment.noteableType == 'Epic') {
+                    break
+                }
+                await fetch(url).then(result => {
+                    return result.json()
+                }).then(collabject => {
+                    recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                })
             }
-            await fetch(url).then(result => {
-                return result.json()
-            }).then(collabject => {
-                recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
-            })
+            let moreString = "'Comments'"
+            recentCommentsString += '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' + moreString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
+            mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "' + recentCommentsString + '"')
         }
-        let moreString = "'Comments'"
-        recentCommentsString += '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' + moreString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
-        mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "' + recentCommentsString + '"')
     })
 }
 
-function getMoreRecentComments(url = 'https://gitlab.com/api/v4/events?action=commented&per_page=' + numberOfComments + '&access_token=' + access_token) {
+function getMoreRecentComments(url = host + '/api/v4/events?action=commented&per_page=' + numberOfComments + '&access_token=' + access_token) {
     let recentCommentsString = '<ul class=\\"list-container\\">'
     let type = "'Comments'"
     let keysetLinks
@@ -805,9 +830,9 @@ function getMoreRecentComments(url = 'https://gitlab.com/api/v4/events?action=co
         for (let comment of comments) {
             let url = ''
             if (comment.note.noteable_type == 'MergeRequest') {
-                url = 'https://gitlab.com/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
+                url = host + '/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
             } else if (comment.note.noteable_type == 'Issue') {
-                url = 'https://gitlab.com/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + access_token
+                url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + access_token
             } else if (comment.noteableType == 'Epic') {
                 break
             }
@@ -822,7 +847,7 @@ function getMoreRecentComments(url = 'https://gitlab.com/api/v4/events?action=co
     })
 }
 
-function getIssues(url = 'https://gitlab.com/api/v4/issues?scope=assigned_to_me&state=opened&order_by=created_at&per_page=' + numberOfIssues + '&access_token=' + access_token, id = 'detail-content') {
+function getIssues(url = host + '/api/v4/issues?scope=assigned_to_me&state=opened&order_by=created_at&per_page=' + numberOfIssues + '&access_token=' + access_token, id = 'detail-content') {
     let issuesString = '<ul class=\\"list-container\\">'
     let type = "'Issues'"
     let keysetLinks
@@ -845,7 +870,7 @@ function getIssues(url = 'https://gitlab.com/api/v4/issues?scope=assigned_to_me&
     })
 }
 
-function getMRs(url = 'https://gitlab.com/api/v4/merge_requests?scope=assigned_to_me&state=opened&order_by=created_at&per_page=' + numberOfMRs + '&access_token=' + access_token, id = 'detail-content') {
+function getMRs(url = host + '/api/v4/merge_requests?scope=assigned_to_me&state=opened&order_by=created_at&per_page=' + numberOfMRs + '&access_token=' + access_token, id = 'detail-content') {
     let mrsString = ''
     let type = "'MRs'"
     let keysetLinks
@@ -873,7 +898,7 @@ function getMRs(url = 'https://gitlab.com/api/v4/merge_requests?scope=assigned_t
     })
 }
 
-function getTodos(url = 'https://gitlab.com/api/v4/todos?per_page=' + numberOfTodos + '&access_token=' + access_token) {
+function getTodos(url = host + '/api/v4/todos?per_page=' + numberOfTodos + '&access_token=' + access_token) {
     let todosString = '<ul class=\\"list-container\\">'
     let type = "'Todos'"
     let keysetLinks
@@ -976,7 +1001,7 @@ function getProjectIssues(project) {
     let projectIssuesString = '<ul class=\\"list-container\\">'
     let projectString = "'" + escapeHtml(JSON.stringify(project)) + "'"
     let nextPage
-    fetch('https://gitlab.com/api/v4/projects/' + project.id + '/issues?state=opened&order_by=created_at&per_page=3&access_token=' + access_token).then(result => {
+    fetch(host + '/api/v4/projects/' + project.id + '/issues?state=opened&order_by=created_at&per_page=3&access_token=' + access_token).then(result => {
         nextPage = result.headers.get('x-next-page')
         return result.json()
     }).then(issues => {
@@ -997,7 +1022,7 @@ function getProjectMRs(project) {
     let projectMRsString = '<ul class=\\"list-container\\">'
     let projectString = "'" + escapeHtml(JSON.stringify(project)) + "'"
     let nextPage
-    fetch('https://gitlab.com/api/v4/projects/' + project.id + '/merge_requests?state=opened&order_by=created_at&per_page=3&access_token=' + access_token).then(result => {
+    fetch(host + '/api/v4/projects/' + project.id + '/merge_requests?state=opened&order_by=created_at&per_page=3&access_token=' + access_token).then(result => {
         nextPage = result.headers.get('x-next-page')
         return result.json()
     }).then(mrs => {
@@ -1049,7 +1074,7 @@ function displayCommit(commit, project, focus = 'project') {
             logo = '<div id=\\"project-name\\">' + project.name.charAt(0).toUpperCase() + '</div>'
         }
         //TODO When https://gitlab.com/gitlab-org/gitlab/-/issues/20924 is fixed, get users avatar here
-        /*await fetch('https://gitlab.com/api/v4/users?search=' + commit.author_email + '&access_token=' + access_token).then(result => {
+        /*await fetch(host + '/api/v4/users?search=' + commit.author_email + '&access_token=' + access_token).then(result => {
             return result.json()
         }).then(user => {
             console.log(user[0])
@@ -1070,7 +1095,7 @@ function addBookmark(link) {
     mb.window.webContents.executeJavaScript('document.getElementById("bookmark-add-button").disabled = "disabled"')
     mb.window.webContents.executeJavaScript('document.getElementById("bookmark-link").disabled = "disabled"')
     mb.window.webContents.executeJavaScript('document.getElementById("bookmark-add-button").innerHTML = "' + spinner + ' Add"')
-    if (link.indexOf('https://gitlab.com') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
+    if (link.indexOf(host + '') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
         parseGitLabUrl(link).then(bookmark => {
             if (!bookmark.type || (bookmark.type != 'issues' && bookmark.type != 'merge_requests' && bookmark.type != 'epics')) {
                 displayAddError('bookmark')
@@ -1093,7 +1118,7 @@ function addProject(link) {
     mb.window.webContents.executeJavaScript('document.getElementById("project-add-button").disabled = "disabled"')
     mb.window.webContents.executeJavaScript('document.getElementById("project-link").disabled = "disabled"')
     mb.window.webContents.executeJavaScript('document.getElementById("project-add-button").innerHTML = "' + spinner + ' Add"')
-    if (link.indexOf('https://gitlab.com') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
+    if (link.indexOf(host + '') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
         parseGitLabUrl(link).then(project => {
             if (project.type && project.type != 'projects') {
                 displayAddError('project')
@@ -1145,9 +1170,9 @@ async function parseGitLabUrl(link) {
     let object = parse(link)
     let issuable
     if (object.type == 'issues' || object.type == 'merge_requests') {
-        let result = await fetch('https://gitlab.com/api/v4/projects/' + encodeURIComponent(object.namespaceWithProject) + '/' + object.type + '/' + object[object.type] + '?access_token=' + access_token)
+        let result = await fetch(host + '/api/v4/projects/' + encodeURIComponent(object.namespaceWithProject) + '/' + object.type + '/' + object[object.type] + '?access_token=' + access_token)
         issuable = await result.json()
-        let result2 = await fetch('https://gitlab.com/api/v4/projects/' + issuable.project_id + '?access_token=' + access_token)
+        let result2 = await fetch(host + '/api/v4/projects/' + issuable.project_id + '?access_token=' + access_token)
         let project = await result2.json()
         return {
             url: link,
@@ -1159,9 +1184,9 @@ async function parseGitLabUrl(link) {
             locationUrl: project.web_url
         }
     } else if (object.type == 'epics') {
-        let result = await fetch('https://gitlab.com/api/v4/groups/' + encodeURIComponent(object.namespaceWithProject) + '/' + object.type + '/' + object[object.type])
+        let result = await fetch(host + '/api/v4/groups/' + encodeURIComponent(object.namespaceWithProject) + '/' + object.type + '/' + object[object.type])
         issuable = await result.json()
-        let result2 = await fetch('https://gitlab.com/api/v4/groups/' + issuable.group_id + '?access_token=' + access_token)
+        let result2 = await fetch(host + '/api/v4/groups/' + issuable.group_id + '?access_token=' + access_token)
         let group = await result2.json()
         return {
             url: link,
@@ -1172,7 +1197,7 @@ async function parseGitLabUrl(link) {
             locationUrl: group.web_url
         }
     } else if (object.type == 'projects') {
-        let result = await fetch('https://gitlab.com/api/v4/projects/' + encodeURIComponent(object.namespaceWithProject) + '?access_token=' + access_token)
+        let result = await fetch(host + '/api/v4/projects/' + encodeURIComponent(object.namespaceWithProject) + '?access_token=' + access_token)
         let project = await result.json()
         return {
             id: project.id,
@@ -1320,4 +1345,17 @@ function changeTheme(option = 'light', manual = false) {
         mb.window.webContents.executeJavaScript('document.getElementById("dark-mode").classList.remove("active")')
         mb.window.webContents.executeJavaScript('document.getElementById("' + option + '-mode").classList.add("active")')
     }
+}
+
+function logout() {
+    store.delete('user_id')
+    store.delete('username')
+    store.delete('access_token')
+    store.delete('favorite-project')
+    store.delete('bookmarks')
+    store.delete('host')
+    mb.window.webContents.session.clearCache()
+    mb.window.webContents.session.clearStorageData()
+    app.quit()
+    app.relaunch()
 }

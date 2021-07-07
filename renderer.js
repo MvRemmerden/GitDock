@@ -95,3 +95,15 @@ function deleteProject(value) {
 function changeTheme(value) {
     window.electron.changeTheme(value)
 }
+
+function startLogin() {
+    window.electron.startLogin()
+}
+
+function startManualLogin(access_token, host) {
+    let value = {
+        access_token: access_token,
+        host: host
+    }
+    window.electron.startManualLogin(value)
+}
