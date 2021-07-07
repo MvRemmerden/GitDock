@@ -92,8 +92,6 @@ if (access_token && user_id && username) {
 
         //Preloading content
         getUser()
-        //getRecentlyVisited()
-        getLastCommits()
         getRecentComments()
         if (store.get('favorite-projects')) {
             displayUsersProjects(store.get('favorite-projects'))
@@ -293,7 +291,6 @@ if (access_token && user_id && username) {
                 url += 'all&approver_ids[]=' + user_id
             }
             url += '&state=' + activeMRsStateOption + '&order_by=' + activeMRsSortOption + '&per_page=' + numberOfMRs + '&access_token=' + access_token
-            console.log(url)
             getMRs(url, id)
         })
 
@@ -380,12 +377,6 @@ if (access_token && user_id && username) {
 
         ipcMain.on('show-modal', (event, arg) => {
             mb.window.webContents.executeJavaScript('document.getElementById("' + arg + '").style.display = "flex"')
-        })
-
-        ipcMain.on('is-in-focus', (event, arg) => {
-            mb.window.webContents.executeJavaScript('console.log(document.activeElement)')
-            mb.window.webContents.executeJavaScript('console.log(document.getElementById("' + arg + '"))')
-            mb.window.webContents.executeJavaScript('console.log(document.getElementById("' + arg + '") === document.activeElement)')
         })
 
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
@@ -543,7 +534,7 @@ async function getLastPipelines(commits) {
                         let commit = await result.json()
                         pipeline.commit_title = commit.title
                         runningPipelineSubscriptions.push(pipeline)
-                        let runningNotification = new Notification({ title: 'Pipeline running', subtitle: parse(pipeline.web_url).namespace + ' / ' + parse(pipeline.web_url).project, body: pipeline.commit_title })
+                        let runningNotification = new Notification({ title: 'Pipeline running', subtitle: parse(pipeline.web_url).namespaceWithProject, body: pipeline.commit_title })
                         runningNotification.on('click', result => {
                             shell.openExternal(pipeline.web_url)
                         })
@@ -993,9 +984,9 @@ function getProjectIssues(project) {
             projectIssuesString += '<li class=\\"history-entry\\">'
             projectIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(issue.created_at)) + ' ago &middot; ' + issue.author.name + '</span></div></li>'
         }
-        if (nextPage) {
-            let issues = "'Issues'"
-            projectIssuesString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + issues + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
+        if (issues.length > 0) {
+            let issuesString = "'Issues'"
+            projectIssuesString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + issuesString + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
         }
         projectIssuesString += '</ul>'
         mb.window.webContents.executeJavaScript('document.getElementById("project-recent-issues").innerHTML = "' + projectIssuesString + '"')
@@ -1015,9 +1006,9 @@ function getProjectMRs(project) {
             projectMRsString += '<li class=\\"history-entry\\">'
             projectMRsString += '<a href=\\"' + mr.web_url + '\\" target=\\"_blank\\">' + escapeHtml(mr.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(mr.created_at)) + ' ago &middot; ' + mr.author.name + '</span></div></li>'
         }
-        if (nextPage) {
-            let mrs = "'Merge Requests'"
-            projectMRsString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + mrs + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
+        if (mrs.length > 0) {
+            let mrsString = "'Merge Requests'"
+            projectMRsString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + mrsString + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
         }
         projectMRsString += '</ul>'
         mb.window.webContents.executeJavaScript('document.getElementById("project-recent-mrs").innerHTML = "' + projectMRsString + '"')

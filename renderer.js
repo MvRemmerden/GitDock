@@ -95,7 +95,3 @@ function deleteProject(value) {
 function changeTheme(value) {
     window.electron.changeTheme(value)
 }
-
-function isInFocus(value) {
-    window.electron.isInFocus(value)
-}
