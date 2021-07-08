@@ -137,18 +137,22 @@
         </div>
         <div id="login-instance">
             <div id="instance-checkbox-wrapper">
-                <input type="checkbox" id="instance-checkbox" name="instance-checkbox"/>
+                <input type="checkbox" id="instance-checkbox" name="instance-checkbox" />
                 <label for="instance-checkbox">I am using a self-managed GitLab instance.</label>
                 <div id="instance-details">
-                    <div id="access-token" class="instance-details-input">
-                        <label for="access-token-input">Access Token</label>
-                        <input id="access-token-input" name="access-token-input">
-                    </div>
-                    <div id="instance-url" class="instance-details-input">
-                        <label for="instance-url-input">Self-managed instance URL</label>
-                        <input id="instance-url-input" name="instance-url-input">
-                    </div>
-                    <button onclick="startManualLogin(document.getElementById('access-token-input').value, document.getElementById('instance-url-input').value)">Log in</button>
+                    <form action="#" onsubmit="return false">
+                        <div id="access-token" class="instance-details-input">
+                            <label for="access-token-input">Access Token</label>
+                            <input id="access-token-input" name="access-token-input">
+                        </div>
+                        <div id="instance-url" class="instance-details-input">
+                            <label for="instance-url-input">Self-managed instance URL</label>
+                            <input id="instance-url-input" name="instance-url-input">
+                        </div>
+                        <button type="submit"
+                            onclick="startManualLogin(document.getElementById('access-token-input').value, document.getElementById('instance-url-input').value)">Log
+                            in</button>
+                    </form>
                 </div>
             </div>
         </div>

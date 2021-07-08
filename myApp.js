@@ -142,7 +142,7 @@ ipcMain.on('sub-detail-page', (event, arg) => {
         mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"filter-sort\\">' + issuesQuerySelect + issuesStateSelect + issuesSortSelect + '</div>"')
         mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").classList.add("with-overflow")')
         displaySkeleton(numberOfIssues, undefined, 'sub-detail-content')
-        getIssues(host + 'api/v4/projects/' + project.id + '/issues?scope=all&state=opened&order_by=created_at&per_page=' + numberOfIssues + '&access_token=' + access_token, 'sub-detail-content')
+        getIssues(host + '/api/v4/projects/' + project.id + '/issues?scope=all&state=opened&order_by=created_at&per_page=' + numberOfIssues + '&access_token=' + access_token, 'sub-detail-content')
     } else if (arg.page == 'Merge Requests') {
         let mrsQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-query-active\\">All</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + allLabel + '\\" onchange=\\"switchMRs(' + allLabel + ', ' + query + ', ' + allText + ')\\" checked><label for=\\"' + allLabel + '\\" class=\\"custom-option-label\\">All</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchMRs(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\"><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchMRs(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + reviewedLabel + '\\" onchange=\\"switchMRs(' + reviewedLabel + ', ' + query + ', ' + reviewedText + ')\\"><label for=\\"' + reviewedLabel + '\\" class=\\"custom-option-label\\">Review requests</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvedLabel + '\\" onchange=\\"switchMRs(' + approvedLabel + ', ' + query + ', ' + approvedText + ')\\"><label for=\\"' + approvedLabel + '\\" class=\\"custom-option-label\\">Approved</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvalLabel + '\\" onchange=\\"switchMRs(' + approvalLabel + ', ' + query + ', ' + approvalText + ')\\"><label for=\\"' + approvalLabel + '\\" class=\\"custom-option-label\\">Approval rule</label></div></div>'
         let mrsStateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-state-active\\">Open</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchMRs(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + mergedLabel + '\\" onchange=\\"switchMRs(' + mergedLabel + ', ' + state + ', ' + mergedText + ')\\"><label for=\\"' + mergedLabel + '\\" class=\\"custom-option-label\\">Merged</label><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchMRs(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div></div>'
@@ -350,11 +350,15 @@ ipcMain.on('start-login', (event, arg) => {
 })
 
 ipcMain.on('start-manual-login', (event, arg) => {
-    saveUser(arg.access_token, arg.host) 
+    saveUser(arg.access_token, arg.host)
+})
+
+
+mb.on('ready', () => {
+    setupSecondaryMenu()
 })
 
 if (access_token && user_id && username) {
-    setupSecondaryMenu()
     mb.on('after-create-window', () => {
         mb.showWindow()
         changeTheme(store.get('theme'), false)
@@ -393,7 +397,6 @@ if (access_token && user_id && username) {
         //getBookmarks()
     })
 } else {
-    setupSecondaryMenu()
     mb.on('after-create-window', () => {
         mb.window.loadURL(`file://${__dirname}/login.html`).then(() => {
             changeTheme(store.get('theme'), false)
@@ -404,16 +407,21 @@ if (access_token && user_id && username) {
 }
 
 function setupSecondaryMenu() {
-    mb.on('ready', () => {
-        const contextMenu = Menu.buildFromTemplate([
+    let contextMenu
+    if (user_id && username) {
+        contextMenu = Menu.buildFromTemplate([
             { label: 'Settings', click: () => { openSettingsPage() } },
             { label: 'Log out', click: () => { logout() } },
             { label: 'Quit', click: () => { mb.app.quit(); } }
         ])
-        mb.tray.on('right-click', () => {
-            mb.tray.popUpContextMenu(contextMenu)
-        })
-    });
+    } else {
+        contextMenu = Menu.buildFromTemplate([
+            { label: 'Quit', click: () => { mb.app.quit(); } }
+        ])
+    }
+    mb.tray.on('right-click', () => {
+        mb.tray.popUpContextMenu(contextMenu)
+    })
 }
 
 function openSettingsPage() {
@@ -459,22 +467,54 @@ function saveUser(code, url = host) {
     fetch(url + '/api/v4/user?access_token=' + temp_access_token).then(result => {
         return result.json()
     }).then(result => {
-        store.set('access_token', temp_access_token)
-        access_token = temp_access_token
-        store.set('user_id', result.id)
-        user_id = result.id
-        store.set('username', result.username)
-        username = result.username
-        store.set('host', host)
-        host = host
-        store.set('theme', 'dark')
-        getUsersProjects().then(async projects => {
-            store.set('favorite-projects', projects)
-            mb.window.removeListener('page-title-updated', handleLogin)
-            await mb.window.loadURL(`file://${__dirname}/index.html`)
-            app.quit()
-            app.relaunch()
-        })
+        if (result && result.id && result.username) {
+            store.set('access_token', temp_access_token)
+            access_token = temp_access_token
+            store.set('user_id', result.id)
+            user_id = result.id
+            store.set('username', result.username)
+            username = result.username
+            store.set('host', url)
+            host = url
+            store.set('theme', 'dark')
+            getUsersProjects().then(async projects => {
+                if (projects && projects.length > 0) {
+                    store.set('favorite-projects', projects)
+                }
+                mb.window.removeListener('page-title-updated', handleLogin)
+                await mb.window.loadURL(`file://${__dirname}/index.html`).then(result => {
+                    getUser()
+                    if (store.get('favorite-projects')) {
+                        displayUsersProjects(store.get('favorite-projects'))
+                    }
+                    getBookmarks()
+                    getRecentlyVisited()
+                    getLastCommits()
+                    getRecentComments()
+                    mb.window.webContents.setWindowOpenHandler(({ url }) => {
+                        shell.openExternal(url);
+                        return { action: 'deny' };
+                    });
+                }).catch(error => {
+                    getUser()
+                    if (store.get('favorite-projects')) {
+                        displayUsersProjects(store.get('favorite-projects'))
+                    }
+                    getBookmarks()
+                    getRecentlyVisited()
+                    getLastCommits()
+                    getRecentComments()
+                    mb.window.webContents.setWindowOpenHandler(({ url }) => {
+                        shell.openExternal(url);
+                        return { action: 'deny' };
+                    });
+                })
+            })
+        } else {
+            console.log('not valid')
+        }
+    }).catch(error => {
+        console.log('not valid')
     })
 }
 
@@ -679,6 +719,7 @@ async function getRecentlyVisited() {
 async function getMoreRecentlyVisited() {
     recentlyVisitedString = ''
     let moreRecentlyVisitedTitlesArray = []
+    let firstItem = true
     await BrowserHistory.getAllHistory(14320).then(async history => {
         if (history.length == 2) {
             history[0] = history[0].concat(history[1])
@@ -694,13 +735,7 @@ async function getMoreRecentlyVisited() {
                 }
             });
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<input id=\\"recentSearch\\" type=\\"text\\" onkeyup=\\"searchRecent(this)\\" placeholder=\\"Search...\\" />"')
-            let previousDate = new Date(item[0].utc_time).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })
-            if (previousDate == new Date(Date.now()).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })) {
-                recentlyVisitedString += '<div class=\\"date\\">Today</div>'
-            } else {
-                recentlyVisitedString += '<div class=\\"date\\">' + previousDate + '</div>'
-            }
-            recentlyVisitedString += '<ul class=\\"list-container history-list-container\\">'
+            let previousDate = 0
             for (let j = 0; j < item.length; j++) {
                 if (item[j].title && item[j].url.indexOf(host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !moreRecentlyVisitedTitlesArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
                     let nameWithNamespace = item[j].url.replace(host + '/', '').split('/-/')[0]
@@ -711,13 +746,22 @@ async function getMoreRecentlyVisited() {
                     }
                     let currentDate = new Date(item[j].utc_time).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })
                     if (previousDate != currentDate) {
-                        recentlyVisitedString += '</ul><div class=\\"date\\">' + currentDate + '</div><ul class=\\"list-container\\">'
+                        if (currentDate == new Date(Date.now()).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })) {
+                            recentlyVisitedString += '<div class=\\"date\\">Today</div>'
+                        } else {
+                            if(!firstItem) {
+                                recentlyVisitedString += '</ul>'
+                            }
+                            recentlyVisitedString += '<div class=\\"date\\">' + currentDate + '</div>'
+                        }
+                        recentlyVisitedString += '<ul class=\\"list-container history-list-container\\">'
+                        previousDate = currentDate
                     }
-                    previousDate = currentDate
                     moreRecentlyVisitedArray.push(item[j])
                     moreRecentlyVisitedTitlesArray.push(item[j].title)
                     recentlyVisitedString += '<li class=\\"history-entry\\">'
                     recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item[j].url.split('/-/')[0] + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[2].trim()) + '</a></span></div></li>'
+                    firstItem = false
                 }
             }
             recentlyVisitedString += '</ul>'
@@ -773,7 +817,7 @@ async function getUsersProjects() {
             }
             projectsArray.push(projectObject)
         }
-    }else{
+    } else {
         console.log('no projects')
     }
     return projectsArray

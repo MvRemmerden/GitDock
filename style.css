@@ -33,10 +33,11 @@ a:hover {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    align-items: center;
     padding: 0 1.5rem 1.5rem;
 }
 #login-page svg {
-    max-width: 100%;
+    max-width: 250px;
 }
 #login-page #instance-checkbox ~ #instance-details {
     display: none;
