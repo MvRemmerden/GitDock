@@ -619,7 +619,12 @@ async function subscribeToRunningPipeline() {
             let result = await fetch(host + '/api/v4/projects/' + runningPipeline.project_id + '/pipelines/' + runningPipeline.id + '?access_token=' + access_token)
             let pipeline = await result.json()
             if (pipeline.status != 'running') {
-                let updateNotification = new Notification({ title: 'Pipeline succeeded', subtitle: parse(pipeline.web_url).namespace + ' / ' + parse(pipeline.web_url).project, body: runningPipeline.commit_title })
+                if(pipeline.status == 'success') {
+                    pipelineStatus = 'succeeded'
+                }else {
+                    pipelineStatus = pipeline.status
+                }
+                let updateNotification = new Notification({ title: 'Pipeline ' + pipelineStatus, subtitle: parse(pipeline.web_url).namespace + ' / ' + parse(pipeline.web_url).project, body: runningPipeline.commit_title })
                 updateNotification.on('click', () => {
                     shell.openExternal(pipeline.web_url)
                 })
@@ -932,6 +937,7 @@ function getMRs(url = host + '/api/v4/merge_requests?scope=assigned_to_me&state=
         if (mrs.length > 0) {
             mrsString = '<ul class=\\"list-container\\">'
             for (let mr of mrs) {
+                console.log(mr)
                 let timestamp
                 if (activeMRsSortOption == 'updated_at') {
                     timestamp = 'Updated ' + timeSince(new Date(mr.updated_at)) + ' ago'
