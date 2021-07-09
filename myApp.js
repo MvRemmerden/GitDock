@@ -68,7 +68,7 @@ const mb = menubar({
     icon: __dirname + '/assets/gitlab.png',
     preloadWindow: true,
     browserWindow: {
-        width: 550,
+        width: 1000,
         height: 700,
         webPreferences: {
             preload: __dirname + '/preload.js',
@@ -362,6 +362,8 @@ if (access_token && user_id && username) {
         mb.showWindow()
         changeTheme(store.get('theme'), false)
 
+        console.log(store.get('host'))
+
         //Preloading content
         getUser()
         getRecentComments()
@@ -372,6 +374,7 @@ if (access_token && user_id && username) {
 
         //Regularly relaoading content
         setInterval(function () {
+            getLastEvent()
             /*console.log('update')
             getRecentlyVisited()
             getLastCommits()
@@ -380,7 +383,7 @@ if (access_token && user_id && username) {
             getBookmarks()*/
         }, 10000);
 
-        //mb.window.webContents.openDevTools()
+        mb.window.webContents.openDevTools()
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
             shell.openExternal(url);
             return { action: 'deny' };
@@ -436,7 +439,7 @@ function openSettingsPage() {
     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">Theme</span>"')
     let settingsString = ''
     let theme = '<div id=\\"theme-selection\\"><div id=\\"light-mode\\" class=\\"theme-option\\" onclick=\\"changeTheme(' + lightString + ')\\"><div class=\\"indicator\\"></div>Light</div><div id=\\"dark-mode\\" class=\\"theme-option\\" onclick=\\"changeTheme(' + darkString + ')\\"><div class=\\"indicator\\"></div>Dark</div></div>'
-    if(user_id && username) {
+    if (user_id && username) {
         let favoriteProjects = '<div class=\\"headline\\"><span class=\\"name\\">Favorite projects</span></div><div id=\\"favorite-projects\\"><ul class=\\"list-container\\">'
         for (let project of store.get('favorite-projects')) {
             favoriteProjects += '<li><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" class=\\"icon\\"/></svg><div class=\\"name-with-namespace\\"><span>' + project.name + '</span><span class=\\"namespace\\">' + project.namespace.name + '</span></div>'
@@ -445,7 +448,7 @@ function openSettingsPage() {
         favoriteProjects += '<li id=\\"add-project-dialog\\" class=\\"more-link\\"><a onclick=\\"startProjectDialog()\\">Add another project <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
         let logout = '<div class=\\"headline\\"><span class=\\"name\\">User</span></div><div id=\\"user-administration\\"><button onclick=\\"logout()\\">Log out</div>'
         settingsString = theme + favoriteProjects
-    }else{
+    } else {
         settingsString = theme
     }
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + settingsString + '</ul></div>"')
@@ -471,6 +474,7 @@ function handleLogin() {
 
 function saveUser(code, url = host) {
     let temp_access_token = code
+    console.log(url)
     fetch(url + '/api/v4/user?access_token=' + temp_access_token).then(result => {
         return result.json()
     }).then(result => {
@@ -529,7 +533,11 @@ function getUser() {
     fetch(host + '/api/v4/user?access_token=' + access_token).then(result => {
         return result.json()
     }).then(user => {
-        let userString = '<a href=\\"' + user.web_url + '\\" target=\\"_blank\\"><img src=\\"' + user.avatar_url + '?width=64\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' + user.name + '</span><span class=\\"username\\">@' + user.username + '</span></div></a>'
+        let avatar_url = new URL(user.avatar_url)
+        if(avatar_url.host != 'secure.gravatar.com') {
+            avatar_url.href = '?width=64'
+        }
+        let userString = '<a href=\\"' + user.web_url + '\\" target=\\"_blank\\"><img src=\\"' + avatar_url.href + '\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' + user.name + '</span><span class=\\"username\\">@' + user.username + '</span></div></a>'
         mb.window.webContents.executeJavaScript('document.getElementById("user").innerHTML = "' + userString + '"')
     })
     /*fetch(host + '/api/v4/issues_statistics?scope=all&assignee_id=' + user_id + '&access_token=' + access_token).then(result => {
@@ -547,6 +555,19 @@ function getUser() {
         let count = result.headers.get('x-total')
         mb.window.webContents.executeJavaScript('document.getElementById("todos-count").innerHTML = "' + count + '"')
     })*/
+}
+
+function getLastEvent(count = 1) {
+    if (recentCommits && recentCommits.length > 0) {
+        fetch(url = host + '/api/v4/events?action=pushed&per_page=' + count + '&access_token=' + access_token).then(result => {
+            return result.json()
+        }).then(commits => {
+            let commit = commits[0]
+            console.log(commit)
+            console.log(recentCommits[0])
+        })
+
+    }
 }
 
 function getLastCommits(count = 20) {
@@ -619,9 +640,9 @@ async function subscribeToRunningPipeline() {
             let result = await fetch(host + '/api/v4/projects/' + runningPipeline.project_id + '/pipelines/' + runningPipeline.id + '?access_token=' + access_token)
             let pipeline = await result.json()
             if (pipeline.status != 'running') {
-                if(pipeline.status == 'success') {
+                if (pipeline.status == 'success') {
                     pipelineStatus = 'succeeded'
-                }else {
+                } else {
                     pipelineStatus = pipeline.status
                 }
                 let updateNotification = new Notification({ title: 'Pipeline ' + pipelineStatus, subtitle: parse(pipeline.web_url).namespace + ' / ' + parse(pipeline.web_url).project, body: runningPipeline.commit_title })
@@ -761,7 +782,7 @@ async function getMoreRecentlyVisited() {
                         if (currentDate == new Date(Date.now()).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })) {
                             recentlyVisitedString += '<div class=\\"date\\">Today</div>'
                         } else {
-                            if(!firstItem) {
+                            if (!firstItem) {
                                 recentlyVisitedString += '</ul>'
                             }
                             recentlyVisitedString += '<div class=\\"date\\">' + currentDate + '</div>'
