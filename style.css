@@ -823,7 +823,7 @@ a:hover {
     margin-right: 0;
     margin-left: 0.25rem;
 }
-.detail-view .detail-content #project-pipeline {
+.detail-view .detail-content #project-pipeline .commit {
     margin-bottom: 1rem;
 }
 .detail-view .detail-content #theme-selection {

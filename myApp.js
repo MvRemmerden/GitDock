@@ -336,7 +336,7 @@ ipcMain.on('delete-project', (event, arg) => {
     })
     store.set('favorite-projects', newProjects)
     //TODO Implement better way to refresh view after deleting project
-    displayUsersProjects(store.get('favorite-projects'))
+    displayUsersProjects()
     openSettingsPage()
 })
 
@@ -362,14 +362,10 @@ if (access_token && user_id && username) {
         mb.showWindow()
         changeTheme(store.get('theme'), false)
 
-        console.log(store.get('host'))
-
         //Preloading content
         getUser()
         getRecentComments()
-        if (store.get('favorite-projects')) {
-            displayUsersProjects(store.get('favorite-projects'))
-        }
+        displayUsersProjects()
         getBookmarks()
 
         //Regularly relaoading content
@@ -440,10 +436,13 @@ function openSettingsPage() {
     let settingsString = ''
     let theme = '<div id=\\"theme-selection\\"><div id=\\"light-mode\\" class=\\"theme-option\\" onclick=\\"changeTheme(' + lightString + ')\\"><div class=\\"indicator\\"></div>Light</div><div id=\\"dark-mode\\" class=\\"theme-option\\" onclick=\\"changeTheme(' + darkString + ')\\"><div class=\\"indicator\\"></div>Dark</div></div>'
     if (user_id && username) {
+        let projects = store.get('favorite-projects')
         let favoriteProjects = '<div class=\\"headline\\"><span class=\\"name\\">Favorite projects</span></div><div id=\\"favorite-projects\\"><ul class=\\"list-container\\">'
-        for (let project of store.get('favorite-projects')) {
-            favoriteProjects += '<li><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" class=\\"icon\\"/></svg><div class=\\"name-with-namespace\\"><span>' + project.name + '</span><span class=\\"namespace\\">' + project.namespace.name + '</span></div>'
-            favoriteProjects += '<div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteProject(' + project.id + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>'
+        if (projects && projects.length > 0) {
+            for (let project of projects) {
+                favoriteProjects += '<li><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" class=\\"icon\\"/></svg><div class=\\"name-with-namespace\\"><span>' + project.name + '</span><span class=\\"namespace\\">' + project.namespace.name + '</span></div>'
+                favoriteProjects += '<div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteProject(' + project.id + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>'
+            }
         }
         favoriteProjects += '<li id=\\"add-project-dialog\\" class=\\"more-link\\"><a onclick=\\"startProjectDialog()\\">Add another project <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
         let logout = '<div class=\\"headline\\"><span class=\\"name\\">User</span></div><div id=\\"user-administration\\"><button onclick=\\"logout()\\">Log out</div>'
@@ -474,7 +473,6 @@ function handleLogin() {
 
 function saveUser(code, url = host) {
     let temp_access_token = code
-    console.log(url)
     fetch(url + '/api/v4/user?access_token=' + temp_access_token).then(result => {
         return result.json()
     }).then(result => {
@@ -495,9 +493,7 @@ function saveUser(code, url = host) {
                 mb.window.removeListener('page-title-updated', handleLogin)
                 await mb.window.loadURL(`file://${__dirname}/index.html`).then(result => {
                     getUser()
-                    if (store.get('favorite-projects')) {
-                        displayUsersProjects(store.get('favorite-projects'))
-                    }
+                    displayUsersProjects()
                     getBookmarks()
                     getRecentlyVisited()
                     getLastCommits()
@@ -508,9 +504,7 @@ function saveUser(code, url = host) {
                     });
                 }).catch(error => {
                     getUser()
-                    if (store.get('favorite-projects')) {
-                        displayUsersProjects(store.get('favorite-projects'))
-                    }
+                    displayUsersProjects()
                     getBookmarks()
                     getRecentlyVisited()
                     getLastCommits()
@@ -534,7 +528,7 @@ function getUser() {
         return result.json()
     }).then(user => {
         let avatar_url = new URL(user.avatar_url)
-        if(avatar_url.host != 'secure.gravatar.com') {
+        if (avatar_url.host != 'secure.gravatar.com') {
             avatar_url.href = '?width=64'
         }
         let userString = '<a href=\\"' + user.web_url + '\\" target=\\"_blank\\"><img src=\\"' + avatar_url.href + '\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' + user.name + '</span><span class=\\"username\\">@' + user.username + '</span></div></a>'
@@ -584,6 +578,9 @@ function getLastCommits(count = 20) {
                 recentCommits = committedArray
                 getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1)
             }
+        } else {
+            mb.window.webContents.executeJavaScript('document.getElementById("commits-pagination").innerHTML = ""')
+            mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = ""')
         }
     })
 }
@@ -592,7 +589,7 @@ function getProjectCommits(project, count = 20) {
     fetch(host + '/api/v4/projects/' + project.id + '/repository/commits/?per_page=' + count + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(commits => {
-        if(commits && commits.length > 0) {
+        if (commits && commits.length > 0) {
             recentProjectCommits = commits
             currentProjectCommit = commits[0]
             fetch(host + '/api/v4/projects/' + project.id + '/repository/commits/' + commits[0].id + '?access_token=' + access_token).then(result => {
@@ -602,6 +599,9 @@ function getProjectCommits(project, count = 20) {
                 mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "' + pagination + '"')
                 mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = "' + displayCommit(commit, project, 'author') + '"')
             })
+        } else {
+            mb.window.webContents.executeJavaScript('document.getElementById("project-commits-pagination").innerHTML = "<span class=\\"name\\">Commits</span>"')
+            mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = ""')
         }
     })
 }
@@ -710,44 +710,45 @@ function getProjectCommitDetails(project_id, sha, index) {
 }
 
 async function getRecentlyVisited() {
-    recentlyVisitedString = '<ul class=\\"list-container\\">'
     recentlyVisitedArray = new Array()
+    let firstItem = true
     await BrowserHistory.getAllHistory(14320).then(async history => {
-        if (history.length == 2) {
-            history[0] = history[0].concat(history[1])
-            history.splice(1, 1)
-        }
-        await history.forEach(async item => {
-            item.sort(function (a, b) {
-                if (a.utc_time > b.utc_time) {
-                    return -1
+        let item = Array.prototype.concat.apply([], history);
+        item.sort(function (a, b) {
+            if (a.utc_time > b.utc_time) {
+                return -1
+            }
+            if (b.utc_time > a.utc_time) {
+                return 1
+            }
+        });
+        let i = 0
+        for (let j = 0; j < item.length; j++) {
+            if (item[j].title && item[j].url.indexOf(host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !recentlyVisitedArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
+                if (firstItem) {
+                    recentlyVisitedString = '<ul class=\\"list-container\\">'
+                    firstItem = false
                 }
-                if (b.utc_time > a.utc_time) {
-                    return 1
+                let nameWithNamespace = item[j].url.replace(host + '/', '').split('/-/')[0]
+                if (nameWithNamespace.split('/')[0] != 'groups') {
+                    url = host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
+                } else {
+                    url = host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
                 }
-            });
-            let i = 0
-            for (let j = 0; j < item.length; j++) {
-                if (item[j].title && item[j].url.indexOf(host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !recentlyVisitedArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
-                    let nameWithNamespace = item[j].url.replace(host + '/', '').split('/-/')[0]
-                    if (nameWithNamespace.split('/')[0] != 'groups') {
-                        url = host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
-                    } else {
-                        url = host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
-                    }
-                    recentlyVisitedArray.push(item[j].title)
-                    recentlyVisitedString += '<li class=\\"history-entry\\">'
-                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item[j].url.split('/-/')[0] + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[2].trim()) + '</a></span></div></li>'
-                    i++
-                    if (i == numberOfRecentlyVisited) {
-                        break
-                    }
+                recentlyVisitedArray.push(item[j].title)
+                recentlyVisitedString += '<li class=\\"history-entry\\">'
+                recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item[j].url.split('/-/')[0] + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[2].trim()) + '</a></span></div></li>'
+                i++
+                if (i == numberOfRecentlyVisited) {
+                    break
                 }
             }
+        }
+        if (!firstItem) {
             let moreString = "'Recently viewed'"
             recentlyVisitedString += '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' + moreString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
-            mb.window.webContents.executeJavaScript('document.getElementById("history").innerHTML = "' + recentlyVisitedString + '"')
-        })
+        }
+        mb.window.webContents.executeJavaScript('document.getElementById("history").innerHTML = "' + recentlyVisitedString + '"')
     })
 }
 
@@ -756,52 +757,48 @@ async function getMoreRecentlyVisited() {
     let moreRecentlyVisitedTitlesArray = []
     let firstItem = true
     await BrowserHistory.getAllHistory(14320).then(async history => {
-        if (history.length == 2) {
-            history[0] = history[0].concat(history[1])
-            history.splice(1, 1)
-        }
-        await history.forEach(async item => {
-            item.sort(function (a, b) {
-                if (a.utc_time > b.utc_time) {
-                    return -1
-                }
-                if (b.utc_time > a.utc_time) {
-                    return 1
-                }
-            });
-            mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<input id=\\"recentSearch\\" type=\\"text\\" onkeyup=\\"searchRecent(this)\\" placeholder=\\"Search...\\" />"')
-            let previousDate = 0
-            for (let j = 0; j < item.length; j++) {
-                if (item[j].title && item[j].url.indexOf(host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !moreRecentlyVisitedTitlesArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
-                    let nameWithNamespace = item[j].url.replace(host + '/', '').split('/-/')[0]
-                    if (nameWithNamespace.split('/')[0] != 'groups') {
-                        url = host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
-                    } else {
-                        url = host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
-                    }
-                    let currentDate = new Date(item[j].utc_time).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })
-                    if (previousDate != currentDate) {
-                        if (currentDate == new Date(Date.now()).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })) {
-                            recentlyVisitedString += '<div class=\\"date\\">Today</div>'
-                        } else {
-                            if (!firstItem) {
-                                recentlyVisitedString += '</ul>'
-                            }
-                            recentlyVisitedString += '<div class=\\"date\\">' + currentDate + '</div>'
-                        }
-                        recentlyVisitedString += '<ul class=\\"list-container history-list-container\\">'
-                        previousDate = currentDate
-                    }
-                    moreRecentlyVisitedArray.push(item[j])
-                    moreRecentlyVisitedTitlesArray.push(item[j].title)
-                    recentlyVisitedString += '<li class=\\"history-entry\\">'
-                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item[j].url.split('/-/')[0] + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[2].trim()) + '</a></span></div></li>'
-                    firstItem = false
-                }
+        let item = Array.prototype.concat.apply([], history);
+        item.sort(function (a, b) {
+            if (a.utc_time > b.utc_time) {
+                return -1
             }
-            recentlyVisitedString += '</ul>'
-            mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + recentlyVisitedString + '"')
-        })
+            if (b.utc_time > a.utc_time) {
+                return 1
+            }
+        });
+        let i = 0
+        mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<input id=\\"recentSearch\\" type=\\"text\\" onkeyup=\\"searchRecent(this)\\" placeholder=\\"Search...\\" />"')
+        let previousDate = 0
+        for (let j = 0; j < item.length; j++) {
+            if (item[j].title && item[j].url.indexOf(host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !moreRecentlyVisitedTitlesArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
+                let nameWithNamespace = item[j].url.replace(host + '/', '').split('/-/')[0]
+                if (nameWithNamespace.split('/')[0] != 'groups') {
+                    url = host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
+                } else {
+                    url = host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
+                }
+                let currentDate = new Date(item[j].utc_time).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })
+                if (previousDate != currentDate) {
+                    if (currentDate == new Date(Date.now()).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })) {
+                        recentlyVisitedString += '<div class=\\"date\\">Today</div>'
+                    } else {
+                        if (!firstItem) {
+                            recentlyVisitedString += '</ul>'
+                        }
+                        recentlyVisitedString += '<div class=\\"date\\">' + currentDate + '</div>'
+                    }
+                    recentlyVisitedString += '<ul class=\\"list-container history-list-container\\">'
+                    previousDate = currentDate
+                }
+                moreRecentlyVisitedArray.push(item[j])
+                moreRecentlyVisitedTitlesArray.push(item[j].title)
+                recentlyVisitedString += '<li class=\\"history-entry\\">'
+                recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item[j].url.split('/-/')[0] + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[2].trim()) + '</a></span></div></li>'
+                firstItem = false
+            }
+        }
+        recentlyVisitedString += '</ul>'
+        mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + recentlyVisitedString + '"')
     })
 }
 
@@ -858,24 +855,30 @@ async function getUsersProjects() {
     return projectsArray
 }
 
-function displayUsersProjects(projects) {
+function displayUsersProjects() {
     let favoriteProjectsString = ''
-    let chevron = '<svg class=\\"chevron\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg>'
-    for (let projectObject of projects) {
-        let projectString = "'Project'"
-        let projectJson = "'" + escapeHtml(JSON.stringify(projectObject)) + "'"
-        favoriteProjectsString += '<li onclick=\\"goToDetail(' + projectString + ', ' + projectJson + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" class=\\"icon\\"/></svg>'
-        favoriteProjectsString += '<div class=\\"name-with-namespace\\"><span>' + projectObject.name + '</span><span class=\\"namespace\\">' + projectObject.namespace.name + '</span></div>' + chevron + '</li>'
+    let projects = store.get('favorite-projects')
+    if (projects && projects.length > 0) {
+        favoriteProjectsString += '<ul id=\\"projects\\" class=\\"list-container clickable\\">'
+        let chevron = '<svg class=\\"chevron\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg>'
+        for (let projectObject of projects) {
+            let projectString = "'Project'"
+            let projectJson = "'" + escapeHtml(JSON.stringify(projectObject)) + "'"
+            favoriteProjectsString += '<li onclick=\\"goToDetail(' + projectString + ', ' + projectJson + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" class=\\"icon\\"/></svg>'
+            favoriteProjectsString += '<div class=\\"name-with-namespace\\"><span>' + projectObject.name + '</span><span class=\\"namespace\\">' + projectObject.namespace.name + '</span></div>' + chevron + '</li>'
+        }
+        favoriteProjectsString += '</ul>'
     }
     mb.window.webContents.executeJavaScript('document.getElementById("projects").innerHTML = "' + favoriteProjectsString + '"')
 }
 
 function getRecentComments() {
-    let recentCommentsString = '<ul class=\\"list-container\\">'
+    let recentCommentsString = ''
     fetch(host + '/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token).then(result => {
         return result.json()
     }).then(async comments => {
         if (comments && comments.length > 0) {
+            recentCommentsString += '<ul class=\\"list-container\\">'
             for (let comment of comments) {
                 let url = ''
                 if (comment.note.noteable_type == 'MergeRequest') {
@@ -893,8 +896,8 @@ function getRecentComments() {
             }
             let moreString = "'Comments'"
             recentCommentsString += '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' + moreString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
-            mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "' + recentCommentsString + '"')
         }
+        mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "' + recentCommentsString + '"')
     })
 }
 
@@ -927,24 +930,29 @@ function getMoreRecentComments(url = host + '/api/v4/events?action=commented&per
 }
 
 function getIssues(url = host + '/api/v4/issues?scope=assigned_to_me&state=opened&order_by=created_at&per_page=' + numberOfIssues + '&access_token=' + access_token, id = 'detail-content') {
-    let issuesString = '<ul class=\\"list-container\\">'
+    let issuesString = ''
     let type = "'Issues'"
     let keysetLinks
     fetch(url).then(result => {
         keysetLinks = result.headers.get('Link')
         return result.json()
     }).then(issues => {
-        for (let issue of issues) {
-            let timestamp
-            if (activeIssuesSortOption == 'updated_at') {
-                timestamp = 'Updated ' + timeSince(new Date(issue.updated_at)) + ' ago'
-            } else if (activeIssuesSortOption == 'created_at') {
-                timestamp = 'Created ' + timeSince(new Date(issue.created_at)) + ' ago'
+        if (issues && issues.length > 0) {
+            issuesString += '<ul class=\\"list-container\\">'
+            for (let issue of issues) {
+                let timestamp
+                if (activeIssuesSortOption == 'updated_at') {
+                    timestamp = 'Updated ' + timeSince(new Date(issue.updated_at)) + ' ago'
+                } else if (activeIssuesSortOption == 'created_at') {
+                    timestamp = 'Created ' + timeSince(new Date(issue.created_at)) + ' ago'
+                }
+                issuesString += '<li class=\\"history-entry\\">'
+                issuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">' + timestamp + ' &middot; <a href=\\"' + issue.web_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + issue.references.full.split('#')[0] + '</a></span></div></li>'
             }
-            issuesString += '<li class=\\"history-entry\\">'
-            issuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">' + timestamp + ' &middot; <a href=\\"' + issue.web_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + issue.references.full.split('#')[0] + '</a></span></div></li>'
+            issuesString += '</ul>' + displayPagination(keysetLinks, type)
+        } else {
+            issuesString = '<div class=\\"zero\\">Empty state.</div>'
         }
-        issuesString += '</ul>' + displayPagination(keysetLinks, type)
         mb.window.webContents.executeJavaScript('document.getElementById("' + id + '").innerHTML = "' + issuesString + '"')
     })
 }
@@ -957,10 +965,9 @@ function getMRs(url = host + '/api/v4/merge_requests?scope=assigned_to_me&state=
         keysetLinks = result.headers.get('Link')
         return result.json()
     }).then(mrs => {
-        if (mrs.length > 0) {
+        if (mrs && mrs.length > 0) {
             mrsString = '<ul class=\\"list-container\\">'
             for (let mr of mrs) {
-                console.log(mr)
                 let timestamp
                 if (activeMRsSortOption == 'updated_at') {
                     timestamp = 'Updated ' + timeSince(new Date(mr.updated_at)) + ' ago'
@@ -972,31 +979,36 @@ function getMRs(url = host + '/api/v4/merge_requests?scope=assigned_to_me&state=
             }
             mrsString += '</ul>' + displayPagination(keysetLinks, type)
         } else {
-            mrsString = '<div class=\\"zero\\">No merge requests.</div>'
+            mrsString = '<div class=\\"zero\\">Empty state.</div>'
         }
         mb.window.webContents.executeJavaScript('document.getElementById("' + id + '").innerHTML = "' + mrsString + '"')
     })
 }
 
 function getTodos(url = host + '/api/v4/todos?per_page=' + numberOfTodos + '&access_token=' + access_token) {
-    let todosString = '<ul class=\\"list-container\\">'
+    let todosString = ''
     let type = "'Todos'"
     let keysetLinks
     fetch(url).then(result => {
         keysetLinks = result.headers.get('Link')
         return result.json()
     }).then(todos => {
-        for (let todo of todos) {
-            todosString += '<li class=\\"history-entry\\">'
-            let location = ''
-            if (todo.project) {
-                location = todo.project.name_with_namespace
-            } else if (todo.group) {
-                location = todo.group.name
+        if (todos && todos.length > 0) {
+            todosString = '<ul class=\\"list-container\\">'
+            for (let todo of todos) {
+                todosString += '<li class=\\"history-entry\\">'
+                let location = ''
+                if (todo.project) {
+                    location = todo.project.name_with_namespace
+                } else if (todo.group) {
+                    location = todo.group.name
+                }
+                todosString += '<a href=\\"' + todo.target_url + '\\" target=\\"_blank\\">' + escapeHtml(todo.target.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(todo.updated_at)) + ' ago &middot; <a href=\\"' + todo.target_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + location + '</a></span></div></li>'
             }
-            todosString += '<a href=\\"' + todo.target_url + '\\" target=\\"_blank\\">' + escapeHtml(todo.target.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(todo.updated_at)) + ' ago &middot; <a href=\\"' + todo.target_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + location + '</a></span></div></li>'
+            todosString += '</ul>' + displayPagination(keysetLinks, type)
+        } else {
+            todosString = '<div class=\\"zero\\">Empty state.</div>'
         }
-        todosString += '</ul>' + displayPagination(keysetLinks, type)
         mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + todosString + '"')
     })
 }
@@ -1078,44 +1090,41 @@ function displayProjectPage(project) {
 }
 
 function getProjectIssues(project) {
-    let projectIssuesString = '<ul class=\\"list-container\\">'
+    let projectIssuesString = ''
     let projectString = "'" + escapeHtml(JSON.stringify(project)) + "'"
-    let nextPage
     fetch(host + '/api/v4/projects/' + project.id + '/issues?state=opened&order_by=created_at&per_page=3&access_token=' + access_token).then(result => {
-        nextPage = result.headers.get('x-next-page')
         return result.json()
     }).then(issues => {
         if (issues.length > 0) {
+            projectIssuesString = '<ul class=\\"list-container\\">'
             for (let issue of issues) {
                 projectIssuesString += '<li class=\\"history-entry\\">'
                 projectIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(issue.created_at)) + ' ago &middot; ' + issue.author.name + '</span></div></li>'
             }
             let issuesString = "'Issues'"
             projectIssuesString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + issuesString + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
+            projectIssuesString += '</ul>'
         }
-        projectIssuesString += '</ul>'
         mb.window.webContents.executeJavaScript('document.getElementById("project-recent-issues").innerHTML = "' + projectIssuesString + '"')
     })
 }
 
 function getProjectMRs(project) {
-    let projectMRsString = '<ul class=\\"list-container\\">'
+    let projectMRsString = ''
     let projectString = "'" + escapeHtml(JSON.stringify(project)) + "'"
-    let nextPage
     fetch(host + '/api/v4/projects/' + project.id + '/merge_requests?state=opened&order_by=created_at&per_page=3&access_token=' + access_token).then(result => {
-        nextPage = result.headers.get('x-next-page')
         return result.json()
     }).then(mrs => {
-        projectMRsString = '<ul class=\\"list-container\\">'
         if (mrs.length > 0) {
+            projectMRsString += '<ul class=\\"list-container\\">'
             for (let mr of mrs) {
                 projectMRsString += '<li class=\\"history-entry\\">'
                 projectMRsString += '<a href=\\"' + mr.web_url + '\\" target=\\"_blank\\">' + escapeHtml(mr.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(mr.created_at)) + ' ago &middot; ' + mr.author.name + '</span></div></li>'
             }
             let mrsString = "'Merge Requests'"
             projectMRsString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + mrsString + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
+            projectMRsString += '</ul>'
         }
-        projectMRsString += '</ul>'
         mb.window.webContents.executeJavaScript('document.getElementById("project-recent-mrs").innerHTML = "' + projectMRsString + '"')
     })
 }
@@ -1431,7 +1440,7 @@ function logout() {
     store.delete('user_id')
     store.delete('username')
     store.delete('access_token')
-    store.delete('favorite-project')
+    store.delete('favorite-projects')
     store.delete('bookmarks')
     store.delete('host')
     mb.window.webContents.session.clearCache()
