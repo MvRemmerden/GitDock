@@ -574,13 +574,18 @@ function getLastCommits(count = 20) {
                 let committedArray = commits.filter(commit => {
                     return (commit.action_name == 'pushed to' || (commit.action_name == 'pushed new' && commit.push_data.commit_to && commit.push_data.commit_count > 0))
                 })
-                currentCommit = committedArray[0]
-                recentCommits = committedArray
-                getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1)
+                if(committedArray && committedArray.length > 0) {
+                    currentCommit = committedArray[0]
+                    recentCommits = committedArray
+                    getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1)
+                } else {
+                    mb.window.webContents.executeJavaScript('document.getElementById("commits-pagination").innerHTML = ""')
+                    mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<p class=\\"no-results\\">No commits pushed yet.</p>"')
+                }
             }
         } else {
             mb.window.webContents.executeJavaScript('document.getElementById("commits-pagination").innerHTML = ""')
-            mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = ""')
+            mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<p class=\\"no-results\\">No commits pushed yet.</p>"')
         }
     })
 }
@@ -601,7 +606,7 @@ function getProjectCommits(project, count = 20) {
             })
         } else {
             mb.window.webContents.executeJavaScript('document.getElementById("project-commits-pagination").innerHTML = "<span class=\\"name\\">Commits</span>"')
-            mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = ""')
+            mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = "<p class=\\"no-results\\">No commits pushed yet.</p>"')
         }
     })
 }
@@ -868,6 +873,9 @@ function displayUsersProjects() {
             favoriteProjectsString += '<div class=\\"name-with-namespace\\"><span>' + projectObject.name + '</span><span class=\\"namespace\\">' + projectObject.namespace.name + '</span></div>' + chevron + '</li>'
         }
         favoriteProjectsString += '</ul>'
+    }else{
+        let projectLink = "'project-link'"
+        favoriteProjectsString = '<div id=\\"new-project\\"><div><span class=\\"cta\\">Track the projects you care about.</span> 🗂</div><div class=\\"cta-description\\">Projects are cool.</div><form id=\\"project-input\\" action=\\"#\\" onsubmit=\\"addProject(document.getElementById(' + projectLink + ').value);return false;\\"><input id=\\"project-link\\" placeholder=\\"Enter your link here...\\" /><button id=\\"project-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-project-error\\"></div></div>'
     }
     mb.window.webContents.executeJavaScript('document.getElementById("projects").innerHTML = "' + favoriteProjectsString + '"')
 }
@@ -896,8 +904,10 @@ function getRecentComments() {
             }
             let moreString = "'Comments'"
             recentCommentsString += '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' + moreString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
+            mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "' + recentCommentsString + '"')
+        }else{
+            mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "<p class=\\"no-results\\">You haven&#039;t written any comments yet.</p>"')
         }
-        mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "' + recentCommentsString + '"')
     })
 }
 
@@ -951,7 +961,8 @@ function getIssues(url = host + '/api/v4/issues?scope=assigned_to_me&state=opene
             }
             issuesString += '</ul>' + displayPagination(keysetLinks, type)
         } else {
-            issuesString = '<div class=\\"zero\\">Empty state.</div>'
+            let illustration = escapeQuotes('<svg width="150" height="110" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 293 216"><g fill="none" fill-rule="evenodd"><g transform="rotate(-5 211.388 -693.89)"><rect width="163.6" height="200" x=".2" stroke="#EEE" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 9" rx="6"/><g transform="translate(24 38)"><path fill="#FC6D26" d="M18.2 14l-4-3.8c-.4-.6-1.4-.6-2 0-.6.6-.6 1.5 0 2l5 5c.3.4.6.5 1 .5s.8 0 1-.4L28 8.8c.6-.6.6-1.5 0-2-.6-.7-1.6-.7-2 0L18 14z"/><path stroke="#6B4FBB" stroke-width="3" d="M27 23.3V27c0 2.3-1.7 4-4 4H4c-2.3 0-4-1.7-4-4V8c0-2.3 1.7-4 4-4h3.8" stroke-linecap="round"/><rect width="76" height="3" x="40" y="11" fill="#6B4FBB" opacity=".5" rx="1.5"/><rect width="43" height="3" x="40" y="21" fill="#6B4FBB" opacity=".5" rx="1.5"/></g><g transform="translate(24 83)"><path fill="#FC6D26" d="M18.2 14l-4-3.8c-.4-.6-1.4-.6-2 0-.6.6-.6 1.5 0 2l5 5c.3.4.6.5 1 .5s.8 0 1-.4L28 8.8c.6-.6.6-1.5 0-2-.6-.7-1.6-.7-2 0L18 14z"/><path stroke="#6B4FBB" stroke-width="3" d="M27 23.3V27c0 2.3-1.7 4-4 4H4c-2.3 0-4-1.7-4-4V8c0-2.3 1.7-4 4-4h3.8" stroke-linecap="round"/><rect width="76" height="3" x="40" y="11" fill="#B5A7DD" rx="1.5"/><rect width="43" height="3" x="40" y="21" fill="#B5A7DD" rx="1.5"/></g><g transform="translate(24 130)"><path fill="#FC6D26" d="M18.2 14l-4-3.8c-.4-.6-1.4-.6-2 0-.6.6-.6 1.5 0 2l5 5c.3.4.6.5 1 .5s.8 0 1-.4L28 8.8c.6-.6.6-1.5 0-2-.6-.7-1.6-.7-2 0L18 14z"/><path stroke="#6B4FBB" stroke-width="3" d="M27 23.3V27c0 2.3-1.7 4-4 4H4c-2.3 0-4-1.7-4-4V8c0-2.3 1.7-4 4-4h3.8" stroke-linecap="round"/><rect width="76" height="3" x="40" y="11" fill="#B5A7DD" rx="1.5"/><rect width="43" height="3" x="40" y="21" fill="#B5A7DD" rx="1.5"/></g></g><path fill="#FFCE29" d="M30 11l-1.8 4-2-4-4-1.8 4-2 2-4 2 4 4 2M286 60l-2.7 6.3-3-6-6-3 6-3 3-6 2.8 6.2 6.6 2.8M263 97l-2 4-2-4-4-2 4-2 2-4 2 4 4 2M12 85l-2.7 6.3-3-6-6-3 6-3 3-6 2.8 6.2 6.6 2.8"/></g></svg>')
+            issuesString = '<div class=\\"zero\\">' + illustration + '<p>No issues with the specified criteria.</p></div>'
         }
         mb.window.webContents.executeJavaScript('document.getElementById("' + id + '").innerHTML = "' + issuesString + '"')
     })
@@ -979,7 +990,8 @@ function getMRs(url = host + '/api/v4/merge_requests?scope=assigned_to_me&state=
             }
             mrsString += '</ul>' + displayPagination(keysetLinks, type)
         } else {
-            mrsString = '<div class=\\"zero\\">Empty state.</div>'
+            let illustration = escapeQuotes('<svg width="150" height="110" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 293 216"><g fill="none" fill-rule="evenodd"><g transform="rotate(-5 211.388 -693.89)"><rect width="163.6" height="200" x=".2" stroke="#EEE" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 9" rx="6"/><g transform="translate(24 38)"><path fill="#FC6D26" d="M18.2 14l-4-3.8c-.4-.6-1.4-.6-2 0-.6.6-.6 1.5 0 2l5 5c.3.4.6.5 1 .5s.8 0 1-.4L28 8.8c.6-.6.6-1.5 0-2-.6-.7-1.6-.7-2 0L18 14z"/><path stroke="#6B4FBB" stroke-width="3" d="M27 23.3V27c0 2.3-1.7 4-4 4H4c-2.3 0-4-1.7-4-4V8c0-2.3 1.7-4 4-4h3.8" stroke-linecap="round"/><rect width="76" height="3" x="40" y="11" fill="#6B4FBB" opacity=".5" rx="1.5"/><rect width="43" height="3" x="40" y="21" fill="#6B4FBB" opacity=".5" rx="1.5"/></g><g transform="translate(24 83)"><path fill="#FC6D26" d="M18.2 14l-4-3.8c-.4-.6-1.4-.6-2 0-.6.6-.6 1.5 0 2l5 5c.3.4.6.5 1 .5s.8 0 1-.4L28 8.8c.6-.6.6-1.5 0-2-.6-.7-1.6-.7-2 0L18 14z"/><path stroke="#6B4FBB" stroke-width="3" d="M27 23.3V27c0 2.3-1.7 4-4 4H4c-2.3 0-4-1.7-4-4V8c0-2.3 1.7-4 4-4h3.8" stroke-linecap="round"/><rect width="76" height="3" x="40" y="11" fill="#B5A7DD" rx="1.5"/><rect width="43" height="3" x="40" y="21" fill="#B5A7DD" rx="1.5"/></g><g transform="translate(24 130)"><path fill="#FC6D26" d="M18.2 14l-4-3.8c-.4-.6-1.4-.6-2 0-.6.6-.6 1.5 0 2l5 5c.3.4.6.5 1 .5s.8 0 1-.4L28 8.8c.6-.6.6-1.5 0-2-.6-.7-1.6-.7-2 0L18 14z"/><path stroke="#6B4FBB" stroke-width="3" d="M27 23.3V27c0 2.3-1.7 4-4 4H4c-2.3 0-4-1.7-4-4V8c0-2.3 1.7-4 4-4h3.8" stroke-linecap="round"/><rect width="76" height="3" x="40" y="11" fill="#B5A7DD" rx="1.5"/><rect width="43" height="3" x="40" y="21" fill="#B5A7DD" rx="1.5"/></g></g><path fill="#FFCE29" d="M30 11l-1.8 4-2-4-4-1.8 4-2 2-4 2 4 4 2M286 60l-2.7 6.3-3-6-6-3 6-3 3-6 2.8 6.2 6.6 2.8M263 97l-2 4-2-4-4-2 4-2 2-4 2 4 4 2M12 85l-2.7 6.3-3-6-6-3 6-3 3-6 2.8 6.2 6.6 2.8"/></g></svg>')
+            mrsString = '<div class=\\"zero\\">' + illustration + '<p>No merge requests with the specified criteria.</p></div>'
         }
         mb.window.webContents.executeJavaScript('document.getElementById("' + id + '").innerHTML = "' + mrsString + '"')
     })
@@ -1007,7 +1019,8 @@ function getTodos(url = host + '/api/v4/todos?per_page=' + numberOfTodos + '&acc
             }
             todosString += '</ul>' + displayPagination(keysetLinks, type)
         } else {
-            todosString = '<div class=\\"zero\\">Empty state.</div>'
+            let illustration = escapeQuotes('<svg width="150" height="110" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 293 216"><g fill="none" fill-rule="evenodd"><g transform="rotate(-5 211.388 -693.89)"><rect width="163.6" height="200" x=".2" stroke="#EEE" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 9" rx="6"/><g transform="translate(24 38)"><path fill="#FC6D26" d="M18.2 14l-4-3.8c-.4-.6-1.4-.6-2 0-.6.6-.6 1.5 0 2l5 5c.3.4.6.5 1 .5s.8 0 1-.4L28 8.8c.6-.6.6-1.5 0-2-.6-.7-1.6-.7-2 0L18 14z"/><path stroke="#6B4FBB" stroke-width="3" d="M27 23.3V27c0 2.3-1.7 4-4 4H4c-2.3 0-4-1.7-4-4V8c0-2.3 1.7-4 4-4h3.8" stroke-linecap="round"/><rect width="76" height="3" x="40" y="11" fill="#6B4FBB" opacity=".5" rx="1.5"/><rect width="43" height="3" x="40" y="21" fill="#6B4FBB" opacity=".5" rx="1.5"/></g><g transform="translate(24 83)"><path fill="#FC6D26" d="M18.2 14l-4-3.8c-.4-.6-1.4-.6-2 0-.6.6-.6 1.5 0 2l5 5c.3.4.6.5 1 .5s.8 0 1-.4L28 8.8c.6-.6.6-1.5 0-2-.6-.7-1.6-.7-2 0L18 14z"/><path stroke="#6B4FBB" stroke-width="3" d="M27 23.3V27c0 2.3-1.7 4-4 4H4c-2.3 0-4-1.7-4-4V8c0-2.3 1.7-4 4-4h3.8" stroke-linecap="round"/><rect width="76" height="3" x="40" y="11" fill="#B5A7DD" rx="1.5"/><rect width="43" height="3" x="40" y="21" fill="#B5A7DD" rx="1.5"/></g><g transform="translate(24 130)"><path fill="#FC6D26" d="M18.2 14l-4-3.8c-.4-.6-1.4-.6-2 0-.6.6-.6 1.5 0 2l5 5c.3.4.6.5 1 .5s.8 0 1-.4L28 8.8c.6-.6.6-1.5 0-2-.6-.7-1.6-.7-2 0L18 14z"/><path stroke="#6B4FBB" stroke-width="3" d="M27 23.3V27c0 2.3-1.7 4-4 4H4c-2.3 0-4-1.7-4-4V8c0-2.3 1.7-4 4-4h3.8" stroke-linecap="round"/><rect width="76" height="3" x="40" y="11" fill="#B5A7DD" rx="1.5"/><rect width="43" height="3" x="40" y="21" fill="#B5A7DD" rx="1.5"/></g></g><path fill="#FFCE29" d="M30 11l-1.8 4-2-4-4-1.8 4-2 2-4 2 4 4 2M286 60l-2.7 6.3-3-6-6-3 6-3 3-6 2.8 6.2 6.6 2.8M263 97l-2 4-2-4-4-2 4-2 2-4 2 4 4 2M12 85l-2.7 6.3-3-6-6-3 6-3 3-6 2.8 6.2 6.6 2.8"/></g></svg>')
+            todosString = '<div class=\\"zero\\">' + illustration + '<p>Take the day off, you have no To-Dos!</p></div>'
         }
         mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + todosString + '"')
     })
@@ -1032,7 +1045,7 @@ function getBookmarks() {
         mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
     } else {
         let bookmarkLink = "'bookmark-link'"
-        bookmarksString = '<div id=\\"new-bookmark\\"><div><span id=\\"cta\\">Add a new GitLab bookmark</span> 🔖</div><div id=\\"cta-description\\">Bookmarks are helpful when you have an issue/merge request you will have to come back to repeatedly.</div><form id=\\"bookmark-input\\" action=\\"#\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter your link here...\\" /><button id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-bookmark-error\\"></div></div>'
+        bookmarksString = '<div id=\\"new-bookmark\\"><div><span class=\\"cta\\">Add a new GitLab bookmark</span> 🔖</div><div class=\\"cta-description\\">Bookmarks are helpful when you have an issue/merge request you will have to come back to repeatedly.</div><form id=\\"bookmark-input\\" action=\\"#\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter your link here...\\" /><button id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-bookmark-error\\"></div></div>'
         mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
     }
 }
@@ -1092,6 +1105,7 @@ function displayProjectPage(project) {
 function getProjectIssues(project) {
     let projectIssuesString = ''
     let projectString = "'" + escapeHtml(JSON.stringify(project)) + "'"
+    let issuesString = "'Issues'"
     fetch(host + '/api/v4/projects/' + project.id + '/issues?state=opened&order_by=created_at&per_page=3&access_token=' + access_token).then(result => {
         return result.json()
     }).then(issues => {
@@ -1101,7 +1115,10 @@ function getProjectIssues(project) {
                 projectIssuesString += '<li class=\\"history-entry\\">'
                 projectIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(issue.created_at)) + ' ago &middot; ' + issue.author.name + '</span></div></li>'
             }
-            let issuesString = "'Issues'"
+            projectIssuesString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + issuesString + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
+            projectIssuesString += '</ul>'
+        }else{
+            projectIssuesString = '<p class=\\"no-results\\">No open issues.</p><ul class=\\"list-container\\">'
             projectIssuesString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + issuesString + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
             projectIssuesString += '</ul>'
         }
@@ -1112,6 +1129,7 @@ function getProjectIssues(project) {
 function getProjectMRs(project) {
     let projectMRsString = ''
     let projectString = "'" + escapeHtml(JSON.stringify(project)) + "'"
+    let mrsString = "'Merge Requests'"
     fetch(host + '/api/v4/projects/' + project.id + '/merge_requests?state=opened&order_by=created_at&per_page=3&access_token=' + access_token).then(result => {
         return result.json()
     }).then(mrs => {
@@ -1121,7 +1139,10 @@ function getProjectMRs(project) {
                 projectMRsString += '<li class=\\"history-entry\\">'
                 projectMRsString += '<a href=\\"' + mr.web_url + '\\" target=\\"_blank\\">' + escapeHtml(mr.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(mr.created_at)) + ' ago &middot; ' + mr.author.name + '</span></div></li>'
             }
-            let mrsString = "'Merge Requests'"
+            projectMRsString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + mrsString + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
+            projectMRsString += '</ul>'
+        }else{
+            projectMRsString = '<p class=\\"no-results\\">No open merge requests.</p><ul class=\\"list-container\\">'
             projectMRsString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + mrsString + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
             projectMRsString += '</ul>'
         }
@@ -1349,6 +1370,10 @@ function escapeHtml(unsafe) {
         .replace(/[\n]/g, '\\n')
         .replace(/[\r]/g, '\\r')
         .replace(/[\t]/g, '\\t')
+}
+
+function escapeQuotes(unsafe) {
+    return unsafe.replace(/"/g, '\\"')
 }
 
 function timeSince(date) {
