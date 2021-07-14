@@ -1206,7 +1206,7 @@ function addBookmark(link) {
     if (link.indexOf(host + '') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
         parseGitLabUrl(link).then(bookmark => {
             if (!bookmark.type || (bookmark.type != 'issues' && bookmark.type != 'merge_requests' && bookmark.type != 'epics')) {
-                displayAddError('bookmark')
+                displayAddError('bookmark', '-')
             } else {
                 let bookmarks = store.get('bookmarks') || []
                 bookmarks.push(bookmark)
@@ -1214,10 +1214,10 @@ function addBookmark(link) {
                 getBookmarks()
             }
         }).catch(error => {
-            displayAddError('bookmark')
+            displayAddError('bookmark', '-')
         })
     } else {
-        displayAddError('bookmark')
+        displayAddError('bookmark', '-')
     }
 }
 
