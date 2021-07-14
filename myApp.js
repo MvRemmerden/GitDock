@@ -309,14 +309,14 @@ ipcMain.on('search-recent', (event, arg) => {
 })
 
 ipcMain.on('change-commit', (event, arg) => {
-    mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<div class=\\"commit empty\\"><div id=\\"project-name\\"></div><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div></div>"')
+    mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<div class=\\"commit empty\\"><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div><div id=\\"project-name\\"></div></div>"')
     let nextCommit = changeCommit(arg, recentCommits, currentCommit)
     currentCommit = nextCommit
     getCommitDetails(nextCommit.project_id, nextCommit.push_data.commit_to, nextCommit.index)
 })
 
 ipcMain.on('change-project-commit', (event, arg) => {
-    mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = "<div class=\\"commit empty\\"><div id=\\"project-name\\"></div><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div></div>"')
+    mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = "<div class=\\"commit empty\\"><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div><div id=\\"project-name\\"></div></div>"')
     let nextCommit = changeCommit(arg, recentProjectCommits, currentProjectCommit)
     currentProjectCommit = nextCommit
     getProjectCommitDetails(currentProject.id, nextCommit.id, nextCommit.index)
@@ -1083,7 +1083,7 @@ function displayPagination(keysetLinks, type) {
 }
 
 function setupEmptyProjectPage() {
-    let emptyPage = '<div id=\\"project-pipeline\\"><div class=\\"commit empty\\"><div id=\\"project-name\\"></div><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div></div></div>'
+    let emptyPage = '<div id=\\"project-pipeline\\"><div class=\\"commit empty\\"><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div></div><div id=\\"project-name\\"></div></div>'
     emptyPage += '<div class=\\"headline\\"><span class=\\"name\\">Issues</span></div>'
     emptyPage += '<div id=\\"project-recent-issues\\"><div id=\\"history\\"><ul class=\\"list-container empty\\"><li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li><li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li><li class=\\"history-entry empty\\"><div class=\\"history-link skeleton\\"></div><div class=\\"history-details skeleton\\"></div></li><li class=\\"more-link empty\\"><div class=\\"more-link-button skeleton\\"></div></li></ul></div></div>'
     emptyPage += '<div class=\\"headline\\"><span class=\\"name\\">Merge requests</span></div>'
@@ -1099,7 +1099,7 @@ function displayProjectPage(project) {
         logo = '<div id=\\"project-detail-name-avatar\\">' + project.name.charAt(0).toUpperCase() + '</div>'
     }
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
-    mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "<div id=\\"project-detail-information\\">' + logo + '<span class=\\"project-name\\">' + project.name + '</span><span class=\\"project-namespace\\">' + project.namespace.name + '</span></div><div id=\\"project-detail-link\\"><a href=\\"' + project.web_url + '\\" target=\\"_blank\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M5,2 C5.55228,2 6,2.44772 6,3 C6,3.55228 5.55228,4 5,4 L4,4 L4,12 L12,12 L12,11 C12,10.4477 12.4477,10 13,10 C13.5523,10 14,10.4477 14,11 L14,12 C14,13.1046 13.1046,14 12,14 L4,14 C2.89543,14 2,13.1046 2,12 L2,4 C2,2.89543 2.89543,2 4,2 L5,2 Z M15,1 L15,5.99814453 C15,6.55043453 14.5523,6.99814453 14,6.99814453 C13.4477,6.99814453 13,6.55043453 13,5.99814453 L13,4.41419 L8.71571,8.69846 C8.32519,9.08899 7.69202,9.08899 7.3015,8.69846 C6.91097,8.30794 6.91097,7.67477 7.3015,7.28425 L11.5858,3 L9.99619141,3 C9.44391141,3 8.99619141,2.55228 8.99619141,2 C8.99619141,1.44772 9.44391141,1 9.99619141,1 L15,1 Z\\"/></svg></a></div>"')
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "<div id=\\"project-detail-information\\">' + logo + '<span class=\\"project-name\\">' + project.name + '</span><span class=\\"project-namespace\\">' + project.namespace.name + '</span></div><div id=\\"project-detail-link\\"><a href=\\"' + project.web_url + '\\" target=\\"_blank\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill-rule=\\"evenodd\\" d=\\"M5,2 C5.55228,2 6,2.44772 6,3 C6,3.55228 5.55228,4 5,4 L4,4 L4,12 L12,12 L12,11 C12,10.4477 12.4477,10 13,10 C13.5523,10 14,10.4477 14,11 L14,12 C14,13.1046 13.1046,14 12,14 L4,14 C2.89543,14 2,13.1046 2,12 L2,4 C2,2.89543 2.89543,2 4,2 L5,2 Z M15,1 L15,5.99814453 C15,6.55043453 14.5523,6.99814453 14,6.99814453 C13.4477,6.99814453 13,6.55043453 13,5.99814453 L13,4.41419 L8.71571,8.69846 C8.32519,9.08899 7.69202,9.08899 7.3015,8.69846 C6.91097,8.30794 6.91097,7.67477 7.3015,7.28425 L11.5858,3 L9.99619141,3 C9.44391141,3 8.99619141,2.55228 8.99619141,2 C8.99619141,1.44772 9.44391141,1 9.99619141,1 L15,1 Z\\"/></svg></a></div>"')
 }
 
 function getProjectIssues(project) {
@@ -1175,7 +1175,7 @@ function displayCommit(commit, project, focus = 'project') {
                 logo += '<path d=\\"M10.5 7.63V6.37l-.787-.13c-.044-.175-.132-.349-.263-.61l.481-.652-.918-.913-.657.478a2.346 2.346 0 0 0-.612-.26L7.656 3.5H6.388l-.132.783c-.219.043-.394.13-.612.26l-.657-.478-.918.913.437.652c-.131.218-.175.392-.262.61l-.744.086v1.261l.787.13c.044.218.132.392.263.61l-.438.651.92.913.655-.434c.175.086.394.173.613.26l.131.783h1.313l.131-.783c.219-.043.394-.13.613-.26l.656.478.918-.913-.48-.652c.13-.218.218-.435.262-.61l.656-.13zM7 8.283a1.285 1.285 0 0 1-1.313-1.305c0-.739.57-1.304 1.313-1.304.744 0 1.313.565 1.313 1.304 0 .74-.57 1.305-1.313 1.305z\\" class=\\"icon\\"/></g></svg>'
             }
         }
-    } else {
+    }/* else {
         if (project.avatar_url && project.avatar_url != null && project.visibility == 'public') {
             logo = '<img src=\\"' + project.avatar_url + '?width=64\\" />'
         } else {
@@ -1187,15 +1187,15 @@ function displayCommit(commit, project, focus = 'project') {
         }).then(user => {
             console.log(user[0])
             logo = '<img src=\\"' + user[0].avatar_url + '\\" />'
-        })*/
-    }
+        })
+    }*/
     let subline
     if (focus == 'project') {
         subline = '<a href=\\"' + project.web_url + '\\" target=\\_blank\\">' + project.name_with_namespace + '</a>'
     } else {
         subline = commit.author_name
     }
-    return '<div class=\\"commit\\">' + logo + '<div class=\\"commit-information\\"><a href=\\"' + commit.web_url + '\\" target=\\"_blank\\">' + escapeHtml(commit.title) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.committed_date.split('.')[0] + 'Z')) + ' ago &middot; ' + subline + '</span></div></div>'
+    return '<div class=\\"commit\\"><div class=\\"commit-information\\"><a href=\\"' + commit.web_url + '\\" target=\\"_blank\\">' + escapeHtml(commit.title) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.committed_date.split('.')[0] + 'Z')) + ' ago &middot; ' + subline + '</span></div>' + logo + '</div>'
 }
 
 function addBookmark(link) {
