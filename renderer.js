@@ -72,7 +72,11 @@ function addBookmark(value) {
     window.electron.addBookmark(value)
 }
 
-function addProject(value) {
+function addProject(input, target) {
+    let value = {
+        input: input,
+        target: target
+    }
     window.electron.addProject(value)
 }
 
@@ -106,4 +110,8 @@ function startManualLogin(access_token, host) {
         host: host
     }
     window.electron.startManualLogin(value)
+}
+
+function logout() {
+    window.electron.logout()
 }

@@ -309,7 +309,7 @@ ipcMain.on('add-bookmark', (event, arg) => {
 })
 
 ipcMain.on('add-project', (event, arg) => {
-    addProject(arg)
+    addProject(arg.input, arg.target)
 })
 
 ipcMain.on('start-bookmark-dialog', (event, arg) => {
@@ -350,6 +350,10 @@ ipcMain.on('start-login', (event, arg) => {
 
 ipcMain.on('start-manual-login', (event, arg) => {
     saveUser(arg.access_token, arg.host)
+})
+
+ipcMain.on('logout', (event, arg) => {
+    logout()
 })
 
 
@@ -405,19 +409,10 @@ if (access_token && user_id && username) {
 }
 
 function setupSecondaryMenu() {
-    let contextMenu
-    if (user_id && username) {
-        contextMenu = Menu.buildFromTemplate([
-            { label: 'Settings', click: () => { openSettingsPage() } },
-            { label: 'Log out', click: () => { logout() } },
-            { label: 'Quit', click: () => { mb.app.quit(); } }
-        ])
-    } else {
-        contextMenu = Menu.buildFromTemplate([
-            { label: 'Settings', click: () => { openSettingsPage() } },
-            { label: 'Quit', click: () => { mb.app.quit(); } }
-        ])
-    }
+    let contextMenu = Menu.buildFromTemplate([
+        { label: 'Settings', click: () => { openSettingsPage() } },
+        { label: 'Quit', click: () => { mb.app.quit(); } }
+    ])
     mb.tray.on('right-click', () => {
         mb.tray.popUpContextMenu(contextMenu)
     })
@@ -444,13 +439,13 @@ function openSettingsPage() {
                 favoriteProjects += '<div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteProject(' + project.id + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>'
             }
         }
-        favoriteProjects += '<li id=\\"add-project-dialog\\" class=\\"more-link\\"><a onclick=\\"startProjectDialog()\\">Add another project <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
-        let logout = '<div class=\\"headline\\"><span class=\\"name\\">User</span></div><div id=\\"user-administration\\"><button onclick=\\"logout()\\">Log out</div>'
-        settingsString = theme + favoriteProjects
+        favoriteProjects += '<li id=\\"add-project-dialog\\" class=\\"more-link\\"><a onclick=\\"startProjectDialog()\\">Add another project <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
+        let logout = '<div class=\\"headline\\"><span class=\\"name\\">User</span></div><div id=\\"user-administration\\"><button id=\\"logout-button\\" onclick=\\"logout()\\">Log out</div>'
+        settingsString = theme + favoriteProjects + logout
     } else {
         settingsString = theme
     }
-    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + settingsString + '</ul></div>"')
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + settingsString + '</div>"')
     mb.window.webContents.executeJavaScript('document.getElementById("light-mode").classList.remove("active")')
     mb.window.webContents.executeJavaScript('document.getElementById("dark-mode").classList.remove("active")')
     mb.window.webContents.executeJavaScript('document.getElementById("' + store.get('theme') + '-mode").classList.add("active")')
@@ -529,26 +524,11 @@ function getUser() {
     }).then(user => {
         let avatar_url = new URL(user.avatar_url)
         if (avatar_url.host != 'secure.gravatar.com') {
-            avatar_url.href = '?width=64'
+            avatar_url.href += '?width=64'
         }
         let userString = '<a href=\\"' + user.web_url + '\\" target=\\"_blank\\"><img src=\\"' + avatar_url.href + '\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' + user.name + '</span><span class=\\"username\\">@' + user.username + '</span></div></a>'
         mb.window.webContents.executeJavaScript('document.getElementById("user").innerHTML = "' + userString + '"')
     })
-    /*fetch(host + '/api/v4/issues_statistics?scope=all&assignee_id=' + user_id + '&access_token=' + access_token).then(result => {
-        return result.json()
-    }).then(stats => {
-        mb.window.webContents.executeJavaScript('document.getElementById("issues-count").innerHTML = "' + stats.statistics.counts.opened + '"')
-    })
-    fetch(host + '/api/v4/user_counts?&access_token=' + access_token).then(result => {
-        return result.json()
-    }).then(stats => {
-        let count = Number(stats.assigned_merge_requests) + Number(stats.review_requested_merge_requests)
-        mb.window.webContents.executeJavaScript('document.getElementById("mrs-count").innerHTML = "' + count + '"')
-    })
-    fetch(host + '/api/v4/todos?&per_page=1&pagination=keyset&access_token=' + access_token).then(result => {
-        let count = result.headers.get('x-total')
-        mb.window.webContents.executeJavaScript('document.getElementById("todos-count").innerHTML = "' + count + '"')
-    })*/
 }
 
 function getLastEvent(count = 1) {
@@ -557,8 +537,7 @@ function getLastEvent(count = 1) {
             return result.json()
         }).then(commits => {
             let commit = commits[0]
-            console.log(commit)
-            console.log(recentCommits[0])
+            //TODO What to do with this information?
         })
 
     }
@@ -574,18 +553,18 @@ function getLastCommits(count = 20) {
                 let committedArray = commits.filter(commit => {
                     return (commit.action_name == 'pushed to' || (commit.action_name == 'pushed new' && commit.push_data.commit_to && commit.push_data.commit_count > 0))
                 })
-                if(committedArray && committedArray.length > 0) {
+                if (committedArray && committedArray.length > 0) {
                     currentCommit = committedArray[0]
                     recentCommits = committedArray
                     getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1)
                 } else {
                     mb.window.webContents.executeJavaScript('document.getElementById("commits-pagination").innerHTML = ""')
-                    mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<p class=\\"no-results\\">No commits pushed yet.</p>"')
+                    mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<p class=\\"no-results\\">You haven&#039;t pushed any commits yet.</p>"')
                 }
             }
         } else {
             mb.window.webContents.executeJavaScript('document.getElementById("commits-pagination").innerHTML = ""')
-            mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<p class=\\"no-results\\">No commits pushed yet.</p>"')
+            mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<p class=\\"no-results\\">You haven&#039;t pushed any commits yet.</p>"')
         }
     })
 }
@@ -619,8 +598,8 @@ async function getLastPipelines(commits) {
                 projectArray.push(commit.project_id)
                 let result = await fetch(host + '/api/v4/projects/' + commit.project_id + '/pipelines?status=running&username=' + username + '&per_page=1&page=1&access_token=' + access_token)
                 let pipelines = await result.json()
-                if (pipelines.length != 0) {
-                    mb.tray.setImage(__dirname + '/assets/running.png')
+                if (pipelines && pipelines.length > 0) {
+                    mb.tray.setImage(__dirname + '/assets/running.png')                    
                     for (let pipeline of pipelines) {
                         if (runningPipelineSubscriptions.findIndex(subscriptionPipeline => subscriptionPipeline.id == pipeline.id) == -1) {
                             let result = await fetch(host + '/api/v4/projects/' + pipeline.project_id + '/repository/commits/' + pipeline.sha + '?access_token=' + access_token)
@@ -652,7 +631,7 @@ async function subscribeToRunningPipeline() {
                 } else {
                     pipelineStatus = pipeline.status
                 }
-                let updateNotification = new Notification({ title: 'Pipeline ' + pipelineStatus, subtitle: parse(pipeline.web_url).namespace + ' / ' + parse(pipeline.web_url).project, body: runningPipeline.commit_title })
+                let updateNotification = new Notification({ title: 'Pipeline ' + pipelineStatus, subtitle: parse(pipeline.web_url).namespaceWithProject, body: runningPipeline.commit_title })
                 updateNotification.on('click', () => {
                     shell.openExternal(pipeline.web_url)
                 })
@@ -716,6 +695,7 @@ function getProjectCommitDetails(project_id, sha, index) {
 
 async function getRecentlyVisited() {
     recentlyVisitedArray = new Array()
+    let recentlyVisitedString = ''
     let firstItem = true
     await BrowserHistory.getAllHistory(14320).then(async history => {
         let item = Array.prototype.concat.apply([], history);
@@ -752,6 +732,8 @@ async function getRecentlyVisited() {
         if (!firstItem) {
             let moreString = "'Recently viewed'"
             recentlyVisitedString += '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' + moreString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
+        } else {
+            recentlyVisitedString = '<p class=\\"no-results\\">Recently visited objects will show up here.<br/><span class=\\"supported-browsers\\">Supported browsers: Chrome, Firefox, Edge, Opera and Brave.</span></p>'
         }
         mb.window.webContents.executeJavaScript('document.getElementById("history").innerHTML = "' + recentlyVisitedString + '"')
     })
@@ -873,9 +855,9 @@ function displayUsersProjects() {
             favoriteProjectsString += '<div class=\\"name-with-namespace\\"><span>' + projectObject.name + '</span><span class=\\"namespace\\">' + projectObject.namespace.name + '</span></div>' + chevron + '</li>'
         }
         favoriteProjectsString += '</ul>'
-    }else{
-        let projectLink = "'project-link'"
-        favoriteProjectsString = '<div id=\\"new-project\\"><div><span class=\\"cta\\">Track the projects you care about.</span> 🗂</div><div class=\\"cta-description\\">Projects are cool.</div><form id=\\"project-input\\" action=\\"#\\" onsubmit=\\"addProject(document.getElementById(' + projectLink + ').value);return false;\\"><input id=\\"project-link\\" placeholder=\\"Enter your link here...\\" /><button id=\\"project-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-project-error\\"></div></div>'
+    } else {
+        let projectLink = "'project-overview-link'"
+        favoriteProjectsString = '<div class=\\"new-project\\"><div><span class=\\"cta\\">Track projects you care about</span> 🌟</div><div class=\\"cta-description\\">Add any project you want a directly accessible shortcut for.</div><form class=\\"project-input\\" action=\\"#\\" onsubmit=\\"addProject(document.getElementById(' + projectLink + ').value, ' + projectLink + ');return false;\\"><input class=\\"project-link\\" id=\\"project-overview-link\\" placeholder=\\"Enter the project link here...\\" /><button class=\\"add-button\\" id=\\"project-overview-add-button\\" type=\\"submit\\">Add</button></form><div class=\\"add-project-error\\" id=\\"add-project-overview-error\\"></div></div>'
     }
     mb.window.webContents.executeJavaScript('document.getElementById("projects").innerHTML = "' + favoriteProjectsString + '"')
 }
@@ -905,7 +887,7 @@ function getRecentComments() {
             let moreString = "'Comments'"
             recentCommentsString += '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' + moreString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
             mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "' + recentCommentsString + '"')
-        }else{
+        } else {
             mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "<p class=\\"no-results\\">You haven&#039;t written any comments yet.</p>"')
         }
     })
@@ -961,7 +943,7 @@ function getIssues(url = host + '/api/v4/issues?scope=assigned_to_me&state=opene
             }
             issuesString += '</ul>' + displayPagination(keysetLinks, type)
         } else {
-            let illustration = escapeQuotes('<svg width="150" height="110" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 293 216"><g fill="none" fill-rule="evenodd"><g transform="rotate(-5 211.388 -693.89)"><rect width="163.6" height="200" x=".2" stroke="#EEE" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 9" rx="6"/><g transform="translate(24 38)"><path fill="#FC6D26" d="M18.2 14l-4-3.8c-.4-.6-1.4-.6-2 0-.6.6-.6 1.5 0 2l5 5c.3.4.6.5 1 .5s.8 0 1-.4L28 8.8c.6-.6.6-1.5 0-2-.6-.7-1.6-.7-2 0L18 14z"/><path stroke="#6B4FBB" stroke-width="3" d="M27 23.3V27c0 2.3-1.7 4-4 4H4c-2.3 0-4-1.7-4-4V8c0-2.3 1.7-4 4-4h3.8" stroke-linecap="round"/><rect width="76" height="3" x="40" y="11" fill="#6B4FBB" opacity=".5" rx="1.5"/><rect width="43" height="3" x="40" y="21" fill="#6B4FBB" opacity=".5" rx="1.5"/></g><g transform="translate(24 83)"><path fill="#FC6D26" d="M18.2 14l-4-3.8c-.4-.6-1.4-.6-2 0-.6.6-.6 1.5 0 2l5 5c.3.4.6.5 1 .5s.8 0 1-.4L28 8.8c.6-.6.6-1.5 0-2-.6-.7-1.6-.7-2 0L18 14z"/><path stroke="#6B4FBB" stroke-width="3" d="M27 23.3V27c0 2.3-1.7 4-4 4H4c-2.3 0-4-1.7-4-4V8c0-2.3 1.7-4 4-4h3.8" stroke-linecap="round"/><rect width="76" height="3" x="40" y="11" fill="#B5A7DD" rx="1.5"/><rect width="43" height="3" x="40" y="21" fill="#B5A7DD" rx="1.5"/></g><g transform="translate(24 130)"><path fill="#FC6D26" d="M18.2 14l-4-3.8c-.4-.6-1.4-.6-2 0-.6.6-.6 1.5 0 2l5 5c.3.4.6.5 1 .5s.8 0 1-.4L28 8.8c.6-.6.6-1.5 0-2-.6-.7-1.6-.7-2 0L18 14z"/><path stroke="#6B4FBB" stroke-width="3" d="M27 23.3V27c0 2.3-1.7 4-4 4H4c-2.3 0-4-1.7-4-4V8c0-2.3 1.7-4 4-4h3.8" stroke-linecap="round"/><rect width="76" height="3" x="40" y="11" fill="#B5A7DD" rx="1.5"/><rect width="43" height="3" x="40" y="21" fill="#B5A7DD" rx="1.5"/></g></g><path fill="#FFCE29" d="M30 11l-1.8 4-2-4-4-1.8 4-2 2-4 2 4 4 2M286 60l-2.7 6.3-3-6-6-3 6-3 3-6 2.8 6.2 6.6 2.8M263 97l-2 4-2-4-4-2 4-2 2-4 2 4 4 2M12 85l-2.7 6.3-3-6-6-3 6-3 3-6 2.8 6.2 6.6 2.8"/></g></svg>')
+            let illustration = escapeQuotes('<svg width="150" height="110" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 293 216"><g fill="none" fill-rule="evenodd"><g transform="rotate(-5 211.388 -693.89)"><rect width="163.6" height="200" x=".2" stroke="#aaa" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 9" rx="6"/><g transform="translate(24 38)"><path fill="#FC6D26" d="M18.2 14l-4-3.8c-.4-.6-1.4-.6-2 0-.6.6-.6 1.5 0 2l5 5c.3.4.6.5 1 .5s.8 0 1-.4L28 8.8c.6-.6.6-1.5 0-2-.6-.7-1.6-.7-2 0L18 14z"/><path stroke="#6B4FBB" stroke-width="3" d="M27 23.3V27c0 2.3-1.7 4-4 4H4c-2.3 0-4-1.7-4-4V8c0-2.3 1.7-4 4-4h3.8" stroke-linecap="round"/><rect width="76" height="3" x="40" y="11" fill="#6B4FBB" opacity=".5" rx="1.5"/><rect width="43" height="3" x="40" y="21" fill="#6B4FBB" opacity=".5" rx="1.5"/></g><g transform="translate(24 83)"><path fill="#FC6D26" d="M18.2 14l-4-3.8c-.4-.6-1.4-.6-2 0-.6.6-.6 1.5 0 2l5 5c.3.4.6.5 1 .5s.8 0 1-.4L28 8.8c.6-.6.6-1.5 0-2-.6-.7-1.6-.7-2 0L18 14z"/><path stroke="#6B4FBB" stroke-width="3" d="M27 23.3V27c0 2.3-1.7 4-4 4H4c-2.3 0-4-1.7-4-4V8c0-2.3 1.7-4 4-4h3.8" stroke-linecap="round"/><rect width="76" height="3" x="40" y="11" fill="#B5A7DD" rx="1.5"/><rect width="43" height="3" x="40" y="21" fill="#B5A7DD" rx="1.5"/></g><g transform="translate(24 130)"><path fill="#FC6D26" d="M18.2 14l-4-3.8c-.4-.6-1.4-.6-2 0-.6.6-.6 1.5 0 2l5 5c.3.4.6.5 1 .5s.8 0 1-.4L28 8.8c.6-.6.6-1.5 0-2-.6-.7-1.6-.7-2 0L18 14z"/><path stroke="#6B4FBB" stroke-width="3" d="M27 23.3V27c0 2.3-1.7 4-4 4H4c-2.3 0-4-1.7-4-4V8c0-2.3 1.7-4 4-4h3.8" stroke-linecap="round"/><rect width="76" height="3" x="40" y="11" fill="#B5A7DD" rx="1.5"/><rect width="43" height="3" x="40" y="21" fill="#B5A7DD" rx="1.5"/></g></g><path fill="#FFCE29" d="M30 11l-1.8 4-2-4-4-1.8 4-2 2-4 2 4 4 2M286 60l-2.7 6.3-3-6-6-3 6-3 3-6 2.8 6.2 6.6 2.8M263 97l-2 4-2-4-4-2 4-2 2-4 2 4 4 2M12 85l-2.7 6.3-3-6-6-3 6-3 3-6 2.8 6.2 6.6 2.8"/></g></svg>')
             issuesString = '<div class=\\"zero\\">' + illustration + '<p>No issues with the specified criteria.</p></div>'
         }
         mb.window.webContents.executeJavaScript('document.getElementById("' + id + '").innerHTML = "' + issuesString + '"')
@@ -1045,7 +1027,7 @@ function getBookmarks() {
         mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
     } else {
         let bookmarkLink = "'bookmark-link'"
-        bookmarksString = '<div id=\\"new-bookmark\\"><div><span class=\\"cta\\">Add a new GitLab bookmark</span> 🔖</div><div class=\\"cta-description\\">Bookmarks are helpful when you have an issue/merge request you will have to come back to repeatedly.</div><form id=\\"bookmark-input\\" action=\\"#\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter your link here...\\" /><button id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-bookmark-error\\"></div></div>'
+        bookmarksString = '<div id=\\"new-bookmark\\"><div><span class=\\"cta\\">Add a new GitLab bookmark</span> 🔖</div><div class=\\"cta-description\\">Bookmarks are helpful when you have an issue/merge request you will have to come back to repeatedly.</div><form id=\\"bookmark-input\\" action=\\"#\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter the link here...\\" /><button class=\\"add-button\\" id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-bookmark-error\\"></div></div>'
         mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
     }
 }
@@ -1117,7 +1099,7 @@ function getProjectIssues(project) {
             }
             projectIssuesString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + issuesString + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
             projectIssuesString += '</ul>'
-        }else{
+        } else {
             projectIssuesString = '<p class=\\"no-results\\">No open issues.</p><ul class=\\"list-container\\">'
             projectIssuesString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + issuesString + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
             projectIssuesString += '</ul>'
@@ -1141,7 +1123,7 @@ function getProjectMRs(project) {
             }
             projectMRsString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + mrsString + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
             projectMRsString += '</ul>'
-        }else{
+        } else {
             projectMRsString = '<p class=\\"no-results\\">No open merge requests.</p><ul class=\\"list-container\\">'
             projectMRsString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + mrsString + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
             projectMRsString += '</ul>'
@@ -1223,41 +1205,48 @@ function addBookmark(link) {
     }
 }
 
-function addProject(link) {
-    let spinner = '<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 14 14\\"><g fill=\\"none\\" fill-rule=\\"evenodd\\"><circle cx=\\"7\\" cy=\\"7\\" r=\\"6\\" stroke=\\"#c9d1d9\\" stroke-opacity=\\".4\\" stroke-width=\\"2\\"/><path class=\\"icon\\" fill-opacity=\\".4\\" fill-rule=\\"nonzero\\" d=\\"M7 0a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V0z\\"/></g></svg>'
-    mb.window.webContents.executeJavaScript('document.getElementById("project-add-button").disabled = "disabled"')
-    mb.window.webContents.executeJavaScript('document.getElementById("project-link").disabled = "disabled"')
-    mb.window.webContents.executeJavaScript('document.getElementById("project-add-button").innerHTML = "' + spinner + ' Add"')
+function addProject(link, target) {
+    if(target == 'project-settings-link') {
+        target = '-settings-'
+    }else if (target == 'project-overview-link') {
+        target = '-overview-'
+    }
+    let spinner = '<svg class=\\"button-spinner\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 14 14\\"><g fill=\\"none\\" fill-rule=\\"evenodd\\"><circle cx=\\"7\\" cy=\\"7\\" r=\\"6\\" stroke=\\"#c9d1d9\\" stroke-opacity=\\".4\\" stroke-width=\\"2\\"/><path class=\\"icon\\" fill-opacity=\\".4\\" fill-rule=\\"nonzero\\" d=\\"M7 0a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V0z\\"/></g></svg>'
+    mb.window.webContents.executeJavaScript('document.getElementById("project' + target + 'add-button").disabled = "disabled"')
+    mb.window.webContents.executeJavaScript('document.getElementById("project' + target + 'link").disabled = "disabled"')
+    mb.window.webContents.executeJavaScript('document.getElementById("project' + target + 'add-button").innerHTML = "' + spinner + ' Add"')
     if (link.indexOf(host + '') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
         parseGitLabUrl(link).then(project => {
             if (project.type && project.type != 'projects') {
-                displayAddError('project')
+                displayAddError('project', target)
             } else {
                 let projects = store.get('favorite-projects') || []
                 projects.push(project)
                 store.set('favorite-projects', projects)
-                openSettingsPage()
+                if(target == '-settings-') {
+                    openSettingsPage()
+                }
                 displayUsersProjects(projects)
             }
         }).catch(error => {
-            displayAddError('project')
+            displayAddError('project', target)
         })
     } else {
-        displayAddError('project')
+        displayAddError('project', target)
     }
 }
 
-function displayAddError(type) {
-    mb.window.webContents.executeJavaScript('document.getElementById("add-' + type + '-error").style.display = "block"')
-    mb.window.webContents.executeJavaScript('document.getElementById("add-' + type + '-error").innerHTML = "This is not a valid GitLab ' + type + ' URL."')
-    mb.window.webContents.executeJavaScript('document.getElementById("' + type + '-add-button").disabled = false')
-    mb.window.webContents.executeJavaScript('document.getElementById("' + type + '-link").disabled = false')
-    mb.window.webContents.executeJavaScript('document.getElementById("' + type + '-add-button").innerHTML = "Add"')
+function displayAddError(type, target) {
+    mb.window.webContents.executeJavaScript('document.getElementById("add-' + type + target +'error").style.display = "block"')
+    mb.window.webContents.executeJavaScript('document.getElementById("add-' + type + target + 'error").innerHTML = "This is not a valid GitLab ' + type + ' URL."')
+    mb.window.webContents.executeJavaScript('document.getElementById("' + type + target + 'add-button").disabled = false')
+    mb.window.webContents.executeJavaScript('document.getElementById("' + type + target + 'link").disabled = false')
+    mb.window.webContents.executeJavaScript('document.getElementById("' + type + target + 'add-button").innerHTML = "Add"')
 }
 
 function startBookmarkDialog() {
     let bookmarkLink = "'bookmark-link'"
-    let bookmarkInput = '<form action=\\"#\\" id=\\"bookmark-input\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter your link here...\\" /><button id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-bookmark-error\\"></div>'
+    let bookmarkInput = '<form action=\\"#\\" id=\\"bookmark-input\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter your link here...\\" /><button class=\\"add-button\\" id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-bookmark-error\\"></div>'
     mb.window.webContents.executeJavaScript('document.getElementById("add-bookmark-dialog").classList.add("opened")')
     mb.window.webContents.executeJavaScript('document.getElementById("add-bookmark-dialog").innerHTML = "' + bookmarkInput + '"')
     mb.window.webContents.executeJavaScript('window.scrollBy(0, 14)')
@@ -1265,12 +1254,12 @@ function startBookmarkDialog() {
 }
 
 function startProjectDialog() {
-    let projectLink = "'project-link'"
-    let projectInput = '<form action=\\"#\\" id=\\"project-input\\" onsubmit=\\"addProject(document.getElementById(' + projectLink + ').value);return false;\\"><input id=\\"project-link\\" placeholder=\\"Enter the link to the project here...\\" /><button id=\\"project-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-project-error\\"></div>'
+    let projectLink = "'project-settings-link'"
+    let projectInput = '<form action=\\"#\\" class=\\"project-input\\" onsubmit=\\"addProject(document.getElementById(' + projectLink + ').value, ' + projectLink + ');return false;\\"><input class=\\"project-link\\" id=\\"project-settings-link\\" placeholder=\\"Enter the link to the project here...\\" /><button class=\\"add-button\\" id=\\"project-settings-add-button\\" type=\\"submit\\">Add</button></form><div class=\\"add-project-error\\" id=\\"add-project-settings-error\\"></div>'
     mb.window.webContents.executeJavaScript('document.getElementById("add-project-dialog").classList.add("opened")')
     mb.window.webContents.executeJavaScript('document.getElementById("add-project-dialog").innerHTML = "' + projectInput + '"')
     mb.window.webContents.executeJavaScript('window.scrollBy(0, 14)')
-    mb.window.webContents.executeJavaScript('document.getElementById("project-link").focus()')
+    mb.window.webContents.executeJavaScript('document.getElementById("project-settings-link").focus()')
 }
 
 async function parseGitLabUrl(link) {

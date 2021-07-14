@@ -548,7 +548,7 @@ a:hover {
     font-size: 0.825rem;
     color: var(--muted-text-color);
 }
-#bookmarks #new-bookmark, #projects #new-project {
+#bookmarks #new-bookmark, #projects .new-project {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -558,23 +558,24 @@ a:hover {
     padding: 1rem;
     background-color: var(--panel-background-color);
 }
-#bookmarks #new-bookmark .cta, #projects #new-project .cta {
+#bookmarks .cta, .new-project .cta {
     margin: 0 0.5rem 0.5rem 0;
     font-weight: 1.125rem;
     font-weight: bold;
     display: inline-block;
 }
-#bookmarks #new-bookmark .cta-description, #projects #new-project .cta-description {
+#bookmarks .cta-description, .new-project .cta-description {
     font-size: 0.825rem;
     color: var(--muted-text-color);
+    width: 100%;
 }
-#bookmarks #new-bookmark #bookmark-input, #projects #new-project #project-input {
+#bookmarks #bookmark-input, .new-project .project-input {
     margin-top: 1rem;
     display: flex;
     align-items: center;
     width: 100%;
 }
-#bookmarks #add-bookmark-dialog.opened #add-bookmark-error, #bookmarks #new-bookmark #add-bookmark-error, #projects #new-project #add-project-error, #favorite-projects #add-project-dialog.opened #add-project-error {
+#bookmarks #add-bookmark-error, .new-project .add-project-error, #favorite-projects .add-project-error {
     margin: 0.5rem auto 0 0;
     font-weight: normal;
     color: #f85149;
@@ -586,15 +587,15 @@ a:hover {
     display: flex;
     flex-direction: column;
 } 
-#bookmarks #add-bookmark-dialog #bookmark-input, #favorite-projects #add-project-dialog #project-input {
+#bookmarks #add-bookmark-dialog #bookmark-input, #favorite-projects #add-project-dialog .project-input {
     display: flex;
     align-items: center;
     width: 100%;
 }
-#bookmarks #new-bookmark #bookmark-input #bookmark-link, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link, #projects #new-project #project-input #project-link, #favorite-projects #add-project-dialog #project-input #project-link {
+#bookmarks #bookmark-link, .project-input .project-link {
     width: 100%;
     margin-right: 0.5rem;
-    border: 1px solid var(--hover-color);
+    border: 1px solid var(--border-color);
     font-size: 0.875rem;
     padding: 0.5rem;
     background-color: var(--lighter-background-color);
@@ -603,14 +604,14 @@ a:hover {
     box-sizing: border-box;
     outline: none;
 }
-#bookmarks #new-bookmark #bookmark-input #bookmark-link::placeholder, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link::placeholder, #projects #new-project #project-input #project-link::placeholder, #favorite-projects #add-project-dialog #project-input #project-link::placeholder {
+#bookmarks #bookmark-link::placeholder, .new-project .project-link::placeholder, #favorite-projects .project-link::placeholder {
     color: var(--placeholder-text-color);
 }
-#bookmarks #new-bookmark #bookmark-input #bookmark-link:disabled, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-link:disabled, #projects #new-project #project-input #project-link:disabled, #favorite-projects #add-project-dialog #project-input #project-link:disabled {
+#bookmarks #bookmark-link:disabled, .new-project .project-link:disabled, #favorite-projects .project-link:disabled {
     color: var(--disabled-background-color);
     cursor: not-allowed;
 }
-#bookmarks #new-bookmark #bookmark-input button, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button, #projects #new-project #project-input button, #favorite-projects #add-project-dialog #project-input #project-add-button {
+.add-button, #logout-button {
     background-color: var(--lighter-background-color);
     border: 1px solid var(--border-color);
     color: var(--text-color);
@@ -621,7 +622,7 @@ a:hover {
     align-items: center;
     cursor: pointer;
 }
-#bookmarks #new-bookmark #bookmark-input button svg, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button svg, #projects #new-project #project-input button svg, #favorite-projects #add-project-dialog #project-input #project-add-button svg {
+.add-button svg.button-spinner {
     width: 1rem;
     margin-right: 0.5rem;
     margin-left: 0;
@@ -629,11 +630,11 @@ a:hover {
     -moz-animation:spin 2s linear infinite;
     animation:spin 2s linear infinite;
 }
-#bookmarks #new-bookmark #bookmark-input button:hover, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button:hover, #projects #new-project #project-input button:hover, #favorite-projects #add-project-dialog #project-input #project-add-button:hover {
+.add-button:hover, #logout-button:hover {
     background-color: var(--border-color);
     border: 1px solid #8b949e;
 }
-#bookmarks #new-bookmark #bookmark-input button:disabled, #bookmarks #add-bookmark-dialog #bookmark-input #bookmark-add-button:disabled, #projects #new-project #project-input button:disabled, #favorite-projects #add-project-dialog #project-input #project-add-button:disabled {
+.add-button:disabled {
     background-color: var(--lighter-background-color);
     border: 1px solid var(--border-color);
     color: var(--disabled-background-color);
@@ -801,6 +802,12 @@ a:hover {
 }
 .no-results {
     margin-top: 0;
+}
+.no-results .supported-browsers {
+    font-size: 0.825rem;
+    color: var(--muted-text-color);
+    margin-top: 0.25rem;
+    display: inline-block;
 }
 .detail-view .detail-content #pagination {
     display: flex;

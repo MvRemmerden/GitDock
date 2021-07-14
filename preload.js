@@ -19,7 +19,8 @@ contextBridge.exposeInMainWorld('electron', {
   deleteProject: (value) => ipcRenderer.send('delete-project', value),
   changeTheme: (value) => ipcRenderer.send('change-theme', value),
   startLogin: () => ipcRenderer.send('start-login'),
-  startManualLogin: (value) => ipcRenderer.send('start-manual-login', value)
+  startManualLogin: (value) => ipcRenderer.send('start-manual-login', value),
+  logout: () => ipcRenderer.send('logout')
 }
 )
 
