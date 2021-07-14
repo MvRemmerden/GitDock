@@ -548,6 +548,18 @@ a:hover {
     font-size: 0.825rem;
     color: var(--muted-text-color);
 }
+.all-link {
+    margin-bottom: 1rem;
+    display: inline-block;
+}
+.all-link a {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+.all-link svg {
+    width: 1rem;
+}
 #bookmarks #new-bookmark, #projects .new-project {
     display: flex;
     align-items: center;
@@ -803,6 +815,9 @@ a:hover {
 }
 .no-results {
     margin-top: 0;
+}
+.no-results.with-all-link {
+    margin-bottom: 0.5rem;
 }
 .no-results .supported-browsers {
     font-size: 0.825rem;

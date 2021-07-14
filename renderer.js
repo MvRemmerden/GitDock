@@ -13,10 +13,11 @@ function goBackToDetail() {
     window.electron.goBackToDetail()
 }
 
-function goToSubDetail(page, project) {
+function goToSubDetail(page, project, all = false) {
     let value = {
         page: page,
-        project: project
+        project: project,
+        all: all
     }
     document.getElementById('sub-detail-view').style.left = 0
     window.electron.goToSubDetail(value)
