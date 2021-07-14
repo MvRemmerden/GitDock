@@ -694,6 +694,7 @@ a:hover {
 .detail-view .detail-header #project-detail-information div {
     display: flex;
     flex-direction: column;
+    line-height: 1.5rem;
 }
 .detail-view .detail-header #project-detail-name-avatar {
     display: flex;
