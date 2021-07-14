@@ -540,12 +540,19 @@ function getUser() {
     fetch(host + '/api/v4/user?access_token=' + access_token).then(result => {
         return result.json()
     }).then(user => {
-        let avatar_url = new URL(user.avatar_url)
-        if (avatar_url.host != 'secure.gravatar.com') {
-            avatar_url.href += '?width=64'
+        if(user && !user.error){
+            let avatar_url
+            if(user.avatar_url) {
+                avatar_url = new URL(user.avatar_url)
+                if (avatar_url.host != 'secure.gravatar.com') {
+                    avatar_url.href += '?width=64'
+                }
+            }
+            let userString = '<a href=\\"' + user.web_url + '\\" target=\\"_blank\\"><img src=\\"' + avatar_url.href + '\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' + user.name + '</span><span class=\\"username\\">@' + user.username + '</span></div></a>'
+            mb.window.webContents.executeJavaScript('document.getElementById("user").innerHTML = "' + userString + '"')
+        }else{
+            logout()
         }
-        let userString = '<a href=\\"' + user.web_url + '\\" target=\\"_blank\\"><img src=\\"' + avatar_url.href + '\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' + user.name + '</span><span class=\\"username\\">@' + user.username + '</span></div></a>'
-        mb.window.webContents.executeJavaScript('document.getElementById("user").innerHTML = "' + userString + '"')
     })
 }
 
