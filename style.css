@@ -388,6 +388,12 @@ a:hover {
 .commit:hover {
     background-color: var(--hover-color);
 }
+.commit:hover .icon-inverse {
+    fill: var(--lighter-background-color);
+}
+.commit .pipeline-link:hover .icon-inverse {
+    fill: var(--border-color);
+}
 .commit.empty .commit-name, .history-entry.empty .history-link, .comment.empty .comment-link {
     width: 80%;
     background-color: var(--border-color);

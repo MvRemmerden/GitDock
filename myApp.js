@@ -1158,7 +1158,7 @@ function getProjectMRs(project) {
 function displayCommit(commit, project, focus = 'project') {
     let logo = ''
     if (commit.last_pipeline) {
-        logo += '<a target=\\"_blank\\" href=\\"' + commit.last_pipeline.web_url + '\\">'
+        logo += '<a target=\\"_blank\\" href=\\"' + commit.last_pipeline.web_url + '\\" class=\\"pipeline-link\\">'
         if (commit.last_pipeline.status == 'scheduled') {
             logo += '<svg viewBox=\\"0 0 14 14\\" xmlns=\\"http://www.w3.org/2000/svg\\"><circle cx=\\"7\\" cy=\\"7\\" r=\\"7\\"/><circle class=\\"icon\\" style=\\"fill: var(--svg-status-bg, #c9d1d9);\\" cx=\\"7\\" cy=\\"7\\" r=\\"6\\"/><g transform=\\"translate(2.75 2.75)\\" fill-rule=\\"nonzero\\"><path d=\\"M4.165 7.81a3.644 3.644 0 1 1 0-7.29 3.644 3.644 0 0 1 0 7.29zm0-1.042a2.603 2.603 0 1 0 0-5.206 2.603 2.603 0 0 0 0 5.206z\\"/><rect x=\\"3.644\\" y=\\"2.083\\" width=\\"1.041\\" height=\\"2.603\\" rx=\\".488\\"/><rect x=\\"3.644\\" y=\\"3.644\\" width=\\"2.083\\" height=\\"1.041\\" rx=\\".488\\"/></g></svg>'
         } else {
