@@ -412,6 +412,7 @@ a:hover {
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
+    width: fit-content;
 }
 .todo, .history-entry, .comment {
     display: flex;
