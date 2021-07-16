@@ -28,10 +28,24 @@ jobs:
       # If you are using yarn instead npm, remove the line above and uncomment the two lines below.
       # - node/install-packages:
       #     pkg-manager: yarn 
-      - run: sudo apt update && sudo apt install rpm -y
+      - run: 
+          name: Get environment ready
+          command: sudo apt update && sudo apt install rpm -y
       - run:
           name: Run make
           command: npm run make
+      - run:
+          name: Creating Dummy Artifacts
+          command: |
+              echo "my artifact file" > /tmp/art-1;
+              mkdir /tmp/artifacts;
+              echo "my artifact files in a dir" > /tmp/artifacts/art-2;
+      - store_artifacts:
+          path: /tmp/art-1
+          destination: artifact-file
+      - store_artifacts:
+          path: /tmp/artifacts
+          
 
 workflows:
   # Below is the definition of your workflow.
