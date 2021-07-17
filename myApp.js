@@ -11,6 +11,7 @@ let access_token = store.get('access_token')
 let user_id = store.get('user_id')
 let username = store.get('username')
 let host = store.get('host') || 'https://git.fosscommunity.in'
+let plan = store.get('plan') || 'free'
 let recentlyVisitedString = ''
 let currentProject
 let moreRecentlyVisitedArray = []
@@ -103,7 +104,11 @@ ipcMain.on('detail-page', (event, arg) => {
             displaySkeleton(numberOfIssues)
             getIssues()
         } else if (arg.page == 'Merge requests') {
-            let mrsQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchMRs(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchMRs(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + reviewedLabel + '\\" onchange=\\"switchMRs(' + reviewedLabel + ', ' + query + ', ' + reviewedText + ')\\"><label for=\\"' + reviewedLabel + '\\" class=\\"custom-option-label\\">Review requests</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvedLabel + '\\" onchange=\\"switchMRs(' + approvedLabel + ', ' + query + ', ' + approvedText + ')\\"><label for=\\"' + approvedLabel + '\\" class=\\"custom-option-label\\">Approved</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvalLabel + '\\" onchange=\\"switchMRs(' + approvalLabel + ', ' + query + ', ' + approvalText + ')\\"><label for=\\"' + approvalLabel + '\\" class=\\"custom-option-label\\">Approval rule</label></div></div>'
+            let mrsQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchMRs(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchMRs(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + reviewedLabel + '\\" onchange=\\"switchMRs(' + reviewedLabel + ', ' + query + ', ' + reviewedText + ')\\"><label for=\\"' + reviewedLabel + '\\" class=\\"custom-option-label\\">Review requests</label>' 
+            if(plan != 'free') {
+                mrsQuerySelect += '<input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvedLabel + '\\" onchange=\\"switchMRs(' + approvedLabel + ', ' + query + ', ' + approvedText + ')\\"><label for=\\"' + approvedLabel + '\\" class=\\"custom-option-label\\">Approved</label>'
+            }
+            mrsQuerySelect += '<input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvalLabel + '\\" onchange=\\"switchMRs(' + approvalLabel + ', ' + query + ', ' + approvalText + ')\\"><label for=\\"' + approvalLabel + '\\" class=\\"custom-option-label\\">Approval rule</label></div></div>'
             let mrsStateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-state-active\\">Open</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + allLabel + '\\" onchange=\\"switchMRs(' + allLabel + ', ' + state + ', ' + allText + ')\\"><label for=\\"' + allLabel + '\\" class=\\"custom-option-label\\">All</label><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchMRs(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + mergedLabel + '\\" onchange=\\"switchMRs(' + mergedLabel + ', ' + state + ', ' + mergedText + ')\\"><label for=\\"' + mergedLabel + '\\" class=\\"custom-option-label\\">Merged</label><input class=\\"custom-option\\" name=\\"mrs-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchMRs(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div></div>'
             let mrsSortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-sort-active\\">Sort by recently created</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchMRs(' + recentlyCreatedLabel + ', ' + sort + ', ' + recentlyCreatedText + ')\\" checked><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label><input class=\\"custom-option\\" name=\\"mrs-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchMRs(' + recentlyUpdatedLabel + ', ' + sort + ', ' + recentlyUpdatedText + ')\\"><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label></div></div>'
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"filter-sort\\">' + mrsQuerySelect + mrsStateSelect + mrsSortSelect + '</div>"')
@@ -550,9 +555,24 @@ function getUser() {
             }
             let userString = '<a href=\\"' + user.web_url + '\\" target=\\"_blank\\"><img src=\\"' + avatar_url.href + '\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' + user.name + '</span><span class=\\"username\\">@' + user.username + '</span></div></a>'
             mb.window.webContents.executeJavaScript('document.getElementById("user").innerHTML = "' + userString + '"')
+            getUsersPlan()
         }else{
             logout()
         }
+    })
+}
+
+async function getUsersPlan() {
+    fetch(host + '/api/v4/namespaces?access_token=' + access_token).then(result => {
+        return result.json()
+    }).then(namespaces => {
+        let namespace = namespaces.filter(namespace => namespace.kind == 'user')[0]
+        if(namespace && namespace.plan) {
+            plan = namespace.plan
+        }else{
+            plan = 'free'
+        }
+        store.set('plan', plan)
     })
 }
 
@@ -1482,6 +1502,7 @@ function logout() {
     store.delete('favorite-projects')
     store.delete('bookmarks')
     store.delete('host')
+    store.delete('plan')
     mb.window.webContents.session.clearCache()
     mb.window.webContents.session.clearStorageData()
     app.quit()
