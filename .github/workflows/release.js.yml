@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  release:
+    types: [ created ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [self-hosted, windows-latest]
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+        cache: 'npm'
+    - name: Setup basic environment
+      run: npm install
+    - name: Setup extra environment
+      if: startsWith(matrix.os, 'self')
+      run: brew install fakeroot && brew install dpkg
+    - name: Publish release for Windows
+      if: startsWith(matrix.os, 'windows')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: npm run publish
+    - name: Publish release for Mac and Linux
+      if: startsWith(matrix.os, 'self')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: npm run publish -- --platform=darwin && npm run publish -- --platform=linux

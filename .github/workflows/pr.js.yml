@@ -1,0 +1,47 @@
+name: Pull request
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [self-hosted, windows-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+        cache: 'npm'
+    - name: Setup basic environment
+      run: npm install
+    - name: Setup extra environment
+      if: startsWith(matrix.os, 'self')
+      run: brew install fakeroot && brew install dpkg && npm install
+    - name: Build MacOS and Linux executables
+      if: startsWith(matrix.os, 'self')
+      run: npm run make -- --platform=darwin && npm run make -- --platform=linux
+    - name: Build Windows executables
+      if: startsWith(matrix.os, 'windows')
+      run: npm run make -- --platform=win32    
+    - name: Get version
+      if: startsWith(matrix.os, 'windows')
+      id: version
+      uses: Saionaro/extract-package-version@v1.0.6
+    - name: Upload artifacts
+      if: startsWith(matrix.os, 'self')
+      uses: actions/upload-artifact@v2
+      with:
+        name: builds
+        path: |
+          out/make
+    - name: Upload artifacts
+      if: startsWith(matrix.os, 'windows')
+      uses: actions/upload-artifact@v2
+      with:
+        name: builds
+        path: |
+          out/make/squirrel.windows/x64/GitLab.exe

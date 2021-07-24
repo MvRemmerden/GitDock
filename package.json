@@ -1,14 +1,16 @@
 {
-  "name": "GitLab",
-  "version": "1.0.0",
-  "description": "A better way of monitoring your work on GitLab.",
+  "name": "gitdock",
+  "productName": "GitDock",
+  "version": "0.0.27",
+  "description": "A better way of managing all your work on GitLab.",
   "main": "myApp.js",
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "make": "electron-forge make"
+    "make": "electron-forge make",
+    "publish": "electron-forge publish"
   },
-  "repository": "https://github.com/mvanremmerden/gitlab-menu-bar",
+  "repository": "https://github.com/mvremmerden/gitdock",
   "keywords": [
     "Electron",
     "quick",
@@ -18,12 +20,13 @@
   ],
   "author": "Marcel van Remmerden",
   "devDependencies": {
-    "@electron-forge/cli": "^6.0.0-beta.57",
-    "@electron-forge/maker-deb": "^6.0.0-beta.57",
-    "@electron-forge/maker-rpm": "^6.0.0-beta.57",
-    "@electron-forge/maker-dmg": "^6.0.0-beta.57",
-    "@electron-forge/maker-squirrel": "^6.0.0-beta.57",
-    "@electron-forge/maker-zip": "^6.0.0-beta.57",
+    "@electron-forge/cli": "^6.0.0-beta.58",
+    "@electron-forge/maker-deb": "^6.0.0-beta.58",
+    "@electron-forge/maker-dmg": "^6.0.0-beta.58",
+    "@electron-forge/maker-rpm": "^6.0.0-beta.58",
+    "@electron-forge/maker-squirrel": "^6.0.0-beta.58",
+    "@electron-forge/maker-zip": "^6.0.0-beta.58",
+    "@electron-forge/publisher-github": "^6.0.0-beta.58",
     "electron": "^13.1.7"
   },
   "dependencies": {
@@ -36,20 +39,19 @@
   "config": {
     "forge": {
       "packagerConfig": {
-        "icon": "./assets/gitlab.icns"
+        "icon": "./assets/gitlab.icns",
+        "appName": "GitLab",
+        "executableName": "GitLab",
+        "name": "GitLab"
       },
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "GitLab"
+            "name": "GitLab",
+            "setupExe": "GitLab.exe",
+            "noDelta": true
           }
-        },
-        {
-          "name": "@electron-forge/maker-zip",
-          "platforms": [
-            "darwin"
-          ]
         },
         {
           "name": "@electron-forge/maker-dmg",
@@ -60,14 +62,34 @@
         },
         {
           "name": "@electron-forge/maker-deb",
-          "config": {}
+          "config": {
+            "options": {
+              "bin": "GitLab",
+              "maintainer": "Marcel van Remmerden",
+              "name": "GitLab"
+            }
+          }
         },
         {
           "name": "@electron-forge/maker-rpm",
           "config": {
             "options": {
-              "license": "Closed Source"
+              "bin": "GitLab",
+              "license": "Closed Source",
+              "name": "GitLab"
             }
+          }
+        }
+      ],
+      "publishers": [
+        {
+          "name": "@electron-forge/publisher-github",
+          "config": {
+            "repository": {
+              "owner": "mvremmerden",
+              "name": "gitdock"
+            },
+            "draft": false
           }
         }
       ]

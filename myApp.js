@@ -10,7 +10,7 @@ process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 let access_token = store.get('access_token')
 let user_id = store.get('user_id')
 let username = store.get('username')
-let host = store.get('host') || 'https://git.fosscommunity.in'
+let host = store.get('host') || 'https://gitlab.com'
 let plan = store.get('plan') || 'free'
 let recentlyVisitedString = ''
 let currentProject
@@ -69,7 +69,7 @@ const mb = menubar({
     icon: __dirname + '/assets/gitlab.png',
     preloadWindow: true,
     browserWindow: {
-        width: 1000,
+        width: 550,
         height: 700,
         webPreferences: {
             preload: __dirname + '/preload.js',
@@ -397,16 +397,14 @@ if (access_token && user_id && username) {
 
         //Regularly relaoading content
         setInterval(function () {
-            getLastEvent()
-            /*console.log('update')
             getRecentlyVisited()
             getLastCommits()
             getRecentComments()
-            getUsersProjects()
-            getBookmarks()*/
-        }, 10000);
+            //TODO Implement smarter polling for commits
+            //getLastEvent()
+        }, 30000);
 
-        mb.window.webContents.openDevTools()
+        //mb.window.webContents.openDevTools()
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
             shell.openExternal(url);
             return { action: 'deny' };
@@ -426,7 +424,7 @@ if (access_token && user_id && username) {
         mb.window.loadURL(`file://${__dirname}/login.html`).then(() => {
             changeTheme(store.get('theme'), false)
             mb.showWindow()
-            mb.window.webContents.openDevTools()
+            //mb.window.webContents.openDevTools()
         })
     })
 }
@@ -475,7 +473,7 @@ function openSettingsPage() {
 }
 
 async function startLogin() {
-    await mb.window.loadURL(host + '/oauth/authorize?client_id=8bcaf7f5331bcb81b6f231d2f82e20a75112a20ef58744f5c73b02d9df025fe4&redirect_uri=' + host + '&response_type=token&state=test&scope=read_api')
+    await mb.window.loadURL(host + '/oauth/authorize?client_id=2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee&redirect_uri=' + host + '&response_type=token&state=test&scope=read_api')
     mb.window.on('page-title-updated', handleLogin)
     mb.showWindow()
 }
@@ -802,7 +800,7 @@ async function getMoreRecentlyVisited() {
         mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<input id=\\"recentSearch\\" type=\\"text\\" onkeyup=\\"searchRecent(this)\\" placeholder=\\"Search...\\" />"')
         let previousDate = 0
         for (let j = 0; j < item.length; j++) {
-            if (item[j].title && item[j].url.indexOf(host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !moreRecentlyVisitedTitlesArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
+            if (item[j].title && item[j].url.indexOf(host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !moreRecentlyVisitedTitlesArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ' && item[j].title.split('·')[0] != '500 Error - GitLab') {
                 let nameWithNamespace = item[j].url.replace(host + '/', '').split('/-/')[0]
                 if (nameWithNamespace.split('/')[0] != 'groups') {
                     url = host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
@@ -1224,7 +1222,7 @@ function displayCommit(commit, project, focus = 'project') {
     } else {
         subline = commit.author_name
     }
-    return '<div class=\\"commit\\"><div class=\\"commit-information\\"><a href=\\"' + commit.web_url + '\\" target=\\"_blank\\">' + escapeHtml(commit.title) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.committed_date.split('.')[0] + 'Z')) + ' ago &middot; ' + subline + '</span></div>' + logo + '</div>'
+    return '<div class=\\"commit\\"><div class=\\"commit-information\\"><a href=\\"' + commit.web_url + '\\" target=\\"_blank\\">' + escapeHtml(commit.title) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(commit.committed_date)) + ' ago &middot; ' + subline + '</span></div>' + logo + '</div>'
 }
 
 function addBookmark(link) {

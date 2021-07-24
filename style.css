@@ -359,7 +359,6 @@ a:hover {
 .commit svg, .commit img, .commit #project-name {
     min-width: 1.5rem;
     height: 1.5rem;
-    margin-left: 0.75rem;
     border-radius: 1.5rem;
     border: 1px solid transparent;
 }
@@ -390,6 +389,9 @@ a:hover {
 }
 .commit:hover .icon-inverse {
     fill: var(--lighter-background-color);
+}
+.commit .pipeline-link {
+    margin-left: 0.75rem;
 }
 .commit .pipeline-link:hover .icon-inverse {
     fill: var(--border-color);

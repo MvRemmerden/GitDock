@@ -1,0 +1,33 @@
+name: Push
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+        cache: 'npm'
+    - id: check
+      uses: EndBug/version-check@v2
+      with:
+        diff-search: true
+        token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Version logging
+      run: 'echo "Changed: ${{ steps.check.outputs.changed }}, Commit: ${{ steps.check.outputs.commit }}, New version: ${{ steps.check.outputs.version }}, Type: (${{ steps.check.outputs.type }})"'
+    - name: Create Release
+      if: steps.check.outputs.changed == 'true' || steps.check.outputs.changed == true
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.RELEASE }}
+      with:
+        tag_name: v${{ steps.check.outputs.version }}
+        release_name: v${{ steps.check.outputs.version }}
+        draft: false
+        prerelease: false

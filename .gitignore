@@ -7,3 +7,4 @@ Thumbs.db
 .vscode/*
 yarn.lock
 package-lock.json
+builds/
