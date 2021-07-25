@@ -21,6 +21,11 @@ body {
     font-size: 15px;
     line-height: 1.25rem;
 }
+:focus {
+    outline: 0;
+    outline-color: transparent;
+    outline-style: none;
+  }
 a {
     color: var(--text-color);
     text-decoration: none;
@@ -592,7 +597,6 @@ a:hover {
     width: 100%;
 }
 #bookmarks #bookmark-input, .new-project .project-input {
-    margin-top: 1rem;
     display: flex;
     align-items: center;
     width: 100%;
