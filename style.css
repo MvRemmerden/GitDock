@@ -595,6 +595,7 @@ a:hover {
     font-size: 0.825rem;
     color: var(--muted-text-color);
     width: 100%;
+    margin-bottom: 1rem;
 }
 #bookmarks #bookmark-input, .new-project .project-input {
     display: flex;
