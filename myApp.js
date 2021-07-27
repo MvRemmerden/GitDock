@@ -17,6 +17,7 @@ let currentProject
 let moreRecentlyVisitedArray = []
 let recentCommits = []
 let currentCommit
+let lastEventId
 let recentProjectCommits = []
 let currentProjectCommit
 let numberOfRecentlyVisited = 3
@@ -36,7 +37,7 @@ let runningPipelineSubscriptions = []
 let timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 let isOnSubPage = false
 
-//Dropdown shared code
+//Dropdown shared variables
 let query = "'query'"
 let state = "'state'"
 let sort = "'sort'"
@@ -62,6 +63,22 @@ let mergedLabel = "'merged'"
 let mergedText = "'Merged'"
 let approvalLabel = "'approval_rule_for_me'"
 let approvalText = "'Approval rules'"
+
+//Anti rebound variables
+let delay = 2000
+let lastUserExecution = 0
+let lastRecentlyVisitedExecution = 0
+let lastLastCommitsExecution = 0
+let lastRecentCommentsExecution = 0
+let lastUsersProjectsExecution = 0
+let lastBookmarksExecution = 0
+
+let lastUserExecutionFinished = true
+let lastRecentlyVisitedExecutionFinished = true
+let lastLastCommitsExecutionFinished = true
+let lastRecentCommentsExecutionFinished = true
+let lastUsersProjectsExecutionFinished = true
+let lastBookmarksExecutionFinished = true
 
 const mb = menubar({
     showDockIcon: false,
@@ -104,8 +121,8 @@ ipcMain.on('detail-page', (event, arg) => {
             displaySkeleton(numberOfIssues)
             getIssues()
         } else if (arg.page == 'Merge requests') {
-            let mrsQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchMRs(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchMRs(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + reviewedLabel + '\\" onchange=\\"switchMRs(' + reviewedLabel + ', ' + query + ', ' + reviewedText + ')\\"><label for=\\"' + reviewedLabel + '\\" class=\\"custom-option-label\\">Review requests</label>' 
-            if(plan != 'free') {
+            let mrsQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchMRs(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchMRs(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + reviewedLabel + '\\" onchange=\\"switchMRs(' + reviewedLabel + ', ' + query + ', ' + reviewedText + ')\\"><label for=\\"' + reviewedLabel + '\\" class=\\"custom-option-label\\">Review requests</label>'
+            if (plan != 'free') {
                 mrsQuerySelect += '<input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvedLabel + '\\" onchange=\\"switchMRs(' + approvedLabel + ', ' + query + ', ' + approvedText + ')\\"><label for=\\"' + approvedLabel + '\\" class=\\"custom-option-label\\">Approved</label>'
             }
             mrsQuerySelect += '<input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvalLabel + '\\" onchange=\\"switchMRs(' + approvalLabel + ', ' + query + ', ' + approvalText + ')\\"><label for=\\"' + approvalLabel + '\\" class=\\"custom-option-label\\">Approval rule</label></div></div>'
@@ -144,7 +161,7 @@ ipcMain.on('sub-detail-page', (event, arg) => {
     mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-header-content").classList.remove("empty")')
     mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-header-content").innerHTML = "' + arg.page + '"')
     if (arg.page == 'Issues') {
-        if(arg.all == true) {
+        if (arg.all == true) {
             activeIssuesStateOption = 'all'
             activeState = 'All'
             allChecked = ' checked'
@@ -159,7 +176,7 @@ ipcMain.on('sub-detail-page', (event, arg) => {
         displaySkeleton(numberOfIssues, undefined, 'sub-detail-content')
         getIssues(host + '/api/v4/projects/' + project.id + '/issues?scope=all&state=' + activeIssuesStateOption + '&order_by=created_at&per_page=' + numberOfIssues + '&access_token=' + access_token, 'sub-detail-content')
     } else if (arg.page == 'Merge Requests') {
-        if(arg.all == true) {
+        if (arg.all == true) {
             activeMRsStateOption = 'all'
             activeState = 'All'
             allChecked = ' checked'
@@ -391,6 +408,9 @@ if (access_token && user_id && username) {
 
         //Preloading content
         getUser()
+        getUsersPlan()
+        getRecentlyVisited()
+        getLastCommits()
         getRecentComments()
         displayUsersProjects()
         getBookmarks()
@@ -398,11 +418,9 @@ if (access_token && user_id && username) {
         //Regularly relaoading content
         setInterval(function () {
             getRecentlyVisited()
-            getLastCommits()
-            getRecentComments()
-            //TODO Implement smarter polling for commits
-            //getLastEvent()
-        }, 30000);
+            getLastEvent()
+            getBookmarks()
+        }, 10000);
 
         //mb.window.webContents.openDevTools()
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
@@ -411,13 +429,13 @@ if (access_token && user_id && username) {
         });
     })
 
+
     mb.on('show', () => {
-        //getUser()
         getRecentlyVisited()
         getLastCommits()
         getRecentComments()
-        //getUsersProjects()
-        //getBookmarks()
+        displayUsersProjects()
+        getBookmarks()
     })
 } else {
     mb.on('after-create-window', () => {
@@ -540,24 +558,30 @@ function saveUser(code, url = host) {
 }
 
 function getUser() {
-    fetch(host + '/api/v4/user?access_token=' + access_token).then(result => {
-        return result.json()
-    }).then(user => {
-        if(user && !user.error){
-            let avatar_url
-            if(user.avatar_url) {
-                avatar_url = new URL(user.avatar_url)
-                if (avatar_url.host != 'secure.gravatar.com') {
-                    avatar_url.href += '?width=64'
+    if (lastUserExecutionFinished && lastUserExecution + delay < Date.now()) {
+        lastUserExecutionFinished = false
+        fetch(host + '/api/v4/user?access_token=' + access_token).then(result => {
+            return result.json()
+        }).then(user => {
+            if (user && !user.error) {
+                let avatar_url
+                if (user.avatar_url) {
+                    avatar_url = new URL(user.avatar_url)
+                    if (avatar_url.host != 'secure.gravatar.com') {
+                        avatar_url.href += '?width=64'
+                    }
                 }
+                let userString = '<a href=\\"' + user.web_url + '\\" target=\\"_blank\\"><img src=\\"' + avatar_url.href + '\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' + user.name + '</span><span class=\\"username\\">@' + user.username + '</span></div></a>'
+                mb.window.webContents.executeJavaScript('document.getElementById("user").innerHTML = "' + userString + '"')
+                lastUserExecution = Date.now()
+                lastUserExecutionFinished = true
+            } else {
+                logout()
             }
-            let userString = '<a href=\\"' + user.web_url + '\\" target=\\"_blank\\"><img src=\\"' + avatar_url.href + '\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' + user.name + '</span><span class=\\"username\\">@' + user.username + '</span></div></a>'
-            mb.window.webContents.executeJavaScript('document.getElementById("user").innerHTML = "' + userString + '"')
-            getUsersPlan()
-        }else{
-            logout()
-        }
-    })
+        })
+    } else {
+        console.log('User running or not out of delay')
+    }
 }
 
 async function getUsersPlan() {
@@ -565,34 +589,42 @@ async function getUsersPlan() {
         return result.json()
     }).then(namespaces => {
         let namespace = namespaces.filter(namespace => namespace.kind == 'user')[0]
-        if(namespace && namespace.plan) {
+        if (namespace && namespace.plan) {
             plan = namespace.plan
-        }else{
+        } else {
             plan = 'free'
         }
         store.set('plan', plan)
     })
 }
 
-function getLastEvent(count = 1) {
+function getLastEvent() {
     if (recentCommits && recentCommits.length > 0) {
-        fetch(url = host + '/api/v4/events?action=pushed&per_page=' + count + '&access_token=' + access_token).then(result => {
+        fetch(url = host + '/api/v4/events?action=pushed&per_page=1&access_token=' + access_token).then(result => {
             return result.json()
-        }).then(commits => {
-            let commit = commits[0]
-            //TODO What to do with this information?
+        }).then(events => {
+            let event = events[0]
+            if (event.id != lastEventId) {
+                lastEventId = event.id
+                getLastCommits()
+                getRecentComments()
+            } else {
+                console.log("no new event")
+            }
         })
 
     }
 }
 
 function getLastCommits(count = 20) {
-    fetch(url = host + '/api/v4/events?action=pushed&per_page=' + count + '&access_token=' + access_token).then(result => {
-        return result.json()
-    }).then(commits => {
-        if (commits && commits.length > 0) {
-            getLastPipelines(commits)
-            if (count == 20) {
+    if (lastLastCommitsExecutionFinished && lastLastCommitsExecution + delay < Date.now()) {
+        lastLastCommitsExecutionFinished = false
+        fetch(url = host + '/api/v4/events?action=pushed&per_page=' + count + '&access_token=' + access_token).then(result => {
+            return result.json()
+        }).then(commits => {
+            if (commits && commits.length > 0) {
+                lastEventId = commits[0].id
+                getLastPipelines(commits)
                 let committedArray = commits.filter(commit => {
                     return (commit.action_name == 'pushed to' || (commit.action_name == 'pushed new' && commit.push_data.commit_to && commit.push_data.commit_count > 0))
                 })
@@ -604,12 +636,14 @@ function getLastCommits(count = 20) {
                     mb.window.webContents.executeJavaScript('document.getElementById("commits-pagination").innerHTML = ""')
                     mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<p class=\\"no-results\\">You haven&#039;t pushed any commits yet.</p>"')
                 }
+            } else {
+                mb.window.webContents.executeJavaScript('document.getElementById("commits-pagination").innerHTML = ""')
+                mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<p class=\\"no-results\\">You haven&#039;t pushed any commits yet.</p>"')
             }
-        } else {
-            mb.window.webContents.executeJavaScript('document.getElementById("commits-pagination").innerHTML = ""')
-            mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<p class=\\"no-results\\">You haven&#039;t pushed any commits yet.</p>"')
-        }
-    })
+            lastLastCommitsExecution = Date.now()
+            lastLastCommitsExecutionFinished = true
+        })
+    }
 }
 
 function getProjectCommits(project, count = 20) {
@@ -642,7 +676,7 @@ async function getLastPipelines(commits) {
                 let result = await fetch(host + '/api/v4/projects/' + commit.project_id + '/pipelines?status=running&username=' + username + '&per_page=1&page=1&access_token=' + access_token)
                 let pipelines = await result.json()
                 if (pipelines && pipelines.length > 0) {
-                    mb.tray.setImage(__dirname + '/assets/running.png')                    
+                    mb.tray.setImage(__dirname + '/assets/running.png')
                     for (let pipeline of pipelines) {
                         if (runningPipelineSubscriptions.findIndex(subscriptionPipeline => subscriptionPipeline.id == pipeline.id) == -1) {
                             let result = await fetch(host + '/api/v4/projects/' + pipeline.project_id + '/repository/commits/' + pipeline.sha + '?access_token=' + access_token)
@@ -737,49 +771,56 @@ function getProjectCommitDetails(project_id, sha, index) {
 }
 
 async function getRecentlyVisited() {
-    recentlyVisitedArray = new Array()
-    let recentlyVisitedString = ''
-    let firstItem = true
-    await BrowserHistory.getAllHistory(14320).then(async history => {
-        let item = Array.prototype.concat.apply([], history);
-        item.sort(function (a, b) {
-            if (a.utc_time > b.utc_time) {
-                return -1
-            }
-            if (b.utc_time > a.utc_time) {
-                return 1
-            }
-        });
-        let i = 0
-        for (let j = 0; j < item.length; j++) {
-            if (item[j].title && item[j].url.indexOf(host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !recentlyVisitedArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
-                if (firstItem) {
-                    recentlyVisitedString = '<ul class=\\"list-container\\">'
-                    firstItem = false
+    if (lastRecentlyVisitedExecutionFinished && lastRecentlyVisitedExecution + delay < Date.now()) {
+        lastRecentlyVisitedExecutionFinished = false
+        recentlyVisitedArray = new Array()
+        let recentlyVisitedString = ''
+        let firstItem = true
+        await BrowserHistory.getAllHistory(14320).then(async history => {
+            let item = Array.prototype.concat.apply([], history);
+            item.sort(function (a, b) {
+                if (a.utc_time > b.utc_time) {
+                    return -1
                 }
-                let nameWithNamespace = item[j].url.replace(host + '/', '').split('/-/')[0]
-                if (nameWithNamespace.split('/')[0] != 'groups') {
-                    url = host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
-                } else {
-                    url = host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
+                if (b.utc_time > a.utc_time) {
+                    return 1
                 }
-                recentlyVisitedArray.push(item[j].title)
-                recentlyVisitedString += '<li class=\\"history-entry\\">'
-                recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item[j].url.split('/-/')[0] + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[2].trim()) + '</a></span></div></li>'
-                i++
-                if (i == numberOfRecentlyVisited) {
-                    break
+            });
+            let i = 0
+            for (let j = 0; j < item.length; j++) {
+                if (item[j].title && item[j].url.indexOf(host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !recentlyVisitedArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
+                    if (firstItem) {
+                        recentlyVisitedString = '<ul class=\\"list-container\\">'
+                        firstItem = false
+                    }
+                    let nameWithNamespace = item[j].url.replace(host + '/', '').split('/-/')[0]
+                    if (nameWithNamespace.split('/')[0] != 'groups') {
+                        url = host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
+                    } else {
+                        url = host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
+                    }
+                    recentlyVisitedArray.push(item[j].title)
+                    recentlyVisitedString += '<li class=\\"history-entry\\">'
+                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item[j].url.split('/-/')[0] + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[2].trim()) + '</a></span></div></li>'
+                    i++
+                    if (i == numberOfRecentlyVisited) {
+                        break
+                    }
                 }
             }
-        }
-        if (!firstItem) {
-            let moreString = "'Recently viewed'"
-            recentlyVisitedString += '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' + moreString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
-        } else {
-            recentlyVisitedString = '<p class=\\"no-results\\">Recently visited objects will show up here.<br/><span class=\\"supported-browsers\\">Supported browsers: Chrome, Firefox, Edge, Opera and Brave.</span></p>'
-        }
-        mb.window.webContents.executeJavaScript('document.getElementById("history").innerHTML = "' + recentlyVisitedString + '"')
-    })
+            if (!firstItem) {
+                let moreString = "'Recently viewed'"
+                recentlyVisitedString += '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' + moreString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
+            } else {
+                recentlyVisitedString = '<p class=\\"no-results\\">Recently visited objects will show up here.<br/><span class=\\"supported-browsers\\">Supported browsers: Chrome, Firefox, Edge, Opera and Brave.</span></p>'
+            }
+            mb.window.webContents.executeJavaScript('document.getElementById("history").innerHTML = "' + recentlyVisitedString + '"')
+            lastRecentlyVisitedExecution = Date.now()
+            lastRecentlyVisitedExecutionFinished = true
+        })
+    } else {
+        console.log('Recently visited running or not out of delay')
+    }
 }
 
 async function getMoreRecentlyVisited() {
@@ -886,54 +927,68 @@ async function getUsersProjects() {
 }
 
 function displayUsersProjects() {
-    let favoriteProjectsString = ''
-    let projects = store.get('favorite-projects')
-    if (projects && projects.length > 0) {
-        favoriteProjectsString += '<ul id=\\"projects\\" class=\\"list-container clickable\\">'
-        let chevron = '<svg class=\\"chevron\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg>'
-        for (let projectObject of projects) {
-            let projectString = "'Project'"
-            let projectJson = "'" + escapeHtml(JSON.stringify(projectObject)) + "'"
-            favoriteProjectsString += '<li onclick=\\"goToDetail(' + projectString + ', ' + projectJson + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" class=\\"icon\\"/></svg>'
-            favoriteProjectsString += '<div class=\\"name-with-namespace\\"><span>' + projectObject.name + '</span><span class=\\"namespace\\">' + projectObject.namespace.name + '</span></div>' + chevron + '</li>'
+    if (lastUsersProjectsExecutionFinished && lastUsersProjectsExecution + delay < Date.now()) {
+        lastUsersProjectsExecutionFinished = false
+        let favoriteProjectsString = ''
+        let projects = store.get('favorite-projects')
+        if (projects && projects.length > 0) {
+            favoriteProjectsString += '<ul id=\\"projects\\" class=\\"list-container clickable\\">'
+            let chevron = '<svg class=\\"chevron\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg>'
+            for (let projectObject of projects) {
+                let projectString = "'Project'"
+                let projectJson = "'" + escapeHtml(JSON.stringify(projectObject)) + "'"
+                favoriteProjectsString += '<li onclick=\\"goToDetail(' + projectString + ', ' + projectJson + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" class=\\"icon\\"/></svg>'
+                favoriteProjectsString += '<div class=\\"name-with-namespace\\"><span>' + projectObject.name + '</span><span class=\\"namespace\\">' + projectObject.namespace.name + '</span></div>' + chevron + '</li>'
+            }
+            favoriteProjectsString += '</ul>'
+        } else {
+            let projectLink = "'project-overview-link'"
+            favoriteProjectsString = '<div class=\\"new-project\\"><div><span class=\\"cta\\">Track projects you care about</span> 🌟</div><div class=\\"cta-description\\">Add any project you want a directly accessible shortcut for.</div><form class=\\"project-input\\" action=\\"#\\" onsubmit=\\"addProject(document.getElementById(' + projectLink + ').value, ' + projectLink + ');return false;\\"><input class=\\"project-link\\" id=\\"project-overview-link\\" placeholder=\\"Enter the project link here...\\" /><button class=\\"add-button\\" id=\\"project-overview-add-button\\" type=\\"submit\\">Add</button></form><div class=\\"add-project-error\\" id=\\"add-project-overview-error\\"></div></div>'
         }
-        favoriteProjectsString += '</ul>'
+        mb.window.webContents.executeJavaScript('document.getElementById("projects").innerHTML = "' + favoriteProjectsString + '"')
+        lastUsersProjectsExecution = Date.now()
+        lastUsersProjectsExecutionFinished = true
     } else {
-        let projectLink = "'project-overview-link'"
-        favoriteProjectsString = '<div class=\\"new-project\\"><div><span class=\\"cta\\">Track projects you care about</span> 🌟</div><div class=\\"cta-description\\">Add any project you want a directly accessible shortcut for.</div><form class=\\"project-input\\" action=\\"#\\" onsubmit=\\"addProject(document.getElementById(' + projectLink + ').value, ' + projectLink + ');return false;\\"><input class=\\"project-link\\" id=\\"project-overview-link\\" placeholder=\\"Enter the project link here...\\" /><button class=\\"add-button\\" id=\\"project-overview-add-button\\" type=\\"submit\\">Add</button></form><div class=\\"add-project-error\\" id=\\"add-project-overview-error\\"></div></div>'
+        console.log('Users projects running or not out of delay')
     }
-    mb.window.webContents.executeJavaScript('document.getElementById("projects").innerHTML = "' + favoriteProjectsString + '"')
 }
 
 function getRecentComments() {
-    let recentCommentsString = ''
-    fetch(host + '/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token).then(result => {
-        return result.json()
-    }).then(async comments => {
-        if (comments && comments.length > 0) {
-            recentCommentsString += '<ul class=\\"list-container\\">'
-            for (let comment of comments) {
-                let url = ''
-                if (comment.note.noteable_type == 'MergeRequest') {
-                    url = host + '/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
-                } else if (comment.note.noteable_type == 'Issue') {
-                    url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + access_token
-                } else if (comment.noteableType == 'Epic') {
-                    break
+    if (lastRecentCommentsExecutionFinished && lastRecentCommentsExecution + delay < Date.now()) {
+        lastRecentCommentsExecutionFinished = false
+        let recentCommentsString = ''
+        fetch(host + '/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token).then(result => {
+            return result.json()
+        }).then(async comments => {
+            if (comments && comments.length > 0) {
+                recentCommentsString += '<ul class=\\"list-container\\">'
+                for (let comment of comments) {
+                    let url = ''
+                    if (comment.note.noteable_type == 'MergeRequest') {
+                        url = host + '/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
+                    } else if (comment.note.noteable_type == 'Issue') {
+                        url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + access_token
+                    } else if (comment.noteableType == 'Epic') {
+                        break
+                    }
+                    await fetch(url).then(result => {
+                        return result.json()
+                    }).then(collabject => {
+                        recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                    })
                 }
-                await fetch(url).then(result => {
-                    return result.json()
-                }).then(collabject => {
-                    recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
-                })
+                let moreString = "'Comments'"
+                recentCommentsString += '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' + moreString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
+                mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "' + recentCommentsString + '"')
+            } else {
+                mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "<p class=\\"no-results\\">You haven&#039;t written any comments yet.</p>"')
             }
-            let moreString = "'Comments'"
-            recentCommentsString += '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' + moreString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
-            mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "' + recentCommentsString + '"')
-        } else {
-            mb.window.webContents.executeJavaScript('document.getElementById("comments").innerHTML = "<p class=\\"no-results\\">You haven&#039;t written any comments yet.</p>"')
-        }
-    })
+            lastRecentCommentsExecution = Date.now()
+            lastRecentCommentsExecutionFinished = true
+        })
+    } else {
+        console.log('Recent comments running or not out of delay')
+    }
 }
 
 function getMoreRecentComments(url = host + '/api/v4/events?action=commented&per_page=' + numberOfComments + '&access_token=' + access_token) {
@@ -1052,26 +1107,33 @@ function getTodos(url = host + '/api/v4/todos?per_page=' + numberOfTodos + '&acc
 }
 
 function getBookmarks() {
-    let bookmarks = store.get('bookmarks')
-    let bookmarksString = ''
-    if (bookmarks && bookmarks.length > 0) {
-        bookmarksString = '<ul class=\\"list-container\\">'
-        bookmarks.forEach(bookmark => {
-            let namespace = ''
-            if (bookmark.namespace) {
-                namespace = '<a href=\\"' + bookmark.locationUrl + '\\" target=\\"_blank\\">' + bookmark.namespace + ' / ' + bookmark.project + '</a>'
-            } else {
-                namespace = '<a href=\\"' + bookmark.locationUrl + '\\" target=\\"_blank\\">' + bookmark.project + '</a>'
-            }
-            let bookmarkUrl = "'" + bookmark.url + "'"
-            bookmarksString += '<li class=\\"history-entry bookmark-entry\\"><div class=\\"bookmark-information\\"><a href=\\"' + bookmark.url + '\\" target=\\"_blank\\">' + escapeHtml(bookmark.title) + '</a><span class=\\"namespace-with-time\\">Added ' + timeSince(bookmark.added) + ' ago &middot; ' + namespace + '</span></div><div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteBookmark(' + bookmarkUrl + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>'
-        })
-        bookmarksString += '<li id=\\"add-bookmark-dialog\\" class=\\"more-link\\"><a onclick=\\"startBookmarkDialog()\\">Add another bookmark <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
-        mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
+    if (lastBookmarksExecutionFinished && lastBookmarksExecution + delay < Date.now()) {
+        lastBookmarksExecutionFinished = false
+        let bookmarks = store.get('bookmarks')
+        let bookmarksString = ''
+        if (bookmarks && bookmarks.length > 0) {
+            bookmarksString = '<ul class=\\"list-container\\">'
+            bookmarks.forEach(bookmark => {
+                let namespace = ''
+                if (bookmark.namespace) {
+                    namespace = '<a href=\\"' + bookmark.locationUrl + '\\" target=\\"_blank\\">' + bookmark.namespace + ' / ' + bookmark.project + '</a>'
+                } else {
+                    namespace = '<a href=\\"' + bookmark.locationUrl + '\\" target=\\"_blank\\">' + bookmark.project + '</a>'
+                }
+                let bookmarkUrl = "'" + bookmark.url + "'"
+                bookmarksString += '<li class=\\"history-entry bookmark-entry\\"><div class=\\"bookmark-information\\"><a href=\\"' + bookmark.url + '\\" target=\\"_blank\\">' + escapeHtml(bookmark.title) + '</a><span class=\\"namespace-with-time\\">Added ' + timeSince(bookmark.added) + ' ago &middot; ' + namespace + '</span></div><div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteBookmark(' + bookmarkUrl + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>'
+            })
+            bookmarksString += '<li id=\\"add-bookmark-dialog\\" class=\\"more-link\\"><a onclick=\\"startBookmarkDialog()\\">Add another bookmark <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
+            mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
+        } else {
+            let bookmarkLink = "'bookmark-link'"
+            bookmarksString = '<div id=\\"new-bookmark\\"><div><span class=\\"cta\\">Add a new GitLab bookmark</span> 🔖</div><div class=\\"cta-description\\">Bookmarks are helpful when you have an issue/merge request you will have to come back to repeatedly.</div><form id=\\"bookmark-input\\" action=\\"#\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter the link here...\\" /><button class=\\"add-button\\" id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-bookmark-error\\"></div></div>'
+            mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
+        }
+        lastBookmarksExecution = Date.now()
+        lastBookmarksExecutionFinished = true
     } else {
-        let bookmarkLink = "'bookmark-link'"
-        bookmarksString = '<div id=\\"new-bookmark\\"><div><span class=\\"cta\\">Add a new GitLab bookmark</span> 🔖</div><div class=\\"cta-description\\">Bookmarks are helpful when you have an issue/merge request you will have to come back to repeatedly.</div><form id=\\"bookmark-input\\" action=\\"#\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter the link here...\\" /><button class=\\"add-button\\" id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-bookmark-error\\"></div></div>'
-        mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
+        console.log('Recent comments running or not out of delay')
     }
 }
 
@@ -1249,9 +1311,9 @@ function addBookmark(link) {
 }
 
 function addProject(link, target) {
-    if(target == 'project-settings-link') {
+    if (target == 'project-settings-link') {
         target = '-settings-'
-    }else if (target == 'project-overview-link') {
+    } else if (target == 'project-overview-link') {
         target = '-overview-'
     }
     let spinner = '<svg class=\\"button-spinner\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 14 14\\"><g fill=\\"none\\" fill-rule=\\"evenodd\\"><circle cx=\\"7\\" cy=\\"7\\" r=\\"6\\" stroke=\\"#c9d1d9\\" stroke-opacity=\\".4\\" stroke-width=\\"2\\"/><path class=\\"icon\\" fill-opacity=\\".4\\" fill-rule=\\"nonzero\\" d=\\"M7 0a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V0z\\"/></g></svg>'
@@ -1266,7 +1328,7 @@ function addProject(link, target) {
                 let projects = store.get('favorite-projects') || []
                 projects.push(project)
                 store.set('favorite-projects', projects)
-                if(target == '-settings-') {
+                if (target == '-settings-') {
                     openSettingsPage()
                 }
                 displayUsersProjects(projects)
@@ -1280,7 +1342,7 @@ function addProject(link, target) {
 }
 
 function displayAddError(type, target) {
-    mb.window.webContents.executeJavaScript('document.getElementById("add-' + type + target +'error").style.display = "block"')
+    mb.window.webContents.executeJavaScript('document.getElementById("add-' + type + target + 'error").style.display = "block"')
     mb.window.webContents.executeJavaScript('document.getElementById("add-' + type + target + 'error").innerHTML = "This is not a valid GitLab ' + type + ' URL."')
     mb.window.webContents.executeJavaScript('document.getElementById("' + type + target + 'add-button").disabled = false')
     mb.window.webContents.executeJavaScript('document.getElementById("' + type + target + 'link").disabled = false')
