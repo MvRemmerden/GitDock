@@ -5,6 +5,8 @@ const Store = require('electron-store');
 const store = new Store()
 const BrowserHistory = require('node-browser-history');
 const { URL } = require('url');
+const ua = require('universal-analytics');
+const uuid = require('uuid/v4');
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
 let access_token = store.get('access_token')
@@ -12,6 +14,9 @@ let user_id = store.get('user_id')
 let username = store.get('username')
 let host = store.get('host') || 'https://gitlab.com'
 let plan = store.get('plan') || 'free'
+let analytics_id = store.get('analytics_id') || uuid();
+store.set('analytics_id', analytics_id)
+let visitor = ua('UA-203420427-1', analytics_id);
 let recentlyVisitedString = ''
 let currentProject
 let moreRecentlyVisitedArray = []
@@ -86,7 +91,7 @@ const mb = menubar({
     icon: __dirname + '/assets/gitlab.png',
     preloadWindow: true,
     browserWindow: {
-        width: 550,
+        width: 1000,
         height: 700,
         webPreferences: {
             preload: __dirname + '/preload.js',
@@ -101,6 +106,7 @@ ipcMain.on('detail-page', (event, arg) => {
     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = ""')
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
     if (arg.page == 'Project') {
+        visitor.pageview("/project").send()
         mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<div id=\\"project-commits-pagination\\"><span class=\\"name\\">Commits</span><div id=\\"commits-pagination\\"><span id=\\"commits-count\\" class=\\"empty\\"></span><button onclick=\\"changeCommit(false)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\" /></svg></button><button onclick=\\"changeCommit(true)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg></button></div></div>"')
         setupEmptyProjectPage()
         let project = JSON.parse(arg.object)
@@ -113,6 +119,7 @@ ipcMain.on('detail-page', (event, arg) => {
         mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
         mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "' + arg.page + '"')
         if (arg.page == 'Issues') {
+            visitor.pageview("/my-issues").send()
             let issuesQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchIssues(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchIssues(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label></div></div>'
             let issuesStateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-state-active\\">Open</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + allLabel + '\\" onchange=\\"switchIssues(' + allLabel + ', ' + state + ', ' + allText + ')\\"><label for=\\"' + allLabel + '\\" class=\\"custom-option-label\\">All</label><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchIssues(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchIssues(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div></div>'
             let issuesSortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-sort-active\\">Sort by recently created</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchIssues(' + recentlyCreatedLabel + ', ' + sort + ', ' + recentlyCreatedText + ')\\" checked><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchIssues(' + recentlyUpdatedLabel + ', ' + sort + ', ' + recentlyUpdatedText + ')\\"><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label></div></div>'
@@ -121,6 +128,7 @@ ipcMain.on('detail-page', (event, arg) => {
             displaySkeleton(numberOfIssues)
             getIssues()
         } else if (arg.page == 'Merge requests') {
+            visitor.pageview("/my-merge-requests").send()
             let mrsQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchMRs(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchMRs(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + reviewedLabel + '\\" onchange=\\"switchMRs(' + reviewedLabel + ', ' + query + ', ' + reviewedText + ')\\"><label for=\\"' + reviewedLabel + '\\" class=\\"custom-option-label\\">Review requests</label>'
             if (plan != 'free') {
                 mrsQuerySelect += '<input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvedLabel + '\\" onchange=\\"switchMRs(' + approvedLabel + ', ' + query + ', ' + approvedText + ')\\"><label for=\\"' + approvedLabel + '\\" class=\\"custom-option-label\\">Approved</label>'
@@ -133,13 +141,16 @@ ipcMain.on('detail-page', (event, arg) => {
             displaySkeleton(numberOfMRs)
             getMRs()
         } else if (arg.page == 'To-Do list') {
+            visitor.pageview("/my-to-do-list").send()
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
             displaySkeleton(numberOfTodos)
             getTodos()
         } else if (arg.page == 'Recently viewed') {
+            visitor.pageview("/my-history").send()
             displaySkeleton(numberOfRecentlyVisited)
             getMoreRecentlyVisited()
         } else if (arg.page == 'Comments') {
+            visitor.pageview("/my-comments").send()
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
             displaySkeleton(numberOfComments)
             getMoreRecentComments()
@@ -161,6 +172,7 @@ ipcMain.on('sub-detail-page', (event, arg) => {
     mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-header-content").classList.remove("empty")')
     mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-header-content").innerHTML = "' + arg.page + '"')
     if (arg.page == 'Issues') {
+        visitor.pageview("/project/issues").send()
         if (arg.all == true) {
             activeIssuesStateOption = 'all'
             activeState = 'All'
@@ -176,6 +188,7 @@ ipcMain.on('sub-detail-page', (event, arg) => {
         displaySkeleton(numberOfIssues, undefined, 'sub-detail-content')
         getIssues(host + '/api/v4/projects/' + project.id + '/issues?scope=all&state=' + activeIssuesStateOption + '&order_by=created_at&per_page=' + numberOfIssues + '&access_token=' + access_token, 'sub-detail-content')
     } else if (arg.page == 'Merge Requests') {
+        visitor.pageview("/project/merge-requests").send()
         if (arg.all == true) {
             activeMRsStateOption = 'all'
             activeState = 'All'
@@ -422,7 +435,7 @@ if (access_token && user_id && username) {
             getBookmarks()
         }, 10000);
 
-        //mb.window.webContents.openDevTools()
+        mb.window.webContents.openDevTools()
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
             shell.openExternal(url);
             return { action: 'deny' };
@@ -431,6 +444,7 @@ if (access_token && user_id && username) {
 
 
     mb.on('show', () => {
+        visitor.pageview("/").send()
         getRecentlyVisited()
         getLastCommits()
         getRecentComments()
@@ -442,7 +456,7 @@ if (access_token && user_id && username) {
         mb.window.loadURL(`file://${__dirname}/login.html`).then(() => {
             changeTheme(store.get('theme'), false)
             mb.showWindow()
-            //mb.window.webContents.openDevTools()
+            mb.window.webContents.openDevTools()
         })
     })
 }
@@ -458,7 +472,10 @@ function setupSecondaryMenu() {
 }
 
 function openSettingsPage() {
-    mb.showWindow()
+    if(!mb._isVisible) {
+        mb.showWindow()
+    }
+    visitor.pageview("/settings").send()
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "Settings"')
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
@@ -608,8 +625,6 @@ function getLastEvent() {
                 lastEventId = event.id
                 getLastCommits()
                 getRecentComments()
-            } else {
-                console.log("no new event")
             }
         })
 
@@ -920,8 +935,6 @@ async function getUsersProjects() {
             }
             projectsArray.push(projectObject)
         }
-    } else {
-        console.log('no projects')
     }
     return projectsArray
 }
