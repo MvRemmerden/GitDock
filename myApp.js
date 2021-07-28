@@ -229,6 +229,7 @@ ipcMain.on('go-to-overview', (event, arg) => {
 })
 
 ipcMain.on('switch-issues', (event, arg) => {
+    visitor.event("Switch issues", arg.type, arg.label).send()
     let url = host + '/api/v4/'
     let id = 'detail-content'
     if (isOnSubPage && currentProject) {
@@ -268,6 +269,7 @@ ipcMain.on('switch-issues', (event, arg) => {
 })
 
 ipcMain.on('switch-mrs', (event, arg) => {
+    visitor.event("Switch merge requests", arg.type, arg.label).send()
     let url = host + '/api/v4/'
     let id = 'detail-content'
     if (isOnSubPage && currentProject) {
@@ -344,6 +346,11 @@ ipcMain.on('search-recent', (event, arg) => {
 })
 
 ipcMain.on('change-commit', (event, arg) => {
+    if(arg) {
+        visitor.event("Navigate my commits", "next").send()
+    }else{
+        visitor.event("Navigate my commits", "previous").send()
+    }
     mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<div class=\\"commit empty\\"><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div><div id=\\"project-name\\"></div></div>"')
     let nextCommit = changeCommit(arg, recentCommits, currentCommit)
     currentCommit = nextCommit
@@ -351,6 +358,11 @@ ipcMain.on('change-commit', (event, arg) => {
 })
 
 ipcMain.on('change-project-commit', (event, arg) => {
+    if(arg) {
+        visitor.event("Navigate project commits", "next").send()
+    }else{
+        visitor.event("Navigate project commits", "previous").send()
+    }
     mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = "<div class=\\"commit empty\\"><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div><div id=\\"project-name\\"></div></div>"')
     let nextCommit = changeCommit(arg, recentProjectCommits, currentProjectCommit)
     currentProjectCommit = nextCommit
@@ -358,10 +370,12 @@ ipcMain.on('change-project-commit', (event, arg) => {
 })
 
 ipcMain.on('add-bookmark', (event, arg) => {
+    visitor.event("Add bookmark").send()
     addBookmark(arg)
 })
 
 ipcMain.on('add-project', (event, arg) => {
+    visitor.event("Add project").send()
     addProject(arg.input, arg.target)
 })
 
@@ -374,6 +388,7 @@ ipcMain.on('start-project-dialog', (event, arg) => {
 })
 
 ipcMain.on('delete-bookmark', (event, arg) => {
+    visitor.event("Delete bookmark").send()
     let bookmarks = store.get('bookmarks')
     let newBookmarks = bookmarks.filter(bookmark => {
         return bookmark.url != arg
@@ -383,6 +398,7 @@ ipcMain.on('delete-bookmark', (event, arg) => {
 })
 
 ipcMain.on('delete-project', (event, arg) => {
+    visitor.event("Delete project").send()
     let projects = store.get('favorite-projects')
     let newProjects = projects.filter(project => {
         return project.id != arg
@@ -394,6 +410,7 @@ ipcMain.on('delete-project', (event, arg) => {
 })
 
 ipcMain.on('change-theme', (event, arg) => {
+    visitor.event("Change theme", arg).send()
     changeTheme(arg, true)
 })
 
@@ -406,6 +423,7 @@ ipcMain.on('start-manual-login', (event, arg) => {
 })
 
 ipcMain.on('logout', (event, arg) => {
+    visitor.event("Log out").send()
     logout()
 })
 
