@@ -14,9 +14,14 @@ let user_id = store.get('user_id')
 let username = store.get('username')
 let host = store.get('host') || 'https://gitlab.com'
 let plan = store.get('plan') || 'free'
+let analytics = store.get('analytics') || false
 let analytics_id = store.get('analytics_id') || uuid();
+console.log(analytics_id)
 store.set('analytics_id', analytics_id)
-let visitor = ua('UA-203420427-1', analytics_id);
+let visitor
+if (analytics) {
+    visitor = ua('UA-203420427-1', analytics_id);
+}
 let recentlyVisitedString = ''
 let currentProject
 let moreRecentlyVisitedArray = []
@@ -75,15 +80,11 @@ let lastUserExecution = 0
 let lastRecentlyVisitedExecution = 0
 let lastLastCommitsExecution = 0
 let lastRecentCommentsExecution = 0
-let lastUsersProjectsExecution = 0
-let lastBookmarksExecution = 0
 
 let lastUserExecutionFinished = true
 let lastRecentlyVisitedExecutionFinished = true
 let lastLastCommitsExecutionFinished = true
 let lastRecentCommentsExecutionFinished = true
-let lastUsersProjectsExecutionFinished = true
-let lastBookmarksExecutionFinished = true
 
 const mb = menubar({
     showDockIcon: false,
@@ -106,7 +107,9 @@ ipcMain.on('detail-page', (event, arg) => {
     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = ""')
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
     if (arg.page == 'Project') {
-        visitor.pageview("/project").send()
+        if (analytics) {
+            visitor.pageview("/project").send()
+        }
         mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<div id=\\"project-commits-pagination\\"><span class=\\"name\\">Commits</span><div id=\\"commits-pagination\\"><span id=\\"commits-count\\" class=\\"empty\\"></span><button onclick=\\"changeCommit(false)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\" /></svg></button><button onclick=\\"changeCommit(true)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg></button></div></div>"')
         setupEmptyProjectPage()
         let project = JSON.parse(arg.object)
@@ -119,7 +122,9 @@ ipcMain.on('detail-page', (event, arg) => {
         mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
         mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "' + arg.page + '"')
         if (arg.page == 'Issues') {
-            visitor.pageview("/my-issues").send()
+            if (analytics) {
+                visitor.pageview("/my-issues").send()
+            }
             let issuesQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchIssues(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchIssues(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label></div></div>'
             let issuesStateSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-state-active\\">Open</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + allLabel + '\\" onchange=\\"switchIssues(' + allLabel + ', ' + state + ', ' + allText + ')\\"><label for=\\"' + allLabel + '\\" class=\\"custom-option-label\\">All</label><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + openedLabel + '\\" onchange=\\"switchIssues(' + openedLabel + ', ' + state + ', ' + openedText + ')\\" checked><label for=\\"' + openedLabel + '\\" class=\\"custom-option-label\\">Open</label><input class=\\"custom-option\\" name=\\"issues-state-select\\" type=\\"radio\\" id=\\"' + closedLabel + '\\" onchange=\\"switchIssues(' + closedLabel + ', ' + state + ', ' + closedText + ')\\"><label for=\\"' + closedLabel + '\\" class=\\"custom-option-label\\">Closed</label></div></div>'
             let issuesSortSelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-sort-active\\">Sort by recently created</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyCreatedLabel + '\\" onchange=\\"switchIssues(' + recentlyCreatedLabel + ', ' + sort + ', ' + recentlyCreatedText + ')\\" checked><label for=\\"' + recentlyCreatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently created</label><input class=\\"custom-option\\" name=\\"issues-sort-select\\" type=\\"radio\\" id=\\"' + recentlyUpdatedLabel + '\\" onchange=\\"switchIssues(' + recentlyUpdatedLabel + ', ' + sort + ', ' + recentlyUpdatedText + ')\\"><label for=\\"' + recentlyUpdatedLabel + '\\" class=\\"custom-option-label\\">Sort by recently updated</label></div></div>'
@@ -128,7 +133,9 @@ ipcMain.on('detail-page', (event, arg) => {
             displaySkeleton(numberOfIssues)
             getIssues()
         } else if (arg.page == 'Merge requests') {
-            visitor.pageview("/my-merge-requests").send()
+            if (analytics) {
+                visitor.pageview("/my-merge-requests").send()
+            }
             let mrsQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchMRs(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchMRs(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + reviewedLabel + '\\" onchange=\\"switchMRs(' + reviewedLabel + ', ' + query + ', ' + reviewedText + ')\\"><label for=\\"' + reviewedLabel + '\\" class=\\"custom-option-label\\">Review requests</label>'
             if (plan != 'free') {
                 mrsQuerySelect += '<input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvedLabel + '\\" onchange=\\"switchMRs(' + approvedLabel + ', ' + query + ', ' + approvedText + ')\\"><label for=\\"' + approvedLabel + '\\" class=\\"custom-option-label\\">Approved</label>'
@@ -141,16 +148,22 @@ ipcMain.on('detail-page', (event, arg) => {
             displaySkeleton(numberOfMRs)
             getMRs()
         } else if (arg.page == 'To-Do list') {
-            visitor.pageview("/my-to-do-list").send()
+            if (analytics) {
+                visitor.pageview("/my-to-do-list").send()
+            }
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
             displaySkeleton(numberOfTodos)
             getTodos()
         } else if (arg.page == 'Recently viewed') {
-            visitor.pageview("/my-history").send()
+            if (analytics) {
+                visitor.pageview("/my-history").send()
+            }
             displaySkeleton(numberOfRecentlyVisited)
             getMoreRecentlyVisited()
         } else if (arg.page == 'Comments') {
-            visitor.pageview("/my-comments").send()
+            if (analytics) {
+                visitor.pageview("/my-comments").send()
+            }
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
             displaySkeleton(numberOfComments)
             getMoreRecentComments()
@@ -172,7 +185,9 @@ ipcMain.on('sub-detail-page', (event, arg) => {
     mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-header-content").classList.remove("empty")')
     mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-header-content").innerHTML = "' + arg.page + '"')
     if (arg.page == 'Issues') {
-        visitor.pageview("/project/issues").send()
+        if (analytics) {
+            visitor.pageview("/project/issues").send()
+        }
         if (arg.all == true) {
             activeIssuesStateOption = 'all'
             activeState = 'All'
@@ -188,7 +203,9 @@ ipcMain.on('sub-detail-page', (event, arg) => {
         displaySkeleton(numberOfIssues, undefined, 'sub-detail-content')
         getIssues(host + '/api/v4/projects/' + project.id + '/issues?scope=all&state=' + activeIssuesStateOption + '&order_by=created_at&per_page=' + numberOfIssues + '&access_token=' + access_token, 'sub-detail-content')
     } else if (arg.page == 'Merge Requests') {
-        visitor.pageview("/project/merge-requests").send()
+        if (analytics) {
+            visitor.pageview("/project/merge-requests").send()
+        }
         if (arg.all == true) {
             activeMRsStateOption = 'all'
             activeState = 'All'
@@ -213,6 +230,9 @@ ipcMain.on('back-to-detail-page', (event, arg) => {
 })
 
 ipcMain.on('go-to-overview', (event, arg) => {
+    if (analytics) {
+        visitor.pageview("/").send()
+    }
     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").classList.remove("with-overflow")')
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.add("empty")')
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = ""')
@@ -229,7 +249,9 @@ ipcMain.on('go-to-overview', (event, arg) => {
 })
 
 ipcMain.on('switch-issues', (event, arg) => {
-    visitor.event("Switch issues", arg.type, arg.label).send()
+    if (analytics) {
+        visitor.event("Switch issues", arg.type, arg.label).send()
+    }
     let url = host + '/api/v4/'
     let id = 'detail-content'
     if (isOnSubPage && currentProject) {
@@ -269,7 +291,9 @@ ipcMain.on('switch-issues', (event, arg) => {
 })
 
 ipcMain.on('switch-mrs', (event, arg) => {
-    visitor.event("Switch merge requests", arg.type, arg.label).send()
+    if (analytics) {
+        visitor.event("Switch merge requests", arg.type, arg.label).send()
+    }
     let url = host + '/api/v4/'
     let id = 'detail-content'
     if (isOnSubPage && currentProject) {
@@ -346,10 +370,12 @@ ipcMain.on('search-recent', (event, arg) => {
 })
 
 ipcMain.on('change-commit', (event, arg) => {
-    if(arg) {
-        visitor.event("Navigate my commits", "next").send()
-    }else{
-        visitor.event("Navigate my commits", "previous").send()
+    if (analytics) {
+        if (arg) {
+            visitor.event("Navigate my commits", "next").send()
+        } else {
+            visitor.event("Navigate my commits", "previous").send()
+        }
     }
     mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "<div class=\\"commit empty\\"><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div><div id=\\"project-name\\"></div></div>"')
     let nextCommit = changeCommit(arg, recentCommits, currentCommit)
@@ -358,10 +384,12 @@ ipcMain.on('change-commit', (event, arg) => {
 })
 
 ipcMain.on('change-project-commit', (event, arg) => {
-    if(arg) {
-        visitor.event("Navigate project commits", "next").send()
-    }else{
-        visitor.event("Navigate project commits", "previous").send()
+    if (analytics) {
+        if (arg) {
+            visitor.event("Navigate project commits", "next").send()
+        } else {
+            visitor.event("Navigate project commits", "previous").send()
+        }
     }
     mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = "<div class=\\"commit empty\\"><div class=\\"commit-information\\"><div class=\\"commit-name skeleton\\"></div><div class=\\"commit-details skeleton\\"></div></div><div id=\\"project-name\\"></div></div>"')
     let nextCommit = changeCommit(arg, recentProjectCommits, currentProjectCommit)
@@ -370,12 +398,16 @@ ipcMain.on('change-project-commit', (event, arg) => {
 })
 
 ipcMain.on('add-bookmark', (event, arg) => {
-    visitor.event("Add bookmark").send()
+    if (analytics) {
+        visitor.event("Add bookmark").send()
+    }
     addBookmark(arg)
 })
 
 ipcMain.on('add-project', (event, arg) => {
-    visitor.event("Add project").send()
+    if (analytics) {
+        visitor.event("Add project").send()
+    }
     addProject(arg.input, arg.target)
 })
 
@@ -388,7 +420,9 @@ ipcMain.on('start-project-dialog', (event, arg) => {
 })
 
 ipcMain.on('delete-bookmark', (event, arg) => {
-    visitor.event("Delete bookmark").send()
+    if (analytics) {
+        visitor.event("Delete bookmark").send()
+    }
     let bookmarks = store.get('bookmarks')
     let newBookmarks = bookmarks.filter(bookmark => {
         return bookmark.url != arg
@@ -398,7 +432,9 @@ ipcMain.on('delete-bookmark', (event, arg) => {
 })
 
 ipcMain.on('delete-project', (event, arg) => {
-    visitor.event("Delete project").send()
+    if (analytics) {
+        visitor.event("Delete project").send()
+    }
     let projects = store.get('favorite-projects')
     let newProjects = projects.filter(project => {
         return project.id != arg
@@ -410,8 +446,20 @@ ipcMain.on('delete-project', (event, arg) => {
 })
 
 ipcMain.on('change-theme', (event, arg) => {
-    visitor.event("Change theme", arg).send()
+    if (analytics) {
+        visitor.event("Change theme", arg).send()
+    }
     changeTheme(arg, true)
+})
+
+ipcMain.on('change-analytics', (event, arg) => {
+    store.set('analytics', arg)
+    analytics = arg
+    if (analytics) {
+        visitor = ua('UA-203420427-1', analytics_id);
+    } else {
+        delete visitor
+    }
 })
 
 ipcMain.on('start-login', (event, arg) => {
@@ -423,7 +471,9 @@ ipcMain.on('start-manual-login', (event, arg) => {
 })
 
 ipcMain.on('logout', (event, arg) => {
-    visitor.event("Log out").send()
+    if (analytics) {
+        visitor.event("Log out").send()
+    }
     logout()
 })
 
@@ -448,9 +498,7 @@ if (access_token && user_id && username) {
 
         //Regularly relaoading content
         setInterval(function () {
-            getRecentlyVisited()
             getLastEvent()
-            getBookmarks()
         }, 10000);
 
         mb.window.webContents.openDevTools()
@@ -462,7 +510,9 @@ if (access_token && user_id && username) {
 
 
     mb.on('show', () => {
-        visitor.pageview("/").send()
+        if (analytics) {
+            visitor.pageview("/").send()
+        }
         getRecentlyVisited()
         getLastCommits()
         getRecentComments()
@@ -490,10 +540,12 @@ function setupSecondaryMenu() {
 }
 
 function openSettingsPage() {
-    if(!mb._isVisible) {
+    if (!mb._isVisible) {
         mb.showWindow()
     }
-    visitor.pageview("/settings").send()
+    if (analytics) {
+        visitor.pageview("/settings").send()
+    }
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "Settings"')
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
@@ -513,9 +565,12 @@ function openSettingsPage() {
                 favoriteProjects += '<div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteProject(' + project.id + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>'
             }
         }
-        favoriteProjects += '<li id=\\"add-project-dialog\\" class=\\"more-link\\"><a onclick=\\"startProjectDialog()\\">Add another project <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
-        let logout = '<div class=\\"headline\\"><span class=\\"name\\">User</span></div><div id=\\"user-administration\\"><button id=\\"logout-button\\" onclick=\\"logout()\\">Log out</div>'
-        settingsString = theme + favoriteProjects + logout
+        favoriteProjects += '<li id=\\"add-project-dialog\\" class=\\"more-link\\"><a onclick=\\"startProjectDialog()\\">Add another project <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul></div>'
+        let analyticsString = '<div class=\\"headline\\"><span class=\\"name\\">Analytics</span></div><div id=\\"analytics\\">'
+        analyticsString += 'To better understand how you navigate around GitLab, we would love to collect insights about your usage. All data is 100% anonymous and we do not track the specific content (projects, issues...) you are interacting with, only which kind of areas you are using.</div>'
+        analyticsString += '<form id=\\"analytics-form\\"><div><input type=\\"radio\\" id=\\"analytics-yes\\" name=\\"analytics\\" value=\\"yes\\"' + (analytics ? " checked" : "") + ' onclick=\\"changeAnalytics(true)\\"><label for=\\"analytics-yes\\">Yes, collect anonymous data</label></div><div><input type=\\"radio\\" id=\\"analytics-no\\" name=\\"analytics\\" value=\\"no\\"' + (!analytics ? " checked" : "") + ' onclick=\\"changeAnalytics(false)\\"><label for=\\"analytics-no\\">No, do not collect any data</label></div></form>'
+        let logout = '<div class=\\"headline\\"><span class=\\"name\\">User</span></div><div id=\\"user-administration\\"><button id=\\"logout-button\\" onclick=\\"logout()\\">Log out</button></div>'
+        settingsString = theme + favoriteProjects + analyticsString + logout
     } else {
         settingsString = theme
     }
@@ -555,6 +610,7 @@ function saveUser(code, url = host) {
             store.set('host', url)
             host = url
             store.set('theme', 'dark')
+            store.set('analytics', false)
             getUsersProjects().then(async projects => {
                 if (projects && projects.length > 0) {
                     store.set('favorite-projects', projects)
@@ -958,36 +1014,30 @@ async function getUsersProjects() {
 }
 
 function displayUsersProjects() {
-    if (lastUsersProjectsExecutionFinished && lastUsersProjectsExecution + delay < Date.now()) {
-        lastUsersProjectsExecutionFinished = false
-        let favoriteProjectsString = ''
-        let projects = store.get('favorite-projects')
-        if (projects && projects.length > 0) {
-            favoriteProjectsString += '<ul id=\\"projects\\" class=\\"list-container clickable\\">'
-            let chevron = '<svg class=\\"chevron\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg>'
-            for (let projectObject of projects) {
-                let projectString = "'Project'"
-                let projectJson = "'" + escapeHtml(JSON.stringify(projectObject)) + "'"
-                favoriteProjectsString += '<li onclick=\\"goToDetail(' + projectString + ', ' + projectJson + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" class=\\"icon\\"/></svg>'
-                favoriteProjectsString += '<div class=\\"name-with-namespace\\"><span>' + projectObject.name + '</span><span class=\\"namespace\\">' + projectObject.namespace.name + '</span></div>' + chevron + '</li>'
-            }
-            favoriteProjectsString += '</ul>'
-        } else {
-            let projectLink = "'project-overview-link'"
-            favoriteProjectsString = '<div class=\\"new-project\\"><div><span class=\\"cta\\">Track projects you care about</span> 🌟</div><div class=\\"cta-description\\">Add any project you want a directly accessible shortcut for.</div><form class=\\"project-input\\" action=\\"#\\" onsubmit=\\"addProject(document.getElementById(' + projectLink + ').value, ' + projectLink + ');return false;\\"><input class=\\"project-link\\" id=\\"project-overview-link\\" placeholder=\\"Enter the project link here...\\" /><button class=\\"add-button\\" id=\\"project-overview-add-button\\" type=\\"submit\\">Add</button></form><div class=\\"add-project-error\\" id=\\"add-project-overview-error\\"></div></div>'
+    let favoriteProjectsString = ''
+    let projects = store.get('favorite-projects')
+    if (projects && projects.length > 0) {
+        favoriteProjectsString += '<ul id=\\"projects\\" class=\\"list-container clickable\\">'
+        let chevron = '<svg class=\\"chevron\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg>'
+        for (let projectObject of projects) {
+            let projectString = "'Project'"
+            let projectJson = "'" + escapeHtml(JSON.stringify(projectObject)) + "'"
+            favoriteProjectsString += '<li onclick=\\"goToDetail(' + projectString + ', ' + projectJson + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" class=\\"icon\\"/></svg>'
+            favoriteProjectsString += '<div class=\\"name-with-namespace\\"><span>' + projectObject.name + '</span><span class=\\"namespace\\">' + projectObject.namespace.name + '</span></div>' + chevron + '</li>'
         }
-        mb.window.webContents.executeJavaScript('document.getElementById("projects").innerHTML = "' + favoriteProjectsString + '"')
-        lastUsersProjectsExecution = Date.now()
-        lastUsersProjectsExecutionFinished = true
+        favoriteProjectsString += '</ul>'
     } else {
-        console.log('Users projects running or not out of delay')
+        let projectLink = "'project-overview-link'"
+        favoriteProjectsString = '<div class=\\"new-project\\"><div><span class=\\"cta\\">Track projects you care about</span> 🌟</div><div class=\\"cta-description\\">Add any project you want a directly accessible shortcut for.</div><form class=\\"project-input\\" action=\\"#\\" onsubmit=\\"addProject(document.getElementById(' + projectLink + ').value, ' + projectLink + ');return false;\\"><input class=\\"project-link\\" id=\\"project-overview-link\\" placeholder=\\"Enter the project link here...\\" /><button class=\\"add-button\\" id=\\"project-overview-add-button\\" type=\\"submit\\">Add</button></form><div class=\\"add-project-error\\" id=\\"add-project-overview-error\\"></div></div>'
     }
+    mb.window.webContents.executeJavaScript('document.getElementById("projects").innerHTML = "' + favoriteProjectsString + '"')
 }
 
 function getRecentComments() {
     if (lastRecentCommentsExecutionFinished && lastRecentCommentsExecution + delay < Date.now()) {
         lastRecentCommentsExecutionFinished = false
         let recentCommentsString = ''
+        console.log(host + '/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token)
         fetch(host + '/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token).then(result => {
             return result.json()
         }).then(async comments => {
@@ -999,8 +1049,9 @@ function getRecentComments() {
                         url = host + '/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
                     } else if (comment.note.noteable_type == 'Issue') {
                         url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + access_token
-                    } else if (comment.noteableType == 'Epic') {
-                        break
+                    } else {
+                        //TODO Add support for Designs, Alerts, Commits, Snippets
+                        continue
                     }
                     await fetch(url).then(result => {
                         return result.json()
@@ -1036,8 +1087,12 @@ function getMoreRecentComments(url = host + '/api/v4/events?action=commented&per
                 url = host + '/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
             } else if (comment.note.noteable_type == 'Issue') {
                 url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + access_token
-            } else if (comment.noteableType == 'Epic') {
-                break
+            } else if (comment.note.noteable_type == 'DesignManagement::Design') {
+                //TODO Add Design code
+                continue
+            } else {
+                //TODO Add support for Designs, Alerts, Commits, Snippets
+                continue
             }
             await fetch(url).then(result => {
                 return result.json()
@@ -1125,6 +1180,9 @@ function getTodos(url = host + '/api/v4/todos?per_page=' + numberOfTodos + '&acc
                     location = todo.project.name_with_namespace
                 } else if (todo.group) {
                     location = todo.group.name
+                } 
+                if (todo.target_type == 'DesignManagement::Design') {
+                    todo.target.title = todo.body
                 }
                 todosString += '<a href=\\"' + todo.target_url + '\\" target=\\"_blank\\">' + escapeHtml(todo.target.title) + '</a><span class=\\"namespace-with-time\\">Updated ' + timeSince(new Date(todo.updated_at)) + ' ago &middot; <a href=\\"' + todo.target_url.split('/-/')[0] + '\\" target=\\"_blank\\">' + location + '</a></span></div></li>'
             }
@@ -1138,33 +1196,26 @@ function getTodos(url = host + '/api/v4/todos?per_page=' + numberOfTodos + '&acc
 }
 
 function getBookmarks() {
-    if (lastBookmarksExecutionFinished && lastBookmarksExecution + delay < Date.now()) {
-        lastBookmarksExecutionFinished = false
-        let bookmarks = store.get('bookmarks')
-        let bookmarksString = ''
-        if (bookmarks && bookmarks.length > 0) {
-            bookmarksString = '<ul class=\\"list-container\\">'
-            bookmarks.forEach(bookmark => {
-                let namespace = ''
-                if (bookmark.namespace) {
-                    namespace = '<a href=\\"' + bookmark.locationUrl + '\\" target=\\"_blank\\">' + bookmark.namespace + ' / ' + bookmark.project + '</a>'
-                } else {
-                    namespace = '<a href=\\"' + bookmark.locationUrl + '\\" target=\\"_blank\\">' + bookmark.project + '</a>'
-                }
-                let bookmarkUrl = "'" + bookmark.url + "'"
-                bookmarksString += '<li class=\\"history-entry bookmark-entry\\"><div class=\\"bookmark-information\\"><a href=\\"' + bookmark.url + '\\" target=\\"_blank\\">' + escapeHtml(bookmark.title) + '</a><span class=\\"namespace-with-time\\">Added ' + timeSince(bookmark.added) + ' ago &middot; ' + namespace + '</span></div><div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteBookmark(' + bookmarkUrl + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>'
-            })
-            bookmarksString += '<li id=\\"add-bookmark-dialog\\" class=\\"more-link\\"><a onclick=\\"startBookmarkDialog()\\">Add another bookmark <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
-            mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
-        } else {
-            let bookmarkLink = "'bookmark-link'"
-            bookmarksString = '<div id=\\"new-bookmark\\"><div><span class=\\"cta\\">Add a new GitLab bookmark</span> 🔖</div><div class=\\"cta-description\\">Bookmarks are helpful when you have an issue/merge request you will have to come back to repeatedly.</div><form id=\\"bookmark-input\\" action=\\"#\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter the link here...\\" /><button class=\\"add-button\\" id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-bookmark-error\\"></div></div>'
-            mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
-        }
-        lastBookmarksExecution = Date.now()
-        lastBookmarksExecutionFinished = true
+    let bookmarks = store.get('bookmarks')
+    let bookmarksString = ''
+    if (bookmarks && bookmarks.length > 0) {
+        bookmarksString = '<ul class=\\"list-container\\">'
+        bookmarks.forEach(bookmark => {
+            let namespace = ''
+            if (bookmark.namespace) {
+                namespace = '<a href=\\"' + bookmark.locationUrl + '\\" target=\\"_blank\\">' + bookmark.namespace + ' / ' + bookmark.project + '</a>'
+            } else {
+                namespace = '<a href=\\"' + bookmark.locationUrl + '\\" target=\\"_blank\\">' + bookmark.project + '</a>'
+            }
+            let bookmarkUrl = "'" + bookmark.url + "'"
+            bookmarksString += '<li class=\\"history-entry bookmark-entry\\"><div class=\\"bookmark-information\\"><a href=\\"' + bookmark.url + '\\" target=\\"_blank\\">' + escapeHtml(bookmark.title) + '</a><span class=\\"namespace-with-time\\">Added ' + timeSince(bookmark.added) + ' ago &middot; ' + namespace + '</span></div><div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteBookmark(' + bookmarkUrl + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>'
+        })
+        bookmarksString += '<li id=\\"add-bookmark-dialog\\" class=\\"more-link\\"><a onclick=\\"startBookmarkDialog()\\">Add another bookmark <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
+        mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
     } else {
-        console.log('Recent comments running or not out of delay')
+        let bookmarkLink = "'bookmark-link'"
+        bookmarksString = '<div id=\\"new-bookmark\\"><div><span class=\\"cta\\">Add a new GitLab bookmark</span> 🔖</div><div class=\\"cta-description\\">Bookmarks are helpful when you have an issue/merge request you will have to come back to repeatedly.</div><form id=\\"bookmark-input\\" action=\\"#\\" onsubmit=\\"addBookmark(document.getElementById(' + bookmarkLink + ').value);return false;\\"><input id=\\"bookmark-link\\" placeholder=\\"Enter the link here...\\" /><button class=\\"add-button\\" id=\\"bookmark-add-button\\" type=\\"submit\\">Add</button></form><div id=\\"add-bookmark-error\\"></div></div>'
+        mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
     }
 }
 
@@ -1319,7 +1370,7 @@ function displayCommit(commit, project, focus = 'project') {
 }
 
 function addBookmark(link) {
-    let spinner = '<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 14 14\\"><g fill=\\"none\\" fill-rule=\\"evenodd\\"><circle cx=\\"7\\" cy=\\"7\\" r=\\"6\\" stroke=\\"#c9d1d9\\" stroke-opacity=\\".4\\" stroke-width=\\"2\\"/><path class=\\"icon\\" fill-opacity=\\".4\\" fill-rule=\\"nonzero\\" d=\\"M7 0a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V0z\\"/></g></svg>'
+    let spinner = '<svg class=\\"button-spinner\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 14 14\\"><g fill=\\"none\\" fill-rule=\\"evenodd\\"><circle cx=\\"7\\" cy=\\"7\\" r=\\"6\\" stroke=\\"#c9d1d9\\" stroke-opacity=\\".4\\" stroke-width=\\"2\\"/><path class=\\"icon\\" fill-opacity=\\".4\\" fill-rule=\\"nonzero\\" d=\\"M7 0a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V0z\\"/></g></svg>'
     mb.window.webContents.executeJavaScript('document.getElementById("bookmark-add-button").disabled = "disabled"')
     mb.window.webContents.executeJavaScript('document.getElementById("bookmark-link").disabled = "disabled"')
     mb.window.webContents.executeJavaScript('document.getElementById("bookmark-add-button").innerHTML = "' + spinner + ' Add"')
@@ -1594,6 +1645,8 @@ function logout() {
     store.delete('bookmarks')
     store.delete('host')
     store.delete('plan')
+    store.delete('analytics')
+    store.delete('analytics_id')
     mb.window.webContents.session.clearCache()
     mb.window.webContents.session.clearStorageData()
     app.quit()
