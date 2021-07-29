@@ -101,6 +101,10 @@ function changeTheme(value) {
     window.electron.changeTheme(value)
 }
 
+function changeAnalytics(value) {
+    window.electron.changeAnalytics(value)
+}
+
 function startLogin() {
     window.electron.startLogin()
 }

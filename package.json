@@ -1,7 +1,7 @@
 {
   "name": "gitdock",
   "productName": "GitDock",
-  "version": "0.0.30",
+  "version": "0.0.50",
   "description": "A better way of managing all your work on GitLab.",
   "main": "myApp.js",
   "scripts": {
@@ -20,13 +20,13 @@
   ],
   "author": "Marcel van Remmerden",
   "devDependencies": {
-    "@electron-forge/cli": "^6.0.0-beta.58",
-    "@electron-forge/maker-deb": "^6.0.0-beta.58",
-    "@electron-forge/maker-dmg": "^6.0.0-beta.58",
-    "@electron-forge/maker-rpm": "^6.0.0-beta.58",
-    "@electron-forge/maker-squirrel": "^6.0.0-beta.58",
-    "@electron-forge/maker-zip": "^6.0.0-beta.58",
-    "@electron-forge/publisher-github": "^6.0.0-beta.58",
+    "@electron-forge/cli": "^6.0.0-beta.59",
+    "@electron-forge/maker-deb": "^6.0.0-beta.59",
+    "@electron-forge/maker-dmg": "^6.0.0-beta.59",
+    "@electron-forge/maker-rpm": "^6.0.0-beta.59",
+    "@electron-forge/maker-squirrel": "^6.0.0-beta.59",
+    "@electron-forge/maker-zip": "^6.0.0-beta.59",
+    "@electron-forge/publisher-github": "^6.0.0-beta.59",
     "electron": "^13.1.7"
   },
   "dependencies": {
@@ -34,7 +34,8 @@
     "electron-store": "^8.0.0",
     "menubar": "^9.0.5",
     "node-browser-history": "^2.4.5",
-    "node-fetch": "^2.6.1"
+    "node-fetch": "^2.6.1",
+    "universal-analytics": "^0.4.23"
   },
   "config": {
     "forge": {
