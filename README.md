@@ -1,1 +1,3 @@
-[![Node.js CI](https://github.com/MvRemmerden/GitDock/actions/workflows/push.js.yml/badge.svg?branch=main)](https://github.com/MvRemmerden/GitDock/actions/workflows/push.js.yml) [![Release](https://github.com/MvRemmerden/GitDock/actions/workflows/release.js.yml/badge.svg)](https://github.com/MvRemmerden/GitDock/actions/workflows/release.js.yml)
+# GitDock ⚓️
+
+GitDock is a MacOS/Windows/Linux app that displays all your GitLab activities in one place. Instead of the GitLab typical project- or group-centric approach, it collects all your information from a user-centric perspective.
