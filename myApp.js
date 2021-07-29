@@ -16,7 +16,6 @@ let host = store.get('host') || 'https://gitlab.com'
 let plan = store.get('plan') || 'free'
 let analytics = store.get('analytics') || false
 let analytics_id = store.get('analytics_id') || uuid();
-console.log(analytics_id)
 store.set('analytics_id', analytics_id)
 let visitor
 if (analytics) {
@@ -472,7 +471,7 @@ ipcMain.on('start-manual-login', (event, arg) => {
 
 ipcMain.on('logout', (event, arg) => {
     if (analytics) {
-        visitor.event("Log out").send()
+        visitor.event("Log out", true).send()
     }
     logout()
 })
@@ -503,6 +502,9 @@ if (access_token && user_id && username) {
 
         mb.window.webContents.openDevTools()
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
+            if (analytics) {
+                visitor.event("Visit external link", true).send()
+            }
             shell.openExternal(url);
             return { action: 'deny' };
         });
@@ -1037,7 +1039,6 @@ function getRecentComments() {
     if (lastRecentCommentsExecutionFinished && lastRecentCommentsExecution + delay < Date.now()) {
         lastRecentCommentsExecutionFinished = false
         let recentCommentsString = ''
-        console.log(host + '/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token)
         fetch(host + '/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token).then(result => {
             return result.json()
         }).then(async comments => {
