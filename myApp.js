@@ -91,7 +91,7 @@ const mb = menubar({
     icon: __dirname + '/assets/gitlab.png',
     preloadWindow: true,
     browserWindow: {
-        width: 1000,
+        width: 550,
         height: 700,
         webPreferences: {
             preload: __dirname + '/preload.js',
@@ -500,7 +500,7 @@ if (access_token && user_id && username) {
             getLastEvent()
         }, 10000);
 
-        mb.window.webContents.openDevTools()
+        //mb.window.webContents.openDevTools()
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
             if (analytics) {
                 visitor.event("Visit external link", true).send()
@@ -526,7 +526,7 @@ if (access_token && user_id && username) {
         mb.window.loadURL(`file://${__dirname}/login.html`).then(() => {
             changeTheme(store.get('theme'), false)
             mb.showWindow()
-            mb.window.webContents.openDevTools()
+            //mb.window.webContents.openDevTools()
         })
     })
 }
