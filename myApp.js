@@ -1043,6 +1043,7 @@ function getRecentComments() {
     if (lastRecentCommentsExecutionFinished && lastRecentCommentsExecution + delay < Date.now()) {
         lastRecentCommentsExecutionFinished = false
         let recentCommentsString = ''
+        console.log(host + '/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token)
         fetch(host + '/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token).then(result => {
             return result.json()
         }).then(async comments => {
@@ -1054,14 +1055,27 @@ function getRecentComments() {
                         url = host + '/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
                     } else if (comment.note.noteable_type == 'Issue') {
                         url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + access_token
+                    } else if (comment.note.noteable_type == 'Commit') {
+                        url = host + '/api/v4/projects/' + comment.project_id + '/repository/commits/' + comment.note.position.head_sha + '?access_token=' + access_token
+                    } else if (comment.note.noteable_type == 'Snippet') {
+                        url = host + '/api/v4/projects/' + comment.project_id + '/snippets/' + comment.note.noteable_id + '?access_token=' + access_token
+                    } else if (comment.note.noteable_type == 'DesignManagement::Design') {
+                        url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.position.new_path.split('/')[1].split('-')[1] + '?access_token=' + access_token
+                        console.log(url)
                     } else {
-                        //TODO Add support for Designs, Alerts, Commits, Snippets
+                        //TODO Add support for Designs, Alerts
                         continue
                     }
                     await fetch(url).then(result => {
                         return result.json()
                     }).then(collabject => {
-                        recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                        if (comment.note.noteable_type == 'DesignManagement::Design') {
+                            collabject.web_url += '/designs/' + comment.target_title
+                            console.log(collabject.web_url)
+                            recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                        } else {
+                            recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                        }
                     })
                 }
                 let moreString = "'Comments'"
@@ -1092,14 +1106,27 @@ function getMoreRecentComments(url = host + '/api/v4/events?action=commented&per
                 url = host + '/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
             } else if (comment.note.noteable_type == 'Issue') {
                 url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + access_token
+            } else if (comment.note.noteable_type == 'Commit') {
+                url = host + '/api/v4/projects/' + comment.project_id + '/repository/commits/' + comment.note.position.head_sha + '?access_token=' + access_token
+            } else if (comment.note.noteable_type == 'Snippet') {
+                url = host + '/api/v4/projects/' + comment.project_id + '/snippets/' + comment.note.noteable_id + '?access_token=' + access_token
+            } else if (comment.note.noteable_type == 'DesignManagement::Design') {
+                url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.position.new_path.split('/')[1].split('-')[1] + '?access_token=' + access_token
+                console.log(url)
             } else {
-                //TODO Add support for Designs, Alerts, Commits, Snippets
+                //TODO Add support for Designs, Alerts
                 continue
             }
             await fetch(url).then(result => {
                 return result.json()
             }).then(collabject => {
-                recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                if (comment.note.noteable_type == 'DesignManagement::Design') {
+                    collabject.web_url += '/designs/' + comment.target_title
+                    console.log(collabject.web_url)
+                    recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                } else {
+                    recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                }
             })
         }
         recentCommentsString += '</ul>' + displayPagination(keysetLinks, type)
