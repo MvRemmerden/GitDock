@@ -88,7 +88,7 @@ let lastRecentCommentsExecutionFinished = true
 const mb = menubar({
     showDockIcon: false,
     showOnAllWorkspaces: false,
-    icon: __dirname + '/assets/gitlab.png',
+    icon: __dirname + '/assets/gitlabTemplate.png',
     preloadWindow: true,
     browserWindow: {
         width: 550,
@@ -232,6 +232,10 @@ ipcMain.on('go-to-overview', (event, arg) => {
     if (analytics) {
         visitor.pageview("/").send()
     }
+    getRecentlyVisited()
+    getRecentComments()
+    displayUsersProjects()
+    getBookmarks()
     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").classList.remove("with-overflow")')
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.add("empty")')
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = ""')
@@ -1088,9 +1092,6 @@ function getMoreRecentComments(url = host + '/api/v4/events?action=commented&per
                 url = host + '/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
             } else if (comment.note.noteable_type == 'Issue') {
                 url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + access_token
-            } else if (comment.note.noteable_type == 'DesignManagement::Design') {
-                //TODO Add Design code
-                continue
             } else {
                 //TODO Add support for Designs, Alerts, Commits, Snippets
                 continue
@@ -1181,7 +1182,7 @@ function getTodos(url = host + '/api/v4/todos?per_page=' + numberOfTodos + '&acc
                     location = todo.project.name_with_namespace
                 } else if (todo.group) {
                     location = todo.group.name
-                } 
+                }
                 if (todo.target_type == 'DesignManagement::Design') {
                     todo.target.title = todo.body
                 }
