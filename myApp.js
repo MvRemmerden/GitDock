@@ -771,7 +771,7 @@ async function getLastPipelines(commits) {
                 let result = await fetch(host + '/api/v4/projects/' + commit.project_id + '/pipelines?status=running&username=' + username + '&per_page=1&page=1&access_token=' + access_token)
                 let pipelines = await result.json()
                 if (pipelines && pipelines.length > 0) {
-                    mb.tray.setImage(__dirname + '/assets/running.png')
+                    mb.tray.setImage(__dirname + '/assets/runningTemplate.png')
                     for (let pipeline of pipelines) {
                         if (runningPipelineSubscriptions.findIndex(subscriptionPipeline => subscriptionPipeline.id == pipeline.id) == -1) {
                             let result = await fetch(host + '/api/v4/projects/' + pipeline.project_id + '/repository/commits/' + pipeline.sha + '?access_token=' + access_token)
@@ -811,7 +811,7 @@ async function subscribeToRunningPipeline() {
                 runningPipelineSubscriptions = runningPipelineSubscriptions.filter(subscriptionPipeline => subscriptionPipeline.id != pipeline.id)
                 if (runningPipelineSubscriptions.length == 0) {
                     clearInterval(interval)
-                    mb.tray.setImage(__dirname + '/assets/gitlab.png')
+                    mb.tray.setImage(__dirname + '/assets/gitlabTemplate.png')
                 }
             }
         }
@@ -1043,7 +1043,6 @@ function getRecentComments() {
     if (lastRecentCommentsExecutionFinished && lastRecentCommentsExecution + delay < Date.now()) {
         lastRecentCommentsExecutionFinished = false
         let recentCommentsString = ''
-        console.log(host + '/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token)
         fetch(host + '/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token).then(result => {
             return result.json()
         }).then(async comments => {
@@ -1061,9 +1060,8 @@ function getRecentComments() {
                         url = host + '/api/v4/projects/' + comment.project_id + '/snippets/' + comment.note.noteable_id + '?access_token=' + access_token
                     } else if (comment.note.noteable_type == 'DesignManagement::Design') {
                         url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.position.new_path.split('/')[1].split('-')[1] + '?access_token=' + access_token
-                        console.log(url)
                     } else {
-                        //TODO Add support for Designs, Alerts
+                        //TODO Add support for Alerts
                         continue
                     }
                     await fetch(url).then(result => {
@@ -1071,7 +1069,6 @@ function getRecentComments() {
                     }).then(collabject => {
                         if (comment.note.noteable_type == 'DesignManagement::Design') {
                             collabject.web_url += '/designs/' + comment.target_title
-                            console.log(collabject.web_url)
                             recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
                         } else {
                             recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
@@ -1112,9 +1109,8 @@ function getMoreRecentComments(url = host + '/api/v4/events?action=commented&per
                 url = host + '/api/v4/projects/' + comment.project_id + '/snippets/' + comment.note.noteable_id + '?access_token=' + access_token
             } else if (comment.note.noteable_type == 'DesignManagement::Design') {
                 url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.position.new_path.split('/')[1].split('-')[1] + '?access_token=' + access_token
-                console.log(url)
             } else {
-                //TODO Add support for Designs, Alerts
+                //TODO Add support for Alerts
                 continue
             }
             await fetch(url).then(result => {
@@ -1122,7 +1118,6 @@ function getMoreRecentComments(url = host + '/api/v4/events?action=commented&per
             }).then(collabject => {
                 if (comment.note.noteable_type == 'DesignManagement::Design') {
                     collabject.web_url += '/designs/' + comment.target_title
-                    console.log(collabject.web_url)
                     recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
                 } else {
                     recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
