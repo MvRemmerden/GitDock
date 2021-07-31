@@ -10,4 +10,4 @@ build:
     - branches
   script:
     - VERSION="$(cat package.json | grep version | head -1 | awk -F= "{ print $2 }" | sed 's/[version:,\",]//g' | tr -d '[[:space:]]')"
-    - release-cli create --name $VERSION --tag-name $VERSION
+    - release-cli create --name $VERSION --tag-name "v$VERSION"
