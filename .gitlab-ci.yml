@@ -17,6 +17,8 @@ build-windows:
   stage: build
   needs:
     - release
+  only:
+    - tags
   tags:
     - windows
     - shared-windows
@@ -34,11 +36,10 @@ build-linux:
   stage: build
   needs:
     - release
+  only:
+    - tags
   tags:
-    - gitlab-org-docker
     - linux
-    - gitlab-org
-    - docker
   script:
     - npm install
     - brew install fakeroot && brew install dpkg
