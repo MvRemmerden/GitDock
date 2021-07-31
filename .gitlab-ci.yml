@@ -4,9 +4,8 @@ stages:
   - release
 
 variables:
-  PACKAGE_VERSION: "0.0.63"
+  PACKAGE_VERSION: "0.0.64"
   DMG_BINARY: "GitDock-${PACKAGE_VERSION}.dmg"
-
 
 build-windows:
   stage: build
@@ -42,10 +41,11 @@ build-mac-and-linux:
 upload:
   stage: upload
   needs:
-    - build
+    - job: build-mac-and-linux
+      artifacts: true
+    - job: build-windows
+      artifacts: true
   image: curlimages/curl:latest
-  dependencies:
-    - build-mac-and-linux
   only:
     - tags
   script:
@@ -55,7 +55,7 @@ upload:
 release:
   stage: release
   needs:
-    - build
+    - upload
   image: registry.gitlab.com/gitlab-org/release-cli
   only:
     - tags
