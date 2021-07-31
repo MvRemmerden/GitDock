@@ -1,22 +1,15 @@
 stages:
-  - release
   - build
+  - upload
+  - release
 
-release:
-  stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli
-  only:
-    - tags
-  except:
-    - branches
-  script:
-    - VERSION="$(cat package.json | grep version | head -1 | awk -F= "{ print $2 }" | sed 's/[version:,\",]//g' | tr -d '[[:space:]]')"
-    - release-cli create --name "v$VERSION" --tag-name "v$VERSION"
+variables:
+  PACKAGE_VERSION: "$(cat package.json | grep version | head -1 | awk -F= "{ print $2 }" | sed 's/[version:,\",]//g' | tr -d '[[:space:]]')"
+  DMG_BINARY: "GitDock-${PACKAGE_VERSION}.dmg"
+
 
 build-windows:
   stage: build
-  needs:
-    - release
   only:
     - tags
   tags:
@@ -34,8 +27,6 @@ build-windows:
 
 build-mac-and-linux:
   stage: build
-  needs:
-    - release
   only:
     - tags
   tags:
@@ -47,3 +38,29 @@ build-mac-and-linux:
   artifacts:
     paths:
       - out/make
+
+upload:
+  stage: upload
+  needs:
+    - build
+  image: curlimages/curl:latest
+  dependencies:
+    - build-mac-and-linux
+  only:
+    - tags
+  script:
+    - |
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/${DMG_BINARY} ${PACKAGE_REGISTRY_URL}/${DMG_BINARY}
+
+release:
+  stage: release
+  needs:
+    - build
+  image: registry.gitlab.com/gitlab-org/release-cli
+  only:
+    - tags
+  except:
+    - branches
+  script:
+    - VERSION="$(cat package.json | grep version | head -1 | awk -F= "{ print $2 }" | sed 's/[version:,\",]//g' | tr -d '[[:space:]]')"
+    - release-cli create --name "v$VERSION" --tag-name "v$VERSION"
