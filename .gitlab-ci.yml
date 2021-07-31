@@ -4,7 +4,7 @@ stages:
   - release
 
 variables:
-  PACKAGE_VERSION: "0.0.65"
+  PACKAGE_VERSION: "0.0.66"
   DMG_BINARY: "GitDock-${PACKAGE_VERSION}.dmg"
   PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/gitdock/${PACKAGE_VERSION}"
 
@@ -52,6 +52,8 @@ upload:
   script:
     - |
       curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/${DMG_BINARY} ${PACKAGE_REGISTRY_URL}/${DMG_BINARY}
+    - |
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/squirrel.windows/x64/GitDock.exe ${PACKAGE_REGISTRY_URL}/GitDock-${PACKAGE_VERSION}.exe
 
 release:
   stage: release
