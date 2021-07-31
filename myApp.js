@@ -1061,17 +1061,20 @@ function getRecentComments() {
                     } else if (comment.note.noteable_type == 'DesignManagement::Design') {
                         url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.position.new_path.split('/')[1].split('-')[1] + '?access_token=' + access_token
                     } else {
-                        //TODO Add support for Alerts
                         continue
                     }
                     await fetch(url).then(result => {
                         return result.json()
                     }).then(collabject => {
-                        if (comment.note.noteable_type == 'DesignManagement::Design') {
-                            collabject.web_url += '/designs/' + comment.target_title
-                            recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                        if (collabject.message && collabject.message == '404 Not found') {
+                            console.log('deleted')
                         } else {
-                            recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                            if (comment.note.noteable_type == 'DesignManagement::Design') {
+                                collabject.web_url += '/designs/' + comment.target_title
+                                recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                            } else {
+                                recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                            }
                         }
                     })
                 }
@@ -1110,17 +1113,20 @@ function getMoreRecentComments(url = host + '/api/v4/events?action=commented&per
             } else if (comment.note.noteable_type == 'DesignManagement::Design') {
                 url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.position.new_path.split('/')[1].split('-')[1] + '?access_token=' + access_token
             } else {
-                //TODO Add support for Alerts
                 continue
             }
             await fetch(url).then(result => {
                 return result.json()
             }).then(collabject => {
-                if (comment.note.noteable_type == 'DesignManagement::Design') {
-                    collabject.web_url += '/designs/' + comment.target_title
-                    recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                if (collabject.message && collabject.message == '404 Not found') {
+                    console.log('deleted')
                 } else {
-                    recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                    if (comment.note.noteable_type == 'DesignManagement::Design') {
+                        collabject.web_url += '/designs/' + comment.target_title
+                        recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                    } else {
+                        recentCommentsString += '<li class=\\"comment\\"><a href=\\"' + collabject.web_url + '#note_' + comment.note.id + '\\" target=\\"_blank\\">' + escapeHtml(comment.note.body) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(comment.created_at)) + ' ago &middot; <a href=\\"' + collabject.web_url.split('#note')[0] + '\\" target=\\"_blank\\">' + escapeHtml(comment.target_title) + '</a></span></div></li>'
+                    }
                 }
             })
         }
