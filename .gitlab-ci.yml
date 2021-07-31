@@ -67,7 +67,9 @@ release:
   before_script:
     - VERSION="$(cat package.json | grep version | head -1 | awk -F= "{ print $2 }" | sed 's/[version:,\",]//g' | tr -d '[[:space:]]')"
   script:
+    - echo "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg"
     - release-cli create --name "v$VERSION" --tag-name "v$VERSION" \
-        --assets-link "{\"name\":\"GitDock.dmg\",\"url\":\"${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg\"}" \
-        --assets-link "{\"name\":\"GitDock.exe\",\"url\":\"${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.exe\"}"
+        --assets-link "{\"name\":\"Kicker\",\"url\":\"https://kicker.de\"}" \
+        --assets-link "{\"name\":\"MacOS\",\"url\":\"${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg\"}" \
+        --assets-link "{\"name\":\"Windows\",\"url\":\"${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.exe\"}"
 
