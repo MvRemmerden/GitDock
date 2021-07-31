@@ -43,7 +43,7 @@ build-linux:
   image: node:14
   script:
     - npm install
-    - brew install fakeroot && brew install dpkg
+    - sudo apt-get update -y && sudo apt-get install -y dpkg && sudo apt-get install -y fakeroot
     - npm run make -- --platform=linux
   artifacts:
     paths:
