@@ -1,7 +1,8 @@
 stages:
   - release
+  - build
 
-build:
+release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli
   only:
@@ -10,4 +11,34 @@ build:
     - branches
   script:
     - VERSION="$(cat package.json | grep version | head -1 | awk -F= "{ print $2 }" | sed 's/[version:,\",]//g' | tr -d '[[:space:]]')"
-    - release-cli create --name $VERSION --tag-name "v$VERSION"
+    - release-cli create --name "v$VERSION" --tag-name "v$VERSION"
+
+build-windows:
+  stage: build
+  needs: release
+  tags:
+    - windows
+    - shared-windows
+    - windows-1809
+  before_script:
+    - cup nodejs.install -y
+  script:
+    - npm install
+    - npm run make -- --platform=win32
+  artifacts:
+  - out/make
+
+build-linux:
+  stage: build
+  needs: release
+  tags:
+    - gitlab-org-docker
+    - linux
+    - gitlab-org
+    - docker
+  script:
+    - npm install
+    - brew install fakeroot && brew install dpkg
+    - npm run make -- --platform=darwin && npm run make -- --platform=linux
+  artifacts:
+  - out/make

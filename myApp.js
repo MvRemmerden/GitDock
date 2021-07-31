@@ -493,6 +493,7 @@ if (access_token && user_id && username) {
 
         //Preloading content
         getUser()
+        getLastTodo()
         getUsersPlan()
         getRecentlyVisited()
         getLastCommits()
@@ -719,7 +720,9 @@ function getLastTodo() {
     }).then(todos => {
         todo = todos[0]
         if(lastTodoId != todo.id) {
-            if(lastTodoId != -1) {
+            console.log(Date.parse(todo.created_at))
+            console.log(Date.now())
+            if(lastTodoId != -1 && Date.parse(todo.created_at) > Date.now() - 20000 ) {
                 let todoNotification = new Notification({ title: todo.body, subtitle: todo.author.name, body: todo.target.title })
                 todoNotification.on('click', result => {
                     shell.openExternal(todo.target_url)
