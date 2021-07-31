@@ -32,24 +32,7 @@ build-windows:
     paths:
       - out/make
 
-build-linux:
-  stage: build
-  needs:
-    - release
-  only:
-    - tags
-  tags:
-    - linux
-  image: node:14
-  script:
-    - npm install
-    - apt-get update -y && apt-get install -y dpkg && apt-get install -y fakeroot
-    - npm run make -- --platform=linux
-  artifacts:
-    paths:
-      - out/make
-
-build-mac:
+build-mac-and-linux:
   stage: build
   needs:
     - release
@@ -60,7 +43,7 @@ build-mac:
   script:
     - npm install
     - brew install fakeroot && brew install dpkg
-    - npm run make -- --platform=darwin
+    - npm run make -- --platform=darwin && npm run make -- --platform=linux
   artifacts:
     paths:
       - out/make
