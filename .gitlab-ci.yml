@@ -4,7 +4,7 @@ stages:
   - release
 
 variables:
-  PACKAGE_VERSION: "$(cat package.json | grep version | head -1 | awk -F= "{ print $2 }" | sed 's/[version:,\",]//g' | tr -d '[[:space:]]')"
+  PACKAGE_VERSION: "0.0.63"
   DMG_BINARY: "GitDock-${PACKAGE_VERSION}.dmg"
 
 
