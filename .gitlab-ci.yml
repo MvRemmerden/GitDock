@@ -4,8 +4,6 @@ stages:
   - release
 
 variables:
-  PACKAGE_VERSION: "0.0.66"
-  DMG_BINARY: "GitDock-${PACKAGE_VERSION}.dmg"
   PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/gitdock/${PACKAGE_VERSION}"
 
 build-windows:
@@ -49,11 +47,13 @@ upload:
   image: curlimages/curl:latest
   only:
     - tags
+  before_script:
+    - VERSION="$(cat package.json | grep version | head -1 | awk -F= "{ print $2 }" | sed 's/[version:,\",]//g' | tr -d '[[:space:]]')"
   script:
     - |
-      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/${DMG_BINARY} ${PACKAGE_REGISTRY_URL}/${DMG_BINARY}
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/GitDock-${VERSION}.dmg ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg
     - |
-      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/squirrel.windows/x64/GitDock.exe ${PACKAGE_REGISTRY_URL}/GitDock-${PACKAGE_VERSION}.exe
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/squirrel.windows/x64/GitDock.exe ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.exe
 
 release:
   stage: release
@@ -64,6 +64,10 @@ release:
     - tags
   except:
     - branches
-  script:
+  before_script:
     - VERSION="$(cat package.json | grep version | head -1 | awk -F= "{ print $2 }" | sed 's/[version:,\",]//g' | tr -d '[[:space:]]')"
-    - release-cli create --name "v$VERSION" --tag-name "v$VERSION"
+  script:
+    - release-cli create --name "v$VERSION" --tag-name "v$VERSION" \
+        --assets-link "{\"name\":\"GitDock.dmg\",\"url\":\"${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg\"}" \
+        --assets-link "{\"name\":\"GitDock.exe\",\"url\":\"${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.exe\"}"
+
