@@ -44,7 +44,23 @@ build-linux:
   script:
     - npm install
     - brew install fakeroot && brew install dpkg
-    - npm run make -- --platform=darwin && npm run make -- --platform=linux
+    - npm run make -- --platform=linux
+  artifacts:
+    paths:
+      - out/make
+
+build-mac:
+  stage: build
+  needs:
+    - release
+  only:
+    - tags
+  tags:
+    - self-hosted
+  script:
+    - npm install
+    - brew install fakeroot && brew install dpkg
+    - npm run make -- --platform=darwin
   artifacts:
     paths:
       - out/make
