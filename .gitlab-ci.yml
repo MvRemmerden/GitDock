@@ -4,8 +4,9 @@ stages:
   - release
 
 variables:
-  PACKAGE_VERSION: "0.0.64"
+  PACKAGE_VERSION: "0.0.65"
   DMG_BINARY: "GitDock-${PACKAGE_VERSION}.dmg"
+  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/gitdock/${PACKAGE_VERSION}"
 
 build-windows:
   stage: build
