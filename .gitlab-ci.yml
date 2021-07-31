@@ -15,7 +15,8 @@ release:
 
 build-windows:
   stage: build
-  needs: release
+  needs:
+    - release
   tags:
     - windows
     - shared-windows
@@ -26,11 +27,13 @@ build-windows:
     - npm install
     - npm run make -- --platform=win32
   artifacts:
-  - out/make
+    paths:
+      - out/make
 
 build-linux:
   stage: build
-  needs: release
+  needs:
+    - release
   tags:
     - gitlab-org-docker
     - linux
@@ -41,4 +44,5 @@ build-linux:
     - brew install fakeroot && brew install dpkg
     - npm run make -- --platform=darwin && npm run make -- --platform=linux
   artifacts:
-  - out/make
+    paths:
+      - out/make
