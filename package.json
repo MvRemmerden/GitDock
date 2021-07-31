@@ -1,7 +1,7 @@
 {
   "name": "gitdock",
   "productName": "GitDock",
-  "version": "0.0.52",
+  "version": "0.0.53",
   "description": "A better way of managing all your work on GitLab.",
   "main": "myApp.js",
   "scripts": {
@@ -41,16 +41,16 @@
     "forge": {
       "packagerConfig": {
         "icon": "./assets/gitlab.icns",
-        "appName": "GitLab",
-        "executableName": "GitLab",
-        "name": "GitLab"
+        "appName": "GitDock",
+        "executableName": "GitDock",
+        "name": "GitDock"
       },
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "GitLab",
-            "setupExe": "GitLab.exe",
+            "name": "GitDock",
+            "setupExe": "GitDock.exe",
             "noDelta": true
           }
         },
@@ -65,9 +65,9 @@
           "name": "@electron-forge/maker-deb",
           "config": {
             "options": {
-              "bin": "GitLab",
+              "bin": "GitDock",
               "maintainer": "Marcel van Remmerden",
-              "name": "GitLab"
+              "name": "GitDock"
             }
           }
         },
@@ -75,9 +75,9 @@
           "name": "@electron-forge/maker-rpm",
           "config": {
             "options": {
-              "bin": "GitLab",
+              "bin": "GitDock",
               "license": "Closed Source",
-              "name": "GitLab"
+              "name": "GitDock"
             }
           }
         }

@@ -1,0 +1,13 @@
+stages:
+  - release
+
+build:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli
+  only:
+    - tags
+  except:
+    - branches
+  script:
+    - VERSION="$(cat package.json | grep version | head -1 | awk -F= "{ print $2 }" | sed 's/[version:,\",]//g' | tr -d '[[:space:]]')"
+    - release-cli create --name $VERSION --tag-name $VERSION

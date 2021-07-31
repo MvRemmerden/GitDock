@@ -44,4 +44,4 @@ jobs:
       with:
         name: builds
         path: |
-          out/make/squirrel.windows/x64/GitLab.exe
+          out/make/squirrel.windows/x64/GitDock.exe

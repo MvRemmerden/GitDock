@@ -27,6 +27,7 @@ let moreRecentlyVisitedArray = []
 let recentCommits = []
 let currentCommit
 let lastEventId
+let lastTodoId = -1
 let recentProjectCommits = []
 let currentProjectCommit
 let numberOfRecentlyVisited = 3
@@ -91,7 +92,7 @@ const mb = menubar({
     icon: __dirname + '/assets/gitlabTemplate.png',
     preloadWindow: true,
     browserWindow: {
-        width: 550,
+        width: 1000,
         height: 700,
         webPreferences: {
             preload: __dirname + '/preload.js',
@@ -502,9 +503,10 @@ if (access_token && user_id && username) {
         //Regularly relaoading content
         setInterval(function () {
             getLastEvent()
+            getLastTodo()
         }, 10000);
 
-        //mb.window.webContents.openDevTools()
+        mb.window.webContents.openDevTools()
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
             if (analytics) {
                 visitor.event("Visit external link", true).send()
@@ -530,7 +532,7 @@ if (access_token && user_id && username) {
         mb.window.loadURL(`file://${__dirname}/login.html`).then(() => {
             changeTheme(store.get('theme'), false)
             mb.showWindow()
-            //mb.window.webContents.openDevTools()
+            mb.window.webContents.openDevTools()
         })
     })
 }
@@ -709,6 +711,24 @@ function getLastEvent() {
         })
 
     }
+}
+
+function getLastTodo() {
+    fetch(host + '/api/v4/todos?per_page=1&access_token=' + access_token).then(result => {
+        return result.json()
+    }).then(todos => {
+        todo = todos[0]
+        if(lastTodoId != todo.id) {
+            if(lastTodoId != -1) {
+                let todoNotification = new Notification({ title: todo.body, subtitle: todo.author.name, body: todo.target.title })
+                todoNotification.on('click', result => {
+                    shell.openExternal(todo.target_url)
+                })
+                todoNotification.show()
+            }
+            lastTodoId = todo.id
+        }
+    })
 }
 
 function getLastCommits(count = 20) {
@@ -1311,8 +1331,10 @@ function getProjectIssues(project) {
         if (issues.length > 0) {
             projectIssuesString = '<ul class=\\"list-container\\">'
             for (let issue of issues) {
+                console.log(issue.title)
+                console.log(escapeHtml(issue.title))
                 projectIssuesString += '<li class=\\"history-entry\\">'
-                projectIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(issue.created_at)) + ' ago &middot; ' + issue.author.name + '</span></div></li>'
+                projectIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(issue.created_at)) + ' ago &middot; ' + escapeHtml(issue.author.name) + '</span></div></li>'
             }
             projectIssuesString += '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' + issuesString + ', ' + projectString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>'
             projectIssuesString += '</ul>'
@@ -1375,20 +1397,7 @@ function displayCommit(commit, project, focus = 'project') {
                 logo += '<path d=\\"M10.5 7.63V6.37l-.787-.13c-.044-.175-.132-.349-.263-.61l.481-.652-.918-.913-.657.478a2.346 2.346 0 0 0-.612-.26L7.656 3.5H6.388l-.132.783c-.219.043-.394.13-.612.26l-.657-.478-.918.913.437.652c-.131.218-.175.392-.262.61l-.744.086v1.261l.787.13c.044.218.132.392.263.61l-.438.651.92.913.655-.434c.175.086.394.173.613.26l.131.783h1.313l.131-.783c.219-.043.394-.13.613-.26l.656.478.918-.913-.48-.652c.13-.218.218-.435.262-.61l.656-.13zM7 8.283a1.285 1.285 0 0 1-1.313-1.305c0-.739.57-1.304 1.313-1.304.744 0 1.313.565 1.313 1.304 0 .74-.57 1.305-1.313 1.305z\\" class=\\"icon\\"/></g></svg>'
             }
         }
-    }/* else {
-        if (project.avatar_url && project.avatar_url != null && project.visibility == 'public') {
-            logo = '<img src=\\"' + project.avatar_url + '?width=64\\" />'
-        } else {
-            logo = '<div id=\\"project-name\\">' + project.name.charAt(0).toUpperCase() + '</div>'
-        }
-        //TODO When https://gitlab.com/gitlab-org/gitlab/-/issues/20924 is fixed, get users avatar here
-        /*await fetch(host + '/api/v4/users?search=' + commit.author_email + '&access_token=' + access_token).then(result => {
-            return result.json()
-        }).then(user => {
-            console.log(user[0])
-            logo = '<img src=\\"' + user[0].avatar_url + '\\" />'
-        })
-    }*/
+    }
     logo += '</a>'
     let subline
     if (focus == 'project') {
