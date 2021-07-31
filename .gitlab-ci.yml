@@ -43,7 +43,7 @@ build-linux:
   image: node:14
   script:
     - npm install
-    - sudo apt-get update -y && sudo apt-get install -y dpkg && sudo apt-get install -y fakeroot
+    - apt-get update -y && apt-get install -y dpkg && apt-get install -y fakeroot
     - npm run make -- --platform=linux
   artifacts:
     paths:
