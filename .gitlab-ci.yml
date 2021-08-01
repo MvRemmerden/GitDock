@@ -1,6 +1,5 @@
 stages:
   - version
-  - test
   - build
   - upload
   - release
@@ -99,7 +98,3 @@ release:
             url: "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg"
           - name: "Windows"
             url: "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.exe"
-
-include:
-  - template: Dependency-Scanning.gitlab-ci.yml
-  - template: Secret-Detection.gitlab-ci.yml
