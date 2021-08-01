@@ -9,8 +9,10 @@ variables:
 
 release-version-creation:
   stage: version
+  only:
+    - tags
   script:
-    - echo "VERSION=$(sed -n -e \"s,^\s\+VERSION = '\([0-9]\+\.[0-9]\+\.[0-9]\+\)'.freeze,\1,p\" lib/GEM_NAME/version.rb)" > version.env
+    - echo "VERSION=$(cat package.json | grep version | head -1 | awk -F= "{ print $2 }" | sed 's/[version:,\",]//g' | tr -d '[[:space:]]')" > version.env
   artifacts:
     reports:
       dotenv: version.env
