@@ -1,10 +1,19 @@
 stages:
+  - version
   - build
   - upload
   - release
 
 variables:
   PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/gitdock"
+
+release-version-creation:
+  stage: version
+  script:
+    - echo "VERSION=$(sed -n -e \"s,^\s\+VERSION = '\([0-9]\+\.[0-9]\+\.[0-9]\+\)'.freeze,\1,p\" lib/GEM_NAME/version.rb)" > version.env
+  artifacts:
+    reports:
+      dotenv: version.env
 
 build-windows:
   stage: build
@@ -44,6 +53,8 @@ upload:
       artifacts: true
     - job: build-windows
       artifacts: true
+    - job: release-version-creation
+      artifacts: true
   image: curlimages/curl:latest
   only:
     - tags
@@ -58,14 +69,17 @@ upload:
 release-test:
   stage: release
   needs:
-    - upload
+    - job: build-mac-and-linux
+      artifacts: true
+    - job: build-windows
+      artifacts: true
+    - job: release-version-creation
+      artifacts: true
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   only:
     - tags
   except:
     - branches
-  before_script:
-    - VERSION="$(cat package.json | grep version | head -1 | awk -F= "{ print $2 }" | sed 's/[version:,\",]//g' | tr -d '[[:space:]]')"
   script:
     - echo "v$VERSION"
     - echo "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg"}
@@ -76,6 +90,6 @@ release-test:
       assets:
         links:
           - name: "MacOS"
-            url: "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg}"
+            url: "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg"
           - name: "Windows"
-            url: "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.exe}"
+            url: "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.exe"
