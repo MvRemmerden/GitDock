@@ -21,6 +21,7 @@ build-windows:
   stage: build
   only:
     - tags
+    - merge_requests
   tags:
     - windows
     - shared-windows
@@ -33,11 +34,13 @@ build-windows:
   artifacts:
     paths:
       - out/make
+    expire_in: 1 hour
 
 build-mac-and-linux:
   stage: build
   only:
     - tags
+    - merge_requests
   tags:
     - self-hosted
   script:
@@ -47,6 +50,7 @@ build-mac-and-linux:
   artifacts:
     paths:
       - out/make
+    expire_in: 1 hour
 
 upload:
   stage: upload
