@@ -92,7 +92,7 @@ const mb = menubar({
     icon: __dirname + '/assets/gitlabTemplate.png',
     preloadWindow: true,
     browserWindow: {
-        width: 1000,
+        width: 550,
         height: 700,
         webPreferences: {
             preload: __dirname + '/preload.js',
@@ -507,7 +507,7 @@ if (access_token && user_id && username) {
             getLastTodo()
         }, 10000);
 
-        mb.window.webContents.openDevTools()
+        //mb.window.webContents.openDevTools()
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
             if (analytics) {
                 visitor.event("Visit external link", true).send()
@@ -533,7 +533,7 @@ if (access_token && user_id && username) {
         mb.window.loadURL(`file://${__dirname}/login.html`).then(() => {
             changeTheme(store.get('theme'), false)
             mb.showWindow()
-            mb.window.webContents.openDevTools()
+            //mb.window.webContents.openDevTools()
         })
     })
 }
@@ -720,8 +720,6 @@ function getLastTodo() {
     }).then(todos => {
         todo = todos[0]
         if(lastTodoId != todo.id) {
-            console.log(Date.parse(todo.created_at))
-            console.log(Date.now())
             if(lastTodoId != -1 && Date.parse(todo.created_at) > Date.now() - 20000 ) {
                 let todoNotification = new Notification({ title: todo.body, subtitle: todo.author.name, body: todo.target.title })
                 todoNotification.on('click', result => {
@@ -838,7 +836,7 @@ async function subscribeToRunningPipeline() {
                 }
             }
         }
-    }, 20000);
+    }, 10000);
 }
 
 function changeCommit(forward = true, commitArray, chosenCommit) {
@@ -1334,8 +1332,6 @@ function getProjectIssues(project) {
         if (issues.length > 0) {
             projectIssuesString = '<ul class=\\"list-container\\">'
             for (let issue of issues) {
-                console.log(issue.title)
-                console.log(escapeHtml(issue.title))
                 projectIssuesString += '<li class=\\"history-entry\\">'
                 projectIssuesString += '<a href=\\"' + issue.web_url + '\\" target=\\"_blank\\">' + escapeHtml(issue.title) + '</a><span class=\\"namespace-with-time\\">Created ' + timeSince(new Date(issue.created_at)) + ' ago &middot; ' + escapeHtml(issue.author.name) + '</span></div></li>'
             }
