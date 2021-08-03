@@ -69,6 +69,10 @@ upload:
       curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/GitDock-${VERSION}.dmg ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg
     - |
       curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/squirrel.windows/x64/GitDock.exe ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.exe
+    - |
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/rpm/x64/GitDock-${VERSION}-1.x86_64.rpm ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.rpm
+    - |
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/deb/x64/gitdock_${VERSION}_amd64.deb ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.deb
 
 release:
   stage: release
@@ -98,3 +102,7 @@ release:
             url: "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg"
           - name: "Windows"
             url: "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.exe"
+          - name: "Linux deb"
+            url: "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.deb"
+          - name: "Linux rpm"
+            url: "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.rpm"

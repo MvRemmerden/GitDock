@@ -7,6 +7,7 @@ GitDock is a MacOS/Windows/Linux app that displays all your GitLab activities in
 As GitDock hasn't been digitally signed and verified (yet), the installation requires a few more steps than usual.
 
 <details><summary>MacOS</summary>
+
 1. Grab the dmg file from the newest release on the [Releases page](https://gitlab.com/mvanremmerden/gitdock/-/releases).
 1. Move the app to your Applications folder and open it. You will see a notification asking you "". Click "Cancel" at this point.
 
@@ -16,10 +17,13 @@ As GitDock hasn't been digitally signed and verified (yet), the installation req
 1. You should now see a message about GitDock in the lower part. After clicking "Open anyway", it should work as expected 🎉
 
 ![Security & Privacy warning](/docs/img/security-privacy-warning.png)
+
 </details>
 
 <details><summary>Windows</summary>
+
 //TODO Add Windows installation instructions
+
 </details>
 
 ## How to use GitDock ⚓️
