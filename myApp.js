@@ -542,12 +542,16 @@ if (access_token && user_id && username) {
 
 function setupSecondaryMenu() {
     let contextMenu = Menu.buildFromTemplate([
+        { label: 'Open GitDock', click: () => mb.showWindow(), open: process.platform === 'linux' },
         { label: 'Settings', click: () => { openSettingsPage() } },
         { label: 'Quit', click: () => { mb.app.quit(); } }
     ])
     mb.tray.on('right-click', () => {
         mb.tray.popUpContextMenu(contextMenu)
     })
+    if (process.platform === 'linux') {
+        mb.tray.setContextMenu(contextMenu);
+    }
 }
 
 function openSettingsPage() {
