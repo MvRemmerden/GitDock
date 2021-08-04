@@ -2,6 +2,10 @@
 
 GitDock is a MacOS/Windows/Linux app that displays all your GitLab activities in one place. Instead of the GitLab typical project- or group-centric approach, it collects all your information from a user-centric perspective.
 
+You can either have a look at this walkthrough video I recorded, or just try it out yourself by downloading it from the [releases](https://gitlab.com/mvanremmerden/gitdock/-/releases).
+
+[![YouTube Video](/docs/img/youtube.png)](https://www.youtube.com/watch?v=WkVS38wo4_w "GitDock ⚓️")
+
 ## Installation
 
 As GitDock hasn't been digitally signed and verified (yet), the installation requires a few more steps than usual.
