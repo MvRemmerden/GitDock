@@ -68,6 +68,8 @@ const mb = menubar({
     browserWindow: {
         width: 550,
         height: 700,
+        minWidth: 280,
+        minHeight: 300,
         webPreferences: {
             preload: __dirname + '/preload.js',
             nodeIntegration: false,
