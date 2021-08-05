@@ -4,7 +4,7 @@ const { allLabel, allText, approvalLabel, approvalText, approvedLabel, approvedT
 const fetch = require('node-fetch');
 const Store = require('electron-store');
 const store = new Store()
-const BrowserHistory = require('node-browser-history');
+const BrowserHistory = require('./lib/browser-history');
 const { URL } = require('url');
 const ua = require('universal-analytics');
 const uuid = require('uuid/v4');
@@ -901,6 +901,8 @@ async function getRecentlyVisited() {
             if (!firstItem) {
                 let moreString = "'Recently viewed'"
                 recentlyVisitedString += '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' + moreString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
+            } else if (!BrowserHistory.isSupported()) {
+                recentlyVisitedString = '<p class=\\"no-results\\">Recently visited objects will show up here.<br/><span class=\\"supported-browsers\\">Supported operating systems: Windows and macOS.</span></p>'
             } else {
                 recentlyVisitedString = '<p class=\\"no-results\\">Recently visited objects will show up here.<br/><span class=\\"supported-browsers\\">Supported browsers: Chrome, Firefox, Edge, Opera and Brave.</span></p>'
             }
