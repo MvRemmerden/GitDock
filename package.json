@@ -76,7 +76,7 @@
           "config": {
             "options": {
               "bin": "GitDock",
-              "license": "Closed Source",
+              "license": "MIT",
               "name": "GitDock"
             }
           }
