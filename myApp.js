@@ -1,5 +1,6 @@
 const { menubar } = require('menubar')
 const { Menu, Notification, shell, ipcMain, app } = require("electron")
+const { allLabel, allText, approvalLabel, approvalText, approvedLabel, approvedText, assignedLabel, assignedText, closedLabel, closedText, createdLabel, createdText, dueDateLabel, dueDateText, mergedLabel, mergedText, openedLabel, openedText, query, recentlyCreatedLabel, recentlyCreatedText, recentlyUpdatedLabel, recentlyUpdatedText, reviewedLabel, reviewedText, sort, state } = require('./src/filter-text')
 const fetch = require('node-fetch');
 const Store = require('electron-store');
 const store = new Store()
@@ -46,35 +47,6 @@ let activeMRsSortOption = 'created_at'
 let runningPipelineSubscriptions = []
 let timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 let isOnSubPage = false
-
-//Dropdown shared variables
-let query = "'query'"
-let state = "'state'"
-let sort = "'sort'"
-let allLabel = "'all'"
-let allText = "'All'"
-let assignedLabel = "'assigned_to_me'"
-let assignedText = "'Assigned'"
-let createdLabel = "'created_by_me'"
-let createdText = "'Created'"
-let openedLabel = "'opened'"
-let openedText = "'Open'"
-let closedLabel = "'closed'"
-let closedText = "'Closed'"
-let recentlyUpdatedLabel = "'updated_at'"
-let recentlyUpdatedText = "'Sort by recently updated'"
-let recentlyCreatedLabel = "'created_at'"
-let recentlyCreatedText = "'Sort by recently created'"
-let dueDateLabel = "'due_date&sort=asc'"
-let dueDateText = "'Sort by due date'"
-let reviewedLabel = "'review_requests_for_me'"
-let reviewedText = "'Reviewed'"
-let approvedLabel = "'approved_by_me'"
-let approvedText = "'Approved'"
-let mergedLabel = "'merged'"
-let mergedText = "'Merged'"
-let approvalLabel = "'approval_rule_for_me'"
-let approvalText = "'Approval rules'"
 
 //Anti rebound variables
 let delay = 2000
