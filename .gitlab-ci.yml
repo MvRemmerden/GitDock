@@ -42,10 +42,12 @@ build-mac-and-linux:
     - tags
     - merge_requests
   tags:
-    - self-hosted
+    - shared-macos-amd64
+  image: macos-11-xcode-12
   script:
+    - npm install -g npm@latest
     - npm install
-    - brew install fakeroot && brew install dpkg
+    - brew install fakeroot && brew install dpkg && brew install rpm
     - npm run make -- --platform=darwin && npm run make -- --platform=linux
   artifacts:
     paths:
