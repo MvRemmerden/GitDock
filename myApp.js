@@ -250,8 +250,8 @@ ipcMain.on('go-to-overview', (event, arg) => {
     activeMRsSortOption = 'created_at'
     moreRecentlyVisitedArray = []
     recentProjectCommits = []
-    delete currentProjectCommit
-    delete currentProject
+    currentProjectCommit = null
+    currentProject = null
 })
 
 ipcMain.on('switch-issues', (event, arg) => {
@@ -464,7 +464,7 @@ ipcMain.on('change-analytics', (event, arg) => {
     if (analytics) {
         visitor = ua('UA-203420427-1', analytics_id);
     } else {
-        delete visitor
+        visitor = null
     }
 })
 
