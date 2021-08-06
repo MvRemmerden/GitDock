@@ -459,7 +459,7 @@ ipcMain.on('logout', (event, arg) => {
 
 
 mb.on('ready', () => {
-    setupSecondaryMenu()
+    setupContextMenu()
 })
 
 if (access_token && user_id && username) {
@@ -514,13 +514,33 @@ if (access_token && user_id && username) {
     })
 }
 
-function setupSecondaryMenu() {
-    let contextMenu = Menu.buildFromTemplate([
+function setupContextMenu() {
+    const baseMenuItems = [
         { label: 'Settings', click: () => { openSettingsPage() } },
         { label: 'Quit', click: () => { mb.app.quit(); } }
+    ]
+
+    if (process.platform === 'linux') {
+        setupLinuxContextMenu(baseMenuItems)
+    } else {
+        setupGenericContextMenu(baseMenuItems)
+    }
+}
+
+function setupLinuxContextMenu(baseMenuItems) {
+    const menu = Menu.buildFromTemplate([
+        { label: 'Open GitDock', click: () => mb.showWindow(), visible: process.platform === 'linux' },
+        ...baseMenuItems
     ])
+
+    mb.tray.setContextMenu(menu)
+}
+
+function setupGenericContextMenu(baseMenuItems) {
+    const menu = Menu.buildFromTemplate(baseMenuItems)
+
     mb.tray.on('right-click', () => {
-        mb.tray.popUpContextMenu(contextMenu)
+        mb.tray.popUpContextMenu(menu)
     })
 }
 
