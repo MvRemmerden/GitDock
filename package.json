@@ -33,7 +33,7 @@
     "electron-squirrel-startup": "^1.0.0",
     "electron-store": "^8.0.0",
     "menubar": "^9.0.5",
-    "node-browser-history": "^2.4.5",
+    "node-browser-history": "^2.4.6",
     "node-fetch": "^2.6.1",
     "universal-analytics": "^0.4.23"
   },
