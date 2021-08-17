@@ -68,7 +68,7 @@ const mb = menubar({
     browserWindow: {
         width: 550,
         height: 700,
-        minWidth: 280,
+        minWidth: 265,
         minHeight: 300,
         webPreferences: {
             preload: __dirname + '/preload.js',
@@ -128,6 +128,7 @@ ipcMain.on('detail-page', (event, arg) => {
                 visitor.pageview("/my-to-do-list").send()
             }
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "' + arg.page + '<div class=\\"detail-external-link\\"><a href=\\"' + host + '/dashboard/todos\\" target=\\"_blank\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill-rule=\\"evenodd\\" d=\\"M5,2 C5.55228,2 6,2.44772 6,3 C6,3.55228 5.55228,4 5,4 L4,4 L4,12 L12,12 L12,11 C12,10.4477 12.4477,10 13,10 C13.5523,10 14,10.4477 14,11 L14,12 C14,13.1046 13.1046,14 12,14 L4,14 C2.89543,14 2,13.1046 2,12 L2,4 C2,2.89543 2.89543,2 4,2 L5,2 Z M15,1 L15,5.99814453 C15,6.55043453 14.5523,6.99814453 14,6.99814453 C13.4477,6.99814453 13,6.55043453 13,5.99814453 L13,4.41419 L8.71571,8.69846 C8.32519,9.08899 7.69202,9.08899 7.3015,8.69846 C6.91097,8.30794 6.91097,7.67477 7.3015,7.28425 L11.5858,3 L9.99619141,3 C9.44391141,3 8.99619141,2.55228 8.99619141,2 C8.99619141,1.44772 9.44391141,1 9.99619141,1 L15,1 Z\\"/></svg></a></div>"')
             displaySkeleton(numberOfTodos)
             getTodos()
         } else if (arg.page == 'Recently viewed') {
@@ -459,7 +460,7 @@ ipcMain.on('logout', (event, arg) => {
 
 
 mb.on('ready', () => {
-    setupSecondaryMenu()
+    setupContextMenu()
 })
 
 if (access_token && user_id && username) {
@@ -509,18 +510,37 @@ if (access_token && user_id && username) {
         mb.window.loadURL(`file://${__dirname}/login.html`).then(() => {
             changeTheme(store.get('theme'), false)
             mb.showWindow()
-            //mb.window.webContents.openDevTools()
         })
     })
 }
 
-function setupSecondaryMenu() {
-    let contextMenu = Menu.buildFromTemplate([
+function setupContextMenu() {
+    const baseMenuItems = [
         { label: 'Settings', click: () => { openSettingsPage() } },
         { label: 'Quit', click: () => { mb.app.quit(); } }
+    ]
+
+    if (process.platform === 'linux') {
+        setupLinuxContextMenu(baseMenuItems)
+    } else {
+        setupGenericContextMenu(baseMenuItems)
+    }
+}
+
+function setupLinuxContextMenu(baseMenuItems) {
+    const menu = Menu.buildFromTemplate([
+        { label: 'Open GitDock', click: () => mb.showWindow(), visible: process.platform === 'linux' },
+        ...baseMenuItems
     ])
+
+    mb.tray.setContextMenu(menu)
+}
+
+function setupGenericContextMenu(baseMenuItems) {
+    const menu = Menu.buildFromTemplate(baseMenuItems)
+
     mb.tray.on('right-click', () => {
-        mb.tray.popUpContextMenu(contextMenu)
+        mb.tray.popUpContextMenu(menu)
     })
 }
 
@@ -1309,7 +1329,7 @@ function displayProjectPage(project) {
         logo = '<div id=\\"project-detail-name-avatar\\">' + project.name.charAt(0).toUpperCase() + '</div>'
     }
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
-    mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "<div id=\\"project-detail-information\\">' + logo + '<span class=\\"project-name\\">' + escapeHtml(project.name) + '</span><span class=\\"project-namespace\\">' + escapeHtml(project.namespace.name) + '</span></div><div id=\\"project-detail-link\\"><a href=\\"' + project.web_url + '\\" target=\\"_blank\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill-rule=\\"evenodd\\" d=\\"M5,2 C5.55228,2 6,2.44772 6,3 C6,3.55228 5.55228,4 5,4 L4,4 L4,12 L12,12 L12,11 C12,10.4477 12.4477,10 13,10 C13.5523,10 14,10.4477 14,11 L14,12 C14,13.1046 13.1046,14 12,14 L4,14 C2.89543,14 2,13.1046 2,12 L2,4 C2,2.89543 2.89543,2 4,2 L5,2 Z M15,1 L15,5.99814453 C15,6.55043453 14.5523,6.99814453 14,6.99814453 C13.4477,6.99814453 13,6.55043453 13,5.99814453 L13,4.41419 L8.71571,8.69846 C8.32519,9.08899 7.69202,9.08899 7.3015,8.69846 C6.91097,8.30794 6.91097,7.67477 7.3015,7.28425 L11.5858,3 L9.99619141,3 C9.44391141,3 8.99619141,2.55228 8.99619141,2 C8.99619141,1.44772 9.44391141,1 9.99619141,1 L15,1 Z\\"/></svg></a></div>"')
+    mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "<div id=\\"project-detail-information\\">' + logo + '<span class=\\"project-name\\">' + escapeHtml(project.name) + '</span><span class=\\"project-namespace\\">' + escapeHtml(project.namespace.name) + '</span></div><div class=\\"detail-external-link\\"><a href=\\"' + project.web_url + '\\" target=\\"_blank\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill-rule=\\"evenodd\\" d=\\"M5,2 C5.55228,2 6,2.44772 6,3 C6,3.55228 5.55228,4 5,4 L4,4 L4,12 L12,12 L12,11 C12,10.4477 12.4477,10 13,10 C13.5523,10 14,10.4477 14,11 L14,12 C14,13.1046 13.1046,14 12,14 L4,14 C2.89543,14 2,13.1046 2,12 L2,4 C2,2.89543 2.89543,2 4,2 L5,2 Z M15,1 L15,5.99814453 C15,6.55043453 14.5523,6.99814453 14,6.99814453 C13.4477,6.99814453 13,6.55043453 13,5.99814453 L13,4.41419 L8.71571,8.69846 C8.32519,9.08899 7.69202,9.08899 7.3015,8.69846 C6.91097,8.30794 6.91097,7.67477 7.3015,7.28425 L11.5858,3 L9.99619141,3 C9.44391141,3 8.99619141,2.55228 8.99619141,2 C8.99619141,1.44772 9.44391141,1 9.99619141,1 L15,1 Z\\"/></svg></a></div>"')
 }
 
 function getProjectIssues(project) {

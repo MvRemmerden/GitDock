@@ -744,20 +744,20 @@ a:hover {
     color: var(--muted-text-color);
     margin-top: 0.175rem;
 }
-.detail-view .detail-header #project-detail-link {
+.detail-view .detail-header .detail-external-link {
     margin: -0.5rem;
 }
-.detail-view .detail-header #project-detail-link a {
+.detail-view .detail-header .detail-external-link a {
     padding: 0.5rem;
     display: flex;
     align-items: center;
     cursor: pointer;
 }
-.detail-view .detail-header #project-detail-link a svg {
+.detail-view .detail-header .detail-external-link a svg {
     cursor: pointer;
     fill: var(--text-color);
 }
-.detail-view .detail-header #project-detail-link a:hover {
+.detail-view .detail-header .detail-external-link a:hover {
     background-color: var(--border-color);
     border-radius: 0.375rem;
 }
