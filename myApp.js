@@ -2,7 +2,7 @@ const { menubar } = require('menubar')
 const { Menu, Notification, shell, ipcMain, app } = require("electron")
 const { allLabel, allText, approvalLabel, approvalText, approvedLabel, approvedText, assignedLabel, assignedText, closedLabel, closedText, createdLabel, createdText, dueDateLabel, dueDateText, mergedLabel, mergedText, openedLabel, openedText, query, recentlyCreatedLabel, recentlyCreatedText, recentlyUpdatedLabel, recentlyUpdatedText, reviewedLabel, reviewedText, sort, state } = require('./src/filter-text')
 const fetch = require('node-fetch');
-const store = require('./lib/store')
+const { store, deleteFromStore } = require('./lib/store')
 const BrowserHistory = require('./lib/browser-history');
 const { URL } = require('url');
 const ua = require('universal-analytics');
@@ -1681,15 +1681,15 @@ function changeTheme(option = 'light', manual = false) {
 }
 
 function logout() {
-    store.delete('user_id')
-    store.delete('username')
-    store.delete('access_token')
-    store.delete('favorite-projects')
-    store.delete('bookmarks')
-    store.delete('host')
-    store.delete('plan')
-    store.delete('analytics')
-    store.delete('analytics_id')
+    deleteFromStore('user_id')
+    deleteFromStore('username')
+    deleteFromStore('access_token')
+    deleteFromStore('favorite-projects')
+    deleteFromStore('bookmarks')
+    deleteFromStore('host')
+    deleteFromStore('plan')
+    deleteFromStore('analytics')
+    deleteFromStore('analytics_id')
     mb.window.webContents.session.clearCache()
     mb.window.webContents.session.clearStorageData()
     app.quit()
