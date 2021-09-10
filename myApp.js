@@ -1524,7 +1524,7 @@ async function parseGitLabUrl(link) {
             locationUrl: project.web_url
         }
     } else if (object.type == 'epics') {
-        let result = await fetch(host + '/api/v4/groups/' + encodeURIComponent(object.namespaceWithProject) + '/' + object.type + '/' + object[object.type])
+        let result = await fetch(host + '/api/v4/groups/' + encodeURIComponent(object.namespaceWithProject.replace('groups/', '')) + '/' + object.type + '/' + object[object.type])
         issuable = await result.json()
         let result2 = await fetch(host + '/api/v4/groups/' + issuable.group_id + '?access_token=' + access_token)
         let group = await result2.json()

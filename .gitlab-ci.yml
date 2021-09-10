@@ -36,7 +36,7 @@ build-windows:
       - out/make
     expire_in: 1 hour
 
-build-mac-and-linux:
+build-mac:
   stage: build
   only:
     - tags
@@ -48,7 +48,25 @@ build-mac-and-linux:
     - npm install -g npm@latest
     - npm install
     - brew install fakeroot && brew install dpkg && brew install rpm
-    - npm run make -- --platform=darwin && npm run make -- --platform=linux
+    - npm run make -- --platform=darwin
+  artifacts:
+    paths:
+      - out/make
+    expire_in: 1 hour
+
+build-linux:
+  stage: build
+  only:
+    - tags
+    - merge_requests
+  tags:
+    - linux
+  image: node:latest
+  script:
+    - npm install -g npm@latest
+    - npm install
+    - apt-get update && apt-get -y install fakeroot && apt-get -y install dpkg && apt-get -y install rpm
+    - npm run make -- --platform=linux
   artifacts:
     paths:
       - out/make
@@ -57,7 +75,9 @@ build-mac-and-linux:
 upload:
   stage: upload
   needs:
-    - job: build-mac-and-linux
+    - job: build-mac
+      artifacts: true
+    - job: build-linux
       artifacts: true
     - job: build-windows
       artifacts: true
@@ -79,7 +99,9 @@ upload:
 release:
   stage: release
   needs:
-    - job: build-mac-and-linux
+    - job: build-mac
+      artifacts: true
+    - job: build-linux
       artifacts: true
     - job: build-windows
       artifacts: true
