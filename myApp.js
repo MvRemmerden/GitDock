@@ -2,25 +2,15 @@ const { menubar } = require('menubar')
 const { Menu, Notification, shell, ipcMain, app } = require("electron")
 const { allLabel, allText, approvalLabel, approvalText, approvedLabel, approvedText, assignedLabel, assignedText, closedLabel, closedText, createdLabel, createdText, dueDateLabel, dueDateText, mergedLabel, mergedText, openedLabel, openedText, query, recentlyCreatedLabel, recentlyCreatedText, recentlyUpdatedLabel, recentlyUpdatedText, reviewedLabel, reviewedText, sort, state } = require('./src/filter-text')
 const fetch = require('node-fetch');
-const Store = require('electron-store');
-const store = new Store()
+const { store, deleteFromStore } = require('./lib/store')
 const BrowserHistory = require('./lib/browser-history');
 const { URL } = require('url');
 const ua = require('universal-analytics');
-const uuid = require('uuid/v4');
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
-let access_token = store.get('access_token')
-let user_id = store.get('user_id')
-let username = store.get('username')
-let host = store.get('host') || 'https://gitlab.com'
-let plan = store.get('plan') || 'free'
-let analytics = store.get('analytics') || false
-let analytics_id = store.get('analytics_id') || uuid();
-store.set('analytics_id', analytics_id)
 let visitor
-if (analytics) {
-    visitor = ua('UA-203420427-1', analytics_id);
+if (store.analytics) {
+    visitor = ua('UA-203420427-1', store.analytics_id);
 }
 let recentlyVisitedString = ''
 let currentProject
@@ -83,7 +73,7 @@ ipcMain.on('detail-page', (event, arg) => {
     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = ""')
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = ""')
     if (arg.page == 'Project') {
-        if (analytics) {
+        if (store.analytics) {
             visitor.pageview("/project").send()
         }
         mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<div id=\\"project-commits-pagination\\"><span class=\\"name\\">Commits</span><div id=\\"commits-pagination\\"><span id=\\"commits-count\\" class=\\"empty\\"></span><button onclick=\\"changeCommit(false)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\" /></svg></button><button onclick=\\"changeCommit(true)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg></button></div></div>"')
@@ -98,7 +88,7 @@ ipcMain.on('detail-page', (event, arg) => {
         mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
         mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "' + arg.page + '"')
         if (arg.page == 'Issues') {
-            if (analytics) {
+            if (store.analytics) {
                 visitor.pageview("/my-issues").send()
             }
             let issuesQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"issues-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchIssues(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"issues-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchIssues(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label></div></div>'
@@ -109,11 +99,11 @@ ipcMain.on('detail-page', (event, arg) => {
             displaySkeleton(numberOfIssues)
             getIssues()
         } else if (arg.page == 'Merge requests') {
-            if (analytics) {
+            if (store.analytics) {
                 visitor.pageview("/my-merge-requests").send()
             }
             let mrsQuerySelect = '<div class=\\"custom-select\\" tabindex=\\"1\\"><div class=\\"custom-select-active\\" id=\\"mrs-query-active\\">Assigned</div><div class=\\"custom-options-wrapper\\"><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + assignedLabel + '\\" onchange=\\"switchMRs(' + assignedLabel + ', ' + query + ', ' + assignedText + ')\\" checked><label for=\\"' + assignedLabel + '\\" class=\\"custom-option-label\\">Assigned</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + createdLabel + '\\" onchange=\\"switchMRs(' + createdLabel + ', ' + query + ', ' + createdText + ')\\"><label for=\\"' + createdLabel + '\\" class=\\"custom-option-label\\">Created</label><input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + reviewedLabel + '\\" onchange=\\"switchMRs(' + reviewedLabel + ', ' + query + ', ' + reviewedText + ')\\"><label for=\\"' + reviewedLabel + '\\" class=\\"custom-option-label\\">Review requests</label>'
-            if (plan != 'free') {
+            if (store.plan != 'free') {
                 mrsQuerySelect += '<input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvedLabel + '\\" onchange=\\"switchMRs(' + approvedLabel + ', ' + query + ', ' + approvedText + ')\\"><label for=\\"' + approvedLabel + '\\" class=\\"custom-option-label\\">Approved</label>'
             }
             mrsQuerySelect += '<input class=\\"custom-option\\" name=\\"mrs-query-select\\" type=\\"radio\\" id=\\"' + approvalLabel + '\\" onchange=\\"switchMRs(' + approvalLabel + ', ' + query + ', ' + approvalText + ')\\"><label for=\\"' + approvalLabel + '\\" class=\\"custom-option-label\\">Approval rule</label></div></div>'
@@ -124,7 +114,7 @@ ipcMain.on('detail-page', (event, arg) => {
             displaySkeleton(numberOfMRs)
             getMRs()
         } else if (arg.page == 'To-Do list') {
-            if (analytics) {
+            if (store.analytics) {
                 visitor.pageview("/my-to-do-list").send()
             }
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
@@ -132,13 +122,13 @@ ipcMain.on('detail-page', (event, arg) => {
             displaySkeleton(numberOfTodos)
             getTodos()
         } else if (arg.page == 'Recently viewed') {
-            if (analytics) {
+            if (store.analytics) {
                 visitor.pageview("/my-history").send()
             }
             displaySkeleton(numberOfRecentlyVisited)
             getMoreRecentlyVisited()
         } else if (arg.page == 'Comments') {
-            if (analytics) {
+            if (store.analytics) {
                 visitor.pageview("/my-comments").send()
             }
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
@@ -162,7 +152,7 @@ ipcMain.on('sub-detail-page', (event, arg) => {
     mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-header-content").classList.remove("empty")')
     mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-header-content").innerHTML = "' + arg.page + '"')
     if (arg.page == 'Issues') {
-        if (analytics) {
+        if (store.analytics) {
             visitor.pageview("/project/issues").send()
         }
         if (arg.all == true) {
@@ -178,9 +168,9 @@ ipcMain.on('sub-detail-page', (event, arg) => {
         mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"filter-sort\\">' + issuesQuerySelect + issuesStateSelect + issuesSortSelect + '</div>"')
         mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").classList.add("with-overflow")')
         displaySkeleton(numberOfIssues, undefined, 'sub-detail-content')
-        getIssues(host + '/api/v4/projects/' + project.id + '/issues?scope=all&state=' + activeIssuesStateOption + '&order_by=created_at&per_page=' + numberOfIssues + '&access_token=' + access_token, 'sub-detail-content')
+        getIssues(store.host + '/api/v4/projects/' + project.id + '/issues?scope=all&state=' + activeIssuesStateOption + '&order_by=created_at&per_page=' + numberOfIssues + '&access_token=' + store.access_token, 'sub-detail-content')
     } else if (arg.page == 'Merge Requests') {
-        if (analytics) {
+        if (store.analytics) {
             visitor.pageview("/project/merge-requests").send()
         }
         if (arg.all == true) {
@@ -196,7 +186,7 @@ ipcMain.on('sub-detail-page', (event, arg) => {
         mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span><div class=\\"filter-sort\\">' + mrsQuerySelect + mrsStateSelect + mrsSortSelect + '</div>"')
         mb.window.webContents.executeJavaScript('document.getElementById("sub-detail-headline").classList.add("with-overflow")')
         displaySkeleton(numberOfMRs, undefined, 'sub-detail-content')
-        getMRs(host + '/api/v4/projects/' + project.id + '/merge_requests?scope=all&state=' + activeMRsStateOption + '&order_by=created_at&per_page=' + numberOfMRs + '&access_token=' + access_token, 'sub-detail-content')
+        getMRs(store.host + '/api/v4/projects/' + project.id + '/merge_requests?scope=all&state=' + activeMRsStateOption + '&order_by=created_at&per_page=' + numberOfMRs + '&access_token=' + store.access_token, 'sub-detail-content')
     }
 })
 
@@ -207,7 +197,7 @@ ipcMain.on('back-to-detail-page', (event, arg) => {
 })
 
 ipcMain.on('go-to-overview', (event, arg) => {
-    if (analytics) {
+    if (store.analytics) {
         visitor.pageview("/").send()
     }
     getRecentlyVisited()
@@ -230,10 +220,10 @@ ipcMain.on('go-to-overview', (event, arg) => {
 })
 
 ipcMain.on('switch-issues', (event, arg) => {
-    if (analytics) {
+    if (store.analytics) {
         visitor.event("Switch issues", arg.type, arg.label).send()
     }
-    let url = host + '/api/v4/'
+    let url = store.host + '/api/v4/'
     let id = 'detail-content'
     if (isOnSubPage && currentProject) {
         url += 'projects/' + currentProject.id + '/'
@@ -267,15 +257,15 @@ ipcMain.on('switch-issues', (event, arg) => {
             mb.window.webContents.executeJavaScript('document.getElementById("issues-sort-active").classList.remove("changed")')
         }
     }
-    url += 'issues?scope=' + activeIssuesQueryOption + '&state=' + activeIssuesStateOption + '&order_by=' + activeIssuesSortOption + '&per_page=' + numberOfIssues + '&access_token=' + access_token
+    url += 'issues?scope=' + activeIssuesQueryOption + '&state=' + activeIssuesStateOption + '&order_by=' + activeIssuesSortOption + '&per_page=' + numberOfIssues + '&access_token=' + store.access_token
     getIssues(url, id)
 })
 
 ipcMain.on('switch-mrs', (event, arg) => {
-    if (analytics) {
+    if (store.analytics) {
         visitor.event("Switch merge requests", arg.type, arg.label).send()
     }
-    let url = host + '/api/v4/'
+    let url = store.host + '/api/v4/'
     let id = 'detail-content'
     if (isOnSubPage && currentProject) {
         url += 'projects/' + currentProject.id + '/'
@@ -313,13 +303,13 @@ ipcMain.on('switch-mrs', (event, arg) => {
     if (activeMRsQueryOption == 'assigned_to_me' || activeMRsQueryOption == 'created_by_me') {
         url += activeMRsQueryOption
     } else if (activeMRsQueryOption == 'approved_by_me') {
-        url += 'all&approved_by_ids[]=' + user_id
+        url += 'all&approved_by_ids[]=' + store.user_id
     } else if (activeMRsQueryOption == 'review_requests_for_me') {
-        url += 'all&reviewer_id=' + user_id
+        url += 'all&reviewer_id=' + store.user_id
     } else if (activeMRsQueryOption == 'approval_rule_for_me') {
-        url += 'all&approver_ids[]=' + user_id
+        url += 'all&approver_ids[]=' + store.user_id
     }
-    url += '&state=' + activeMRsStateOption + '&order_by=' + activeMRsSortOption + '&per_page=' + numberOfMRs + '&access_token=' + access_token
+    url += '&state=' + activeMRsStateOption + '&order_by=' + activeMRsSortOption + '&per_page=' + numberOfMRs + '&access_token=' + store.access_token
     getMRs(url, id)
 })
 
@@ -351,7 +341,7 @@ ipcMain.on('search-recent', (event, arg) => {
 })
 
 ipcMain.on('change-commit', (event, arg) => {
-    if (analytics) {
+    if (store.analytics) {
         if (arg) {
             visitor.event("Navigate my commits", "next").send()
         } else {
@@ -365,7 +355,7 @@ ipcMain.on('change-commit', (event, arg) => {
 })
 
 ipcMain.on('change-project-commit', (event, arg) => {
-    if (analytics) {
+    if (store.analytics) {
         if (arg) {
             visitor.event("Navigate project commits", "next").send()
         } else {
@@ -379,14 +369,14 @@ ipcMain.on('change-project-commit', (event, arg) => {
 })
 
 ipcMain.on('add-bookmark', (event, arg) => {
-    if (analytics) {
+    if (store.analytics) {
         visitor.event("Add bookmark").send()
     }
     addBookmark(arg)
 })
 
 ipcMain.on('add-project', (event, arg) => {
-    if (analytics) {
+    if (store.analytics) {
         visitor.event("Add project").send()
     }
     addProject(arg.input, arg.target)
@@ -401,43 +391,42 @@ ipcMain.on('start-project-dialog', (event, arg) => {
 })
 
 ipcMain.on('delete-bookmark', (event, arg) => {
-    if (analytics) {
+    if (store.analytics) {
         visitor.event("Delete bookmark").send()
     }
-    let bookmarks = store.get('bookmarks')
+    let bookmarks = store.bookmarks
     let newBookmarks = bookmarks.filter(bookmark => {
         return bookmark.url != arg
     })
-    store.set('bookmarks', newBookmarks)
+    store.bookmarks = newBookmarks
     getBookmarks()
 })
 
 ipcMain.on('delete-project', (event, arg) => {
-    if (analytics) {
+    if (store.analytics) {
         visitor.event("Delete project").send()
     }
-    let projects = store.get('favorite-projects')
+    let projects = store['favorite-projects']
     let newProjects = projects.filter(project => {
         return project.id != arg
     })
-    store.set('favorite-projects', newProjects)
+    store['favorite-projects'] = newProjects
     //TODO Implement better way to refresh view after deleting project
     displayUsersProjects()
     openSettingsPage()
 })
 
 ipcMain.on('change-theme', (event, arg) => {
-    if (analytics) {
+    if (store.analytics) {
         visitor.event("Change theme", arg).send()
     }
     changeTheme(arg, true)
 })
 
 ipcMain.on('change-analytics', (event, arg) => {
-    store.set('analytics', arg)
-    analytics = arg
-    if (analytics) {
-        visitor = ua('UA-203420427-1', analytics_id);
+    store.analytics = arg
+    if (store.analytics) {
+        visitor = ua('UA-203420427-1', store.analytics_id);
     } else {
         visitor = null
     }
@@ -452,7 +441,7 @@ ipcMain.on('start-manual-login', (event, arg) => {
 })
 
 ipcMain.on('logout', (event, arg) => {
-    if (analytics) {
+    if (store.analytics) {
         visitor.event("Log out", true).send()
     }
     logout()
@@ -463,10 +452,10 @@ mb.on('ready', () => {
     setupContextMenu()
 })
 
-if (access_token && user_id && username) {
+if (store.access_token && store.user_id && store.username) {
     mb.on('after-create-window', () => {
         mb.showWindow()
-        changeTheme(store.get('theme'), false)
+        changeTheme(store.theme, false)
 
         //Preloading content
         getUser()
@@ -486,7 +475,7 @@ if (access_token && user_id && username) {
 
         //mb.window.webContents.openDevTools()
         mb.window.webContents.setWindowOpenHandler(({ url }) => {
-            if (analytics) {
+            if (store.analytics) {
                 visitor.event("Visit external link", true).send()
             }
             shell.openExternal(url);
@@ -496,7 +485,7 @@ if (access_token && user_id && username) {
 
 
     mb.on('show', () => {
-        if (analytics) {
+        if (store.analytics) {
             visitor.pageview("/").send()
         }
         getRecentlyVisited()
@@ -508,7 +497,7 @@ if (access_token && user_id && username) {
 } else {
     mb.on('after-create-window', () => {
         mb.window.loadURL(`file://${__dirname}/login.html`).then(() => {
-            changeTheme(store.get('theme'), false)
+            changeTheme(store.theme, false)
             mb.showWindow()
         })
     })
@@ -548,7 +537,7 @@ function openSettingsPage() {
     if (!mb._isVisible) {
         mb.showWindow()
     }
-    if (analytics) {
+    if (store.analytics) {
         visitor.pageview("/settings").send()
     }
     mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").classList.remove("empty")')
@@ -561,8 +550,8 @@ function openSettingsPage() {
     mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">Theme</span>"')
     let settingsString = ''
     let theme = '<div id=\\"theme-selection\\"><div id=\\"light-mode\\" class=\\"theme-option\\" onclick=\\"changeTheme(' + lightString + ')\\"><div class=\\"indicator\\"></div>Light</div><div id=\\"dark-mode\\" class=\\"theme-option\\" onclick=\\"changeTheme(' + darkString + ')\\"><div class=\\"indicator\\"></div>Dark</div></div>'
-    if (user_id && username) {
-        let projects = store.get('favorite-projects')
+    if (store.user_id && store.username) {
+        let projects = store['favorite-projects']
         let favoriteProjects = '<div class=\\"headline\\"><span class=\\"name\\">Favorite projects</span></div><div id=\\"favorite-projects\\"><ul class=\\"list-container\\">'
         if (projects && projects.length > 0) {
             for (let project of projects) {
@@ -573,7 +562,7 @@ function openSettingsPage() {
         favoriteProjects += '<li id=\\"add-project-dialog\\" class=\\"more-link\\"><a onclick=\\"startProjectDialog()\\">Add another project <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul></div>'
         let analyticsString = '<div class=\\"headline\\"><span class=\\"name\\">Analytics</span></div><div id=\\"analytics\\">'
         analyticsString += 'To better understand how you navigate around GitLab, we would love to collect insights about your usage. All data is 100% anonymous and we do not track the specific content (projects, issues...) you are interacting with, only which kind of areas you are using.</div>'
-        analyticsString += '<form id=\\"analytics-form\\"><div><input type=\\"radio\\" id=\\"analytics-yes\\" name=\\"analytics\\" value=\\"yes\\"' + (analytics ? " checked" : "") + ' onclick=\\"changeAnalytics(true)\\"><label for=\\"analytics-yes\\">Yes, collect anonymous data</label></div><div><input type=\\"radio\\" id=\\"analytics-no\\" name=\\"analytics\\" value=\\"no\\"' + (!analytics ? " checked" : "") + ' onclick=\\"changeAnalytics(false)\\"><label for=\\"analytics-no\\">No, do not collect any data</label></div></form>'
+        analyticsString += '<form id=\\"analytics-form\\"><div><input type=\\"radio\\" id=\\"analytics-yes\\" name=\\"analytics\\" value=\\"yes\\"' + (store.analytics ? " checked" : "") + ' onclick=\\"changeAnalytics(true)\\"><label for=\\"analytics-yes\\">Yes, collect anonymous data</label></div><div><input type=\\"radio\\" id=\\"analytics-no\\" name=\\"analytics\\" value=\\"no\\"' + (!store.analytics ? " checked" : "") + ' onclick=\\"changeAnalytics(false)\\"><label for=\\"analytics-no\\">No, do not collect any data</label></div></form>'
         let logout = '<div class=\\"headline\\"><span class=\\"name\\">User</span></div><div id=\\"user-administration\\"><button id=\\"logout-button\\" onclick=\\"logout()\\">Log out</button></div>'
         settingsString = theme + favoriteProjects + analyticsString + logout
     } else {
@@ -582,11 +571,11 @@ function openSettingsPage() {
     mb.window.webContents.executeJavaScript('document.getElementById("detail-content").innerHTML = "' + settingsString + '</div>"')
     mb.window.webContents.executeJavaScript('document.getElementById("light-mode").classList.remove("active")')
     mb.window.webContents.executeJavaScript('document.getElementById("dark-mode").classList.remove("active")')
-    mb.window.webContents.executeJavaScript('document.getElementById("' + store.get('theme') + '-mode").classList.add("active")')
+    mb.window.webContents.executeJavaScript('document.getElementById("' + store.theme + '-mode").classList.add("active")')
 }
 
 async function startLogin() {
-    await mb.window.loadURL(host + '/oauth/authorize?client_id=2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee&redirect_uri=' + host + '&response_type=token&state=test&scope=read_api')
+    await mb.window.loadURL(store.host + '/oauth/authorize?client_id=2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee&redirect_uri=' + store.host + '&response_type=token&state=test&scope=read_api')
     mb.window.on('page-title-updated', handleLogin)
     mb.showWindow()
 }
@@ -600,25 +589,21 @@ function handleLogin() {
     }
 }
 
-function saveUser(code, url = host) {
+function saveUser(code, url = store.host) {
     let temp_access_token = code
     fetch(url + '/api/v4/user?access_token=' + temp_access_token).then(result => {
         return result.json()
     }).then(result => {
         if (result && result.id && result.username) {
-            store.set('access_token', temp_access_token)
-            access_token = temp_access_token
-            store.set('user_id', result.id)
-            user_id = result.id
-            store.set('username', result.username)
-            username = result.username
-            store.set('host', url)
-            host = url
-            store.set('theme', 'dark')
-            store.set('analytics', false)
+            store.access_token = temp_access_token
+            store.user_id = result.id
+            store.username = result.username
+            store.host = url
+            store.theme = 'dark'
+            store.analytics = false
             getUsersProjects().then(async projects => {
                 if (projects && projects.length > 0) {
-                    store.set('favorite-projects', projects)
+                    store['favorite-projects'] = projects
                 }
                 mb.window.removeListener('page-title-updated', handleLogin)
                 await mb.window.loadURL(`file://${__dirname}/index.html`).then(result => {
@@ -656,7 +641,7 @@ function saveUser(code, url = host) {
 function getUser() {
     if (lastUserExecutionFinished && lastUserExecution + delay < Date.now()) {
         lastUserExecutionFinished = false
-        fetch(host + '/api/v4/user?access_token=' + access_token).then(result => {
+        fetch(store.host + '/api/v4/user?access_token=' + store.access_token).then(result => {
             return result.json()
         }).then(user => {
             if (user && !user.error) {
@@ -681,22 +666,21 @@ function getUser() {
 }
 
 async function getUsersPlan() {
-    fetch(host + '/api/v4/namespaces?access_token=' + access_token).then(result => {
+    fetch(store.host + '/api/v4/namespaces?access_token=' + store.access_token).then(result => {
         return result.json()
     }).then(namespaces => {
         let namespace = namespaces.filter(namespace => namespace.kind == 'user')[0]
         if (namespace && namespace.plan) {
-            plan = namespace.plan
+            store.plan = namespace.plan
         } else {
-            plan = 'free'
+            store.plan = 'free'
         }
-        store.set('plan', plan)
     })
 }
 
 function getLastEvent() {
     if (recentCommits && recentCommits.length > 0) {
-        fetch(url = host + '/api/v4/events?action=pushed&per_page=1&access_token=' + access_token).then(result => {
+        fetch(url = store.host + '/api/v4/events?action=pushed&per_page=1&access_token=' + store.access_token).then(result => {
             return result.json()
         }).then(events => {
             let event = events[0]
@@ -711,7 +695,7 @@ function getLastEvent() {
 }
 
 function getLastTodo() {
-    fetch(host + '/api/v4/todos?per_page=1&access_token=' + access_token).then(result => {
+    fetch(store.host + '/api/v4/todos?per_page=1&access_token=' + store.access_token).then(result => {
         return result.json()
     }).then(todos => {
         todo = todos[0]
@@ -731,7 +715,7 @@ function getLastTodo() {
 function getLastCommits(count = 20) {
     if (lastLastCommitsExecutionFinished && lastLastCommitsExecution + delay < Date.now()) {
         lastLastCommitsExecutionFinished = false
-        fetch(url = host + '/api/v4/events?action=pushed&per_page=' + count + '&access_token=' + access_token).then(result => {
+        fetch(url = store.host + '/api/v4/events?action=pushed&per_page=' + count + '&access_token=' + store.access_token).then(result => {
             return result.json()
         }).then(commits => {
             if (commits && commits.length > 0) {
@@ -759,13 +743,13 @@ function getLastCommits(count = 20) {
 }
 
 function getProjectCommits(project, count = 20) {
-    fetch(host + '/api/v4/projects/' + project.id + '/repository/commits/?per_page=' + count + '&access_token=' + access_token).then(result => {
+    fetch(store.host + '/api/v4/projects/' + project.id + '/repository/commits/?per_page=' + count + '&access_token=' + store.access_token).then(result => {
         return result.json()
     }).then(commits => {
         if (commits && commits.length > 0) {
             recentProjectCommits = commits
             currentProjectCommit = commits[0]
-            fetch(host + '/api/v4/projects/' + project.id + '/repository/commits/' + commits[0].id + '?access_token=' + access_token).then(result => {
+            fetch(store.host + '/api/v4/projects/' + project.id + '/repository/commits/' + commits[0].id + '?access_token=' + store.access_token).then(result => {
                 return result.json()
             }).then(commit => {
                 let pagination = '<div id=\\"project-commits-pagination\\"><span class=\\"name\\">Commits</span><div id=\\"commits-pagination\\"><span id=\\"project-commits-count\\">1/' + recentProjectCommits.length + '</span><button onclick=\\"changeProjectCommit(false)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\" /></svg></button><button onclick=\\"changeProjectCommit(true)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg></button></div></div>'
@@ -785,13 +769,13 @@ async function getLastPipelines(commits) {
         for (let commit of commits) {
             if (!projectArray.includes(commit.project_id)) {
                 projectArray.push(commit.project_id)
-                let result = await fetch(host + '/api/v4/projects/' + commit.project_id + '/pipelines?status=running&username=' + username + '&per_page=1&page=1&access_token=' + access_token)
+                let result = await fetch(store.host + '/api/v4/projects/' + commit.project_id + '/pipelines?status=running&username=' + store.username + '&per_page=1&page=1&access_token=' + store.access_token)
                 let pipelines = await result.json()
                 if (pipelines && pipelines.length > 0) {
                     mb.tray.setImage(__dirname + '/assets/runningTemplate.png')
                     for (let pipeline of pipelines) {
                         if (runningPipelineSubscriptions.findIndex(subscriptionPipeline => subscriptionPipeline.id == pipeline.id) == -1) {
-                            let result = await fetch(host + '/api/v4/projects/' + pipeline.project_id + '/repository/commits/' + pipeline.sha + '?access_token=' + access_token)
+                            let result = await fetch(store.host + '/api/v4/projects/' + pipeline.project_id + '/repository/commits/' + pipeline.sha + '?access_token=' + store.access_token)
                             let commit = await result.json()
                             pipeline.commit_title = commit.title
                             runningPipelineSubscriptions.push(pipeline)
@@ -812,7 +796,7 @@ async function getLastPipelines(commits) {
 async function subscribeToRunningPipeline() {
     let interval = setInterval(async function () {
         for (let runningPipeline of runningPipelineSubscriptions) {
-            let result = await fetch(host + '/api/v4/projects/' + runningPipeline.project_id + '/pipelines/' + runningPipeline.id + '?access_token=' + access_token)
+            let result = await fetch(store.host + '/api/v4/projects/' + runningPipeline.project_id + '/pipelines/' + runningPipeline.id + '?access_token=' + store.access_token)
             let pipeline = await result.json()
             if (pipeline.status != 'running') {
                 if (pipeline.status == 'success') {
@@ -861,10 +845,10 @@ function changeCommit(forward = true, commitArray, chosenCommit) {
 function getCommitDetails(project_id, sha, index) {
     mb.window.webContents.executeJavaScript('document.getElementById("commits-count").classList.remove("empty")')
     mb.window.webContents.executeJavaScript('document.getElementById("commits-count").innerHTML = "' + index + '/' + recentCommits.length + '"')
-    fetch(host + '/api/v4/projects/' + project_id + '?access_token=' + access_token).then(result => {
+    fetch(store.host + '/api/v4/projects/' + project_id + '?access_token=' + store.access_token).then(result => {
         return result.json()
     }).then(project => {
-        fetch(host + '/api/v4/projects/' + project.id + '/repository/commits/' + sha + '?access_token=' + access_token).then(result => {
+        fetch(store.host + '/api/v4/projects/' + project.id + '/repository/commits/' + sha + '?access_token=' + store.access_token).then(result => {
             return result.json()
         }).then(commit => {
             mb.window.webContents.executeJavaScript('document.getElementById("pipeline").innerHTML = "' + displayCommit(commit, project) + '"')
@@ -875,7 +859,7 @@ function getCommitDetails(project_id, sha, index) {
 function getProjectCommitDetails(project_id, sha, index) {
     mb.window.webContents.executeJavaScript('document.getElementById("project-commits-count").classList.remove("empty")')
     mb.window.webContents.executeJavaScript('document.getElementById("project-commits-count").innerHTML = "' + index + '/' + recentProjectCommits.length + '"')
-    fetch(host + '/api/v4/projects/' + project_id + '/repository/commits/' + sha + '?access_token=' + access_token).then(result => {
+    fetch(store.host + '/api/v4/projects/' + project_id + '/repository/commits/' + sha + '?access_token=' + store.access_token).then(result => {
         return result.json()
     }).then(commit => {
         mb.window.webContents.executeJavaScript('document.getElementById("project-pipeline").innerHTML = "' + displayCommit(commit, currentProject, 'author') + '"')
@@ -900,16 +884,16 @@ async function getRecentlyVisited() {
             });
             let i = 0
             for (let j = 0; j < item.length; j++) {
-                if (item[j].title && item[j].url.indexOf(host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !recentlyVisitedArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
+                if (item[j].title && item[j].url.indexOf(store.host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !recentlyVisitedArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
                     if (firstItem) {
                         recentlyVisitedString = '<ul class=\\"list-container\\">'
                         firstItem = false
                     }
-                    let nameWithNamespace = item[j].url.replace(host + '/', '').split('/-/')[0]
+                    let nameWithNamespace = item[j].url.replace(store.host + '/', '').split('/-/')[0]
                     if (nameWithNamespace.split('/')[0] != 'groups') {
-                        url = host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
+                        url = store.host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + store.access_token
                     } else {
-                        url = host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
+                        url = store.host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + store.access_token
                     }
                     recentlyVisitedArray.push(item[j].title)
                     recentlyVisitedString += '<li class=\\"history-entry\\">'
@@ -953,12 +937,12 @@ async function getMoreRecentlyVisited() {
         mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<input id=\\"recentSearch\\" type=\\"text\\" onkeyup=\\"searchRecent(this)\\" placeholder=\\"Search...\\" />"')
         let previousDate = 0
         for (let j = 0; j < item.length; j++) {
-            if (item[j].title && item[j].url.indexOf(host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !moreRecentlyVisitedTitlesArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ' && item[j].title.split('·')[0] != '500 Error - GitLab') {
-                let nameWithNamespace = item[j].url.replace(host + '/', '').split('/-/')[0]
+            if (item[j].title && item[j].url.indexOf(store.host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !moreRecentlyVisitedTitlesArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ' && item[j].title.split('·')[0] != '500 Error - GitLab') {
+                let nameWithNamespace = item[j].url.replace(store.host + '/', '').split('/-/')[0]
                 if (nameWithNamespace.split('/')[0] != 'groups') {
-                    url = host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
+                    url = store.host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + store.access_token
                 } else {
-                    url = host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
+                    url = store.host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + store.access_token
                 }
                 let currentDate = new Date(item[j].utc_time).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })
                 if (previousDate != currentDate) {
@@ -991,11 +975,11 @@ function searchRecentlyVisited(searchterm) {
     })
     foundString = '<ul class=\\"list-container\\">'
     for (let item of foundArray) {
-        let nameWithNamespace = item.url.replace(host + '/', '').split('/-/')[0]
+        let nameWithNamespace = item.url.replace(store.host + '/', '').split('/-/')[0]
         if (nameWithNamespace.split('/')[0] != 'groups') {
-            url = host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + access_token
+            url = store.host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + store.access_token
         } else {
-            url = host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + access_token
+            url = store.host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + store.access_token
         }
         foundString += '<li class=\\"history-entry\\">'
         foundString += '<a href=\\"' + item.url + '\\" target=\\"_blank\\">' + escapeHtml(item.title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item.utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item.url.split('/-/')[0] + '\\" target=\\"_blank\\">' + escapeHtml(item.title.split('·')[2].trim()) + '</a></span></div></li>'
@@ -1005,7 +989,7 @@ function searchRecentlyVisited(searchterm) {
 }
 
 async function getUsersProjects() {
-    let result = await fetch(host + '/api/v4/users/' + user_id + '/starred_projects?min_access_level=30&per_page=' + numberOfFavoriteProjects + '&order_by=updated_at&access_token=' + access_token)
+    let result = await fetch(store.host + '/api/v4/users/' + store.user_id + '/starred_projects?min_access_level=30&per_page=' + numberOfFavoriteProjects + '&order_by=updated_at&access_token=' + store.access_token)
     let projects = await result.json()
     let projectsArray = []
     if (projects && projects.length > 0) {
@@ -1038,7 +1022,7 @@ async function getUsersProjects() {
 
 function displayUsersProjects() {
     let favoriteProjectsString = ''
-    let projects = store.get('favorite-projects')
+    let projects = store['favorite-projects']
     if (projects && projects.length > 0) {
         favoriteProjectsString += '<ul id=\\"projects\\" class=\\"list-container clickable\\">'
         let chevron = '<svg class=\\"chevron\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg>'
@@ -1064,7 +1048,7 @@ function getRecentComments() {
     if (lastRecentCommentsExecutionFinished && lastRecentCommentsExecution + delay < Date.now()) {
         lastRecentCommentsExecutionFinished = false
         let recentCommentsString = ''
-        fetch(host + '/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + access_token).then(result => {
+        fetch(store.host + '/api/v4/events?action=commented&per_page=' + numberOfRecentComments + '&access_token=' + store.access_token).then(result => {
             return result.json()
         }).then(async comments => {
             if (comments && comments.length > 0) {
@@ -1072,15 +1056,15 @@ function getRecentComments() {
                 for (let comment of comments) {
                     let url = ''
                     if (comment.note.noteable_type == 'MergeRequest') {
-                        url = host + '/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
+                        url = store.host + '/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + store.access_token
                     } else if (comment.note.noteable_type == 'Issue') {
-                        url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + access_token
+                        url = store.host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + store.access_token
                     } else if (comment.note.noteable_type == 'Commit') {
-                        url = host + '/api/v4/projects/' + comment.project_id + '/repository/commits/' + comment.note.position.head_sha + '?access_token=' + access_token
+                        url = store.host + '/api/v4/projects/' + comment.project_id + '/repository/commits/' + comment.note.position.head_sha + '?access_token=' + store.access_token
                     } else if (comment.note.noteable_type == 'Snippet') {
-                        url = host + '/api/v4/projects/' + comment.project_id + '/snippets/' + comment.note.noteable_id + '?access_token=' + access_token
+                        url = store.host + '/api/v4/projects/' + comment.project_id + '/snippets/' + comment.note.noteable_id + '?access_token=' + store.access_token
                     } else if (comment.note.noteable_type == 'DesignManagement::Design') {
-                        url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.position.new_path.split('/')[1].split('-')[1] + '?access_token=' + access_token
+                        url = store.host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.position.new_path.split('/')[1].split('-')[1] + '?access_token=' + store.access_token
                     } else {
                         continue
                     }
@@ -1113,7 +1097,7 @@ function getRecentComments() {
     }
 }
 
-function getMoreRecentComments(url = host + '/api/v4/events?action=commented&per_page=' + numberOfComments + '&access_token=' + access_token) {
+function getMoreRecentComments(url = store.host + '/api/v4/events?action=commented&per_page=' + numberOfComments + '&access_token=' + store.access_token) {
     let recentCommentsString = '<ul class=\\"list-container\\">'
     let type = "'Comments'"
     let keysetLinks
@@ -1124,15 +1108,15 @@ function getMoreRecentComments(url = host + '/api/v4/events?action=commented&per
         for (let comment of comments) {
             let url = ''
             if (comment.note.noteable_type == 'MergeRequest') {
-                url = host + '/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + access_token
+                url = store.host + '/api/v4/projects/' + comment.project_id + '/merge_requests/' + comment.note.noteable_iid + '?access_token=' + store.access_token
             } else if (comment.note.noteable_type == 'Issue') {
-                url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + access_token
+                url = store.host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.noteable_iid + '?access_token=' + store.access_token
             } else if (comment.note.noteable_type == 'Commit') {
-                url = host + '/api/v4/projects/' + comment.project_id + '/repository/commits/' + comment.note.position.head_sha + '?access_token=' + access_token
+                url = store.host + '/api/v4/projects/' + comment.project_id + '/repository/commits/' + comment.note.position.head_sha + '?access_token=' + store.access_token
             } else if (comment.note.noteable_type == 'Snippet') {
-                url = host + '/api/v4/projects/' + comment.project_id + '/snippets/' + comment.note.noteable_id + '?access_token=' + access_token
+                url = store.host + '/api/v4/projects/' + comment.project_id + '/snippets/' + comment.note.noteable_id + '?access_token=' + store.access_token
             } else if (comment.note.noteable_type == 'DesignManagement::Design') {
-                url = host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.position.new_path.split('/')[1].split('-')[1] + '?access_token=' + access_token
+                url = store.host + '/api/v4/projects/' + comment.project_id + '/issues/' + comment.note.position.new_path.split('/')[1].split('-')[1] + '?access_token=' + store.access_token
             } else {
                 continue
             }
@@ -1156,7 +1140,7 @@ function getMoreRecentComments(url = host + '/api/v4/events?action=commented&per
     })
 }
 
-function getIssues(url = host + '/api/v4/issues?scope=assigned_to_me&state=opened&order_by=created_at&per_page=' + numberOfIssues + '&access_token=' + access_token, id = 'detail-content') {
+function getIssues(url = store.host + '/api/v4/issues?scope=assigned_to_me&state=opened&order_by=created_at&per_page=' + numberOfIssues + '&access_token=' + store.access_token, id = 'detail-content') {
     let issuesString = ''
     let type = "'Issues'"
     let keysetLinks
@@ -1193,7 +1177,7 @@ function getIssues(url = host + '/api/v4/issues?scope=assigned_to_me&state=opene
     })
 }
 
-function getMRs(url = host + '/api/v4/merge_requests?scope=assigned_to_me&state=opened&order_by=created_at&per_page=' + numberOfMRs + '&access_token=' + access_token, id = 'detail-content') {
+function getMRs(url = store.host + '/api/v4/merge_requests?scope=assigned_to_me&state=opened&order_by=created_at&per_page=' + numberOfMRs + '&access_token=' + store.access_token, id = 'detail-content') {
     let mrsString = ''
     let type = "'MRs'"
     let keysetLinks
@@ -1222,7 +1206,7 @@ function getMRs(url = host + '/api/v4/merge_requests?scope=assigned_to_me&state=
     })
 }
 
-function getTodos(url = host + '/api/v4/todos?per_page=' + numberOfTodos + '&access_token=' + access_token) {
+function getTodos(url = store.host + '/api/v4/todos?per_page=' + numberOfTodos + '&access_token=' + store.access_token) {
     let todosString = ''
     let type = "'Todos'"
     let keysetLinks
@@ -1255,7 +1239,7 @@ function getTodos(url = host + '/api/v4/todos?per_page=' + numberOfTodos + '&acc
 }
 
 function getBookmarks() {
-    let bookmarks = store.get('bookmarks')
+    let bookmarks = store.bookmarks
     let bookmarksString = ''
     if (bookmarks && bookmarks.length > 0) {
         bookmarksString = '<ul class=\\"list-container\\">'
@@ -1338,7 +1322,7 @@ function getProjectIssues(project) {
     jsonProjectObject.name = escapeQuotes(project.name)
     let projectString = "'" + escapeHtml(JSON.stringify(jsonProjectObject)) + "'"
     let issuesString = "'Issues'"
-    fetch(host + '/api/v4/projects/' + project.id + '/issues?state=opened&order_by=created_at&per_page=3&access_token=' + access_token).then(result => {
+    fetch(store.host + '/api/v4/projects/' + project.id + '/issues?state=opened&order_by=created_at&per_page=3&access_token=' + store.access_token).then(result => {
         return result.json()
     }).then(issues => {
         if (issues.length > 0) {
@@ -1365,7 +1349,7 @@ function getProjectMRs(project) {
     jsonProjectObject.name = escapeQuotes(project.name)
     let projectString = "'" + escapeHtml(JSON.stringify(jsonProjectObject)) + "'"
     let mrsString = "'Merge Requests'"
-    fetch(host + '/api/v4/projects/' + project.id + '/merge_requests?state=opened&order_by=created_at&per_page=3&access_token=' + access_token).then(result => {
+    fetch(store.host + '/api/v4/projects/' + project.id + '/merge_requests?state=opened&order_by=created_at&per_page=3&access_token=' + store.access_token).then(result => {
         return result.json()
     }).then(mrs => {
         if (mrs.length > 0) {
@@ -1428,14 +1412,14 @@ function addBookmark(link) {
     mb.window.webContents.executeJavaScript('document.getElementById("bookmark-add-button").disabled = "disabled"')
     mb.window.webContents.executeJavaScript('document.getElementById("bookmark-link").disabled = "disabled"')
     mb.window.webContents.executeJavaScript('document.getElementById("bookmark-add-button").innerHTML = "' + spinner + ' Add"')
-    if (link.indexOf(host + '') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
+    if (link.indexOf(store.host + '') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
         parseGitLabUrl(link).then(bookmark => {
             if (!bookmark.type || (bookmark.type != 'issues' && bookmark.type != 'merge_requests' && bookmark.type != 'epics')) {
                 displayAddError('bookmark', '-')
             } else {
-                let bookmarks = store.get('bookmarks') || []
+                let bookmarks = store.bookmarks || []
                 bookmarks.push(bookmark)
-                store.set('bookmarks', bookmarks)
+                store.bookmarks = bookmarks
                 getBookmarks()
             }
         }).catch(error => {
@@ -1456,14 +1440,14 @@ function addProject(link, target) {
     mb.window.webContents.executeJavaScript('document.getElementById("project' + target + 'add-button").disabled = "disabled"')
     mb.window.webContents.executeJavaScript('document.getElementById("project' + target + 'link").disabled = "disabled"')
     mb.window.webContents.executeJavaScript('document.getElementById("project' + target + 'add-button").innerHTML = "' + spinner + ' Add"')
-    if (link.indexOf(host + '') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
+    if (link.indexOf(store.host + '') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
         parseGitLabUrl(link).then(project => {
             if (project.type && project.type != 'projects') {
                 displayAddError('project', target)
             } else {
-                let projects = store.get('favorite-projects') || []
+                let projects = store['favorite-projects'] || []
                 projects.push(project)
-                store.set('favorite-projects', projects)
+                store['favorite-projects'] = projects
                 if (target == '-settings-') {
                     openSettingsPage()
                 }
@@ -1510,9 +1494,9 @@ async function parseGitLabUrl(link) {
     let object = parse(link)
     let issuable
     if (object.type == 'issues' || object.type == 'merge_requests') {
-        let result = await fetch(host + '/api/v4/projects/' + encodeURIComponent(object.namespaceWithProject) + '/' + object.type + '/' + object[object.type] + '?access_token=' + access_token)
+        let result = await fetch(store.host + '/api/v4/projects/' + encodeURIComponent(object.namespaceWithProject) + '/' + object.type + '/' + object[object.type] + '?access_token=' + store.access_token)
         issuable = await result.json()
-        let result2 = await fetch(host + '/api/v4/projects/' + issuable.project_id + '?access_token=' + access_token)
+        let result2 = await fetch(store.host + '/api/v4/projects/' + issuable.project_id + '?access_token=' + store.access_token)
         let project = await result2.json()
         return {
             url: link,
@@ -1526,7 +1510,7 @@ async function parseGitLabUrl(link) {
     } else if (object.type == 'epics') {
         let result = await fetch(host + '/api/v4/groups/' + encodeURIComponent(object.namespaceWithProject.replace('groups/', '')) + '/' + object.type + '/' + object[object.type])
         issuable = await result.json()
-        let result2 = await fetch(host + '/api/v4/groups/' + issuable.group_id + '?access_token=' + access_token)
+        let result2 = await fetch(store.host + '/api/v4/groups/' + issuable.group_id + '?access_token=' + store.access_token)
         let group = await result2.json()
         return {
             url: link,
@@ -1537,7 +1521,7 @@ async function parseGitLabUrl(link) {
             locationUrl: group.web_url
         }
     } else if (object.type == 'projects') {
-        let result = await fetch(host + '/api/v4/projects/' + encodeURIComponent(object.namespaceWithProject) + '?access_token=' + access_token)
+        let result = await fetch(store.host + '/api/v4/projects/' + encodeURIComponent(object.namespaceWithProject) + '?access_token=' + store.access_token)
         let project = await result.json()
         return {
             id: project.id,
@@ -1667,7 +1651,7 @@ function displaySkeleton(count, pagination = false, id = 'detail-content') {
 }
 
 function changeTheme(option = 'light', manual = false) {
-    store.set('theme', option)
+    store.theme = option
     if (option == 'light') {
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--background-color", "#fff")');
         mb.window.webContents.executeJavaScript('document.documentElement.style.setProperty("--text-color", "#24292f")');
@@ -1697,15 +1681,15 @@ function changeTheme(option = 'light', manual = false) {
 }
 
 function logout() {
-    store.delete('user_id')
-    store.delete('username')
-    store.delete('access_token')
-    store.delete('favorite-projects')
-    store.delete('bookmarks')
-    store.delete('host')
-    store.delete('plan')
-    store.delete('analytics')
-    store.delete('analytics_id')
+    deleteFromStore('user_id')
+    deleteFromStore('username')
+    deleteFromStore('access_token')
+    deleteFromStore('favorite-projects')
+    deleteFromStore('bookmarks')
+    deleteFromStore('host')
+    deleteFromStore('plan')
+    deleteFromStore('analytics')
+    deleteFromStore('analytics_id')
     mb.window.webContents.session.clearCache()
     mb.window.webContents.session.clearStorageData()
     app.quit()
