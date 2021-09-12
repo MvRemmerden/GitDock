@@ -6,6 +6,9 @@ const { store, deleteFromStore } = require('./lib/store')
 const BrowserHistory = require('./lib/browser-history');
 const { URL } = require('url');
 const ua = require('universal-analytics');
+const jsdom = require("jsdom")
+const { JSDOM } = jsdom
+global.DOMParser = new JSDOM().window.DOMParser
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
 let visitor
@@ -118,7 +121,7 @@ ipcMain.on('detail-page', (event, arg) => {
                 visitor.pageview("/my-to-do-list").send()
             }
             mb.window.webContents.executeJavaScript('document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">' + arg.page + '</span>"')
-            mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "' + arg.page + '<div class=\\"detail-external-link\\"><a href=\\"' + host + '/dashboard/todos\\" target=\\"_blank\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill-rule=\\"evenodd\\" d=\\"M5,2 C5.55228,2 6,2.44772 6,3 C6,3.55228 5.55228,4 5,4 L4,4 L4,12 L12,12 L12,11 C12,10.4477 12.4477,10 13,10 C13.5523,10 14,10.4477 14,11 L14,12 C14,13.1046 13.1046,14 12,14 L4,14 C2.89543,14 2,13.1046 2,12 L2,4 C2,2.89543 2.89543,2 4,2 L5,2 Z M15,1 L15,5.99814453 C15,6.55043453 14.5523,6.99814453 14,6.99814453 C13.4477,6.99814453 13,6.55043453 13,5.99814453 L13,4.41419 L8.71571,8.69846 C8.32519,9.08899 7.69202,9.08899 7.3015,8.69846 C6.91097,8.30794 6.91097,7.67477 7.3015,7.28425 L11.5858,3 L9.99619141,3 C9.44391141,3 8.99619141,2.55228 8.99619141,2 C8.99619141,1.44772 9.44391141,1 9.99619141,1 L15,1 Z\\"/></svg></a></div>"')
+            mb.window.webContents.executeJavaScript('document.getElementById("detail-header-content").innerHTML = "' + arg.page + '<div class=\\"detail-external-link\\"><a href=\\"' + store.host + '/dashboard/todos\\" target=\\"_blank\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path fill-rule=\\"evenodd\\" d=\\"M5,2 C5.55228,2 6,2.44772 6,3 C6,3.55228 5.55228,4 5,4 L4,4 L4,12 L12,12 L12,11 C12,10.4477 12.4477,10 13,10 C13.5523,10 14,10.4477 14,11 L14,12 C14,13.1046 13.1046,14 12,14 L4,14 C2.89543,14 2,13.1046 2,12 L2,4 C2,2.89543 2.89543,2 4,2 L5,2 Z M15,1 L15,5.99814453 C15,6.55043453 14.5523,6.99814453 14,6.99814453 C13.4477,6.99814453 13,6.55043453 13,5.99814453 L13,4.41419 L8.71571,8.69846 C8.32519,9.08899 7.69202,9.08899 7.3015,8.69846 C6.91097,8.30794 6.91097,7.67477 7.3015,7.28425 L11.5858,3 L9.99619141,3 C9.44391141,3 8.99619141,2.55228 8.99619141,2 C8.99619141,1.44772 9.44391141,1 9.99619141,1 L15,1 Z\\"/></svg></a></div>"')
             displaySkeleton(numberOfTodos)
             getTodos()
         } else if (arg.page == 'Recently viewed') {
@@ -396,7 +399,7 @@ ipcMain.on('delete-bookmark', (event, arg) => {
     }
     let bookmarks = store.bookmarks
     let newBookmarks = bookmarks.filter(bookmark => {
-        return bookmark.url != arg
+        return bookmark.web_url != arg
     })
     store.bookmarks = newBookmarks
     getBookmarks()
@@ -699,8 +702,8 @@ function getLastTodo() {
         return result.json()
     }).then(todos => {
         todo = todos[0]
-        if(lastTodoId != todo.id) {
-            if(lastTodoId != -1 && Date.parse(todo.created_at) > Date.now() - 20000 ) {
+        if (lastTodoId != todo.id) {
+            if (lastTodoId != -1 && Date.parse(todo.created_at) > Date.now() - 20000) {
                 let todoNotification = new Notification({ title: todo.body, subtitle: todo.author.name, body: todo.target.title })
                 todoNotification.on('click', result => {
                     shell.openExternal(todo.target_url)
@@ -1157,11 +1160,11 @@ function getIssues(url = store.host + '/api/v4/issues?scope=assigned_to_me&state
                 } else if (activeIssuesSortOption == 'created_at') {
                     timestamp = 'Created ' + timeSince(new Date(issue.created_at)) + ' ago'
                 } else if (activeIssuesSortOption == 'due_date&sort=asc') {
-                    if(!issue.due_date) {
+                    if (!issue.due_date) {
                         timestamp = 'No due date'
-                    }else if(new Date() > new Date(issue.due_date)) {
+                    } else if (new Date() > new Date(issue.due_date)) {
                         timestamp = 'Due ' + timeSince(new Date(issue.due_date)) + ' ago'
-                    }else{
+                    } else {
                         timestamp = 'Due in ' + timeSince(new Date(issue.due_date), 'to')
                     }
                 }
@@ -1244,14 +1247,12 @@ function getBookmarks() {
     if (bookmarks && bookmarks.length > 0) {
         bookmarksString = '<ul class=\\"list-container\\">'
         bookmarks.forEach(bookmark => {
-            let namespace = ''
-            if (bookmark.namespace) {
-                namespace = bookmark.namespace + ' / ' + bookmark.project
-            } else {
-                namespace = bookmark.project
+            let namespace_link = ''
+            if (bookmark.parent_name && bookmark.parent_url) {
+                namespace_link = ' &middot; <a href=\\"' + bookmark.parent_url + '\\" target=\\"_blank\\">' + escapeHtml(bookmark.parent_name) + '</a>'
             }
-            let bookmarkUrl = "'" + bookmark.url + "'"
-            bookmarksString += '<li class=\\"history-entry bookmark-entry\\"><div class=\\"bookmark-information\\"><a href=\\"' + bookmark.url + '\\" target=\\"_blank\\">' + escapeHtml(bookmark.title) + '</a><span class=\\"namespace-with-time\\">Added ' + timeSince(bookmark.added) + ' ago &middot; <a href=\\"' + bookmark.locationUrl + '\\" target=\\"_blank\\">' + escapeHtml(namespace) + '</a></span></div><div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteBookmark(' + bookmarkUrl + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>'
+            let bookmarkUrl = "'" + bookmark.web_url + "'"
+            bookmarksString += '<li class=\\"history-entry bookmark-entry\\"><div class=\\"bookmark-information\\"><a href=\\"' + bookmark.web_url + '\\" target=\\"_blank\\">' + escapeHtml(bookmark.title) + '</a><span class=\\"namespace-with-time\\">Added ' + timeSince(bookmark.added) + ' ago' + namespace_link + '</span></div><div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteBookmark(' + bookmarkUrl + ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>'
         })
         bookmarksString += '<li id=\\"add-bookmark-dialog\\" class=\\"more-link\\"><a onclick=\\"startBookmarkDialog()\\">Add another bookmark <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
         mb.window.webContents.executeJavaScript('document.getElementById("bookmarks").innerHTML = "' + bookmarksString + '"')
@@ -1414,7 +1415,7 @@ function addBookmark(link) {
     mb.window.webContents.executeJavaScript('document.getElementById("bookmark-add-button").innerHTML = "' + spinner + ' Add"')
     if (link.indexOf(store.host + '') == 0 || link.indexOf('gitlab.com') == 0 || link.indexOf('http://gitlab.com') == 0) {
         parseGitLabUrl(link).then(bookmark => {
-            if (!bookmark.type || (bookmark.type != 'issues' && bookmark.type != 'merge_requests' && bookmark.type != 'epics')) {
+            if (!bookmark.type || (bookmark.type != 'issues' && bookmark.type != 'merge_requests' && bookmark.type != 'epics' && bookmark.type != 'projects' && bookmark.type != 'groups' && bookmark.type != 'boards' && bookmark.type != 'users' && bookmark.type != 'unknown')) {
                 displayAddError('bookmark', '-')
             } else {
                 let bookmarks = store.bookmarks || []
@@ -1491,7 +1492,7 @@ async function parseGitLabUrl(link) {
     if (!/^(?:f|ht)tps?\:\/\//.test(link)) {
         link = "https://" + link;
     }
-    let object = parse(link)
+    let object = await parse(link)
     let issuable
     if (object.type == 'issues' || object.type == 'merge_requests') {
         let result = await fetch(store.host + '/api/v4/projects/' + encodeURIComponent(object.namespaceWithProject) + '/' + object.type + '/' + object[object.type] + '?access_token=' + store.access_token)
@@ -1499,26 +1500,37 @@ async function parseGitLabUrl(link) {
         let result2 = await fetch(store.host + '/api/v4/projects/' + issuable.project_id + '?access_token=' + store.access_token)
         let project = await result2.json()
         return {
-            url: link,
-            namespace: project.namespace.name,
+            web_url: link,
+            parent_name: project.name_with_namespace,
             project: project.name,
             title: issuable.title,
             added: Date.now(),
             type: object.type,
-            locationUrl: project.web_url
+            parent_url: project.web_url
         }
     } else if (object.type == 'epics') {
-        let result = await fetch(host + '/api/v4/groups/' + encodeURIComponent(object.namespaceWithProject.replace('groups/', '')) + '/' + object.type + '/' + object[object.type])
+        let result = await fetch(store.host + '/api/v4/groups/' + encodeURIComponent(object.namespaceWithProject.replace('groups/', '')) + '/' + object.type + '/' + object[object.type] + '?access_token=' + store.access_token)
         issuable = await result.json()
         let result2 = await fetch(store.host + '/api/v4/groups/' + issuable.group_id + '?access_token=' + store.access_token)
         let group = await result2.json()
         return {
-            url: link,
-            project: group.name,
+            web_url: link,
+            parent_name: group.full_name,
             title: issuable.title,
             added: Date.now(),
             type: object.type,
-            locationUrl: group.web_url
+            parent_url: group.web_url
+        }
+    } else if (object.type == 'boards') {
+        let result = await fetch(store.host + '/api/v4/projects/' + encodeURIComponent(object.namespaceWithProject) + '/' + object.type + '/' + object[object.type] + '?access_token=' + store.access_token)
+        board = await result.json()
+        return {
+            web_url: link,
+            parent_name: board.project.name_with_namespace,
+            title: board.name,
+            added: Date.now(),
+            type: object.type,
+            parent_url: board.project.web_url
         }
     } else if (object.type == 'projects') {
         let result = await fetch(store.host + '/api/v4/projects/' + encodeURIComponent(object.namespaceWithProject) + '?access_token=' + store.access_token)
@@ -1528,9 +1540,12 @@ async function parseGitLabUrl(link) {
             visibility: project.visibility,
             web_url: project.web_url,
             name: project.name,
+            title: project.name,
             namespace: {
                 name: project.namespace.name
             },
+            parent_name: project.name_with_namespace,
+            parent_url: project.namespace.web_url,
             added: Date.now(),
             name_with_namespace: project.name_with_namespace,
             open_issues_count: project.open_issues_count,
@@ -1540,16 +1555,67 @@ async function parseGitLabUrl(link) {
             forks_count: project.forks_count,
             type: 'projects'
         }
+    } else if (object.type == 'groups') {
+        let result = await fetch(store.host + '/api/v4/groups/' + encodeURIComponent(object.namespaceWithProject) + '?access_token=' + store.access_token)
+        let group = await result.json()
+        let groupObject = {
+            id: group.id,
+            visibility: group.visibility,
+            web_url: group.web_url,
+            title: group.name,
+            name: group.name,
+            namespace: {
+                name: group.name
+            },
+            added: Date.now(),
+            name_with_namespace: group.name_with_namespace,
+            avatar_url: group.avatar_url,
+            type: 'groups'
+        }
+        if (group.full_name.indexOf(' / ' + group.name) != -1) {
+            groupObject.parent_name = group.full_name.replace(' / ' + group.name, '')
+            groupObject.parent_url = group.web_url.replace('/' + group.path, '')
+        }
+        return groupObject
+    } else if (object.type == 'users') {
+        let result = await fetch(store.host + '/api/v4/users?username=' + encodeURIComponent(object.namespaceWithProject))
+        let user = await result.json()
+        user = user[0]
+        return {
+            title: user.name,
+            type: object.type,
+            web_url: user.web_url,
+            added: Date.now()
+        }
+    } else if (object.type == 'unknown') {
+        let titleArray = object.doc.querySelector('title').text.split(' · ')
+        let unknownObject = {
+            title: titleArray[0],
+            type: object.type,
+            web_url: link,
+            added: Date.now()
+        }
+        if(object.doc.querySelector('.context-header a')) {
+            unknownObject.parent_url = store.host + object.doc.querySelector('.context-header a').getAttribute('href')
+            console.log(object.doc.querySelector('.context-header a').getAttribute('href'))
+            if(titleArray.length == 3) {
+                unknownObject.parent_name = titleArray[1]
+            }else if(titleArray.length == 4){
+                unknownObject.parent_name = titleArray[2]
+            }
+        }
+        return unknownObject
     }
 }
 
-function parse(gitlabUrl) {
+async function parse(gitlabUrl) {
     if (typeof gitlabUrl !== 'string') {
         throw new Error('Expected gitLabUrl of type string')
     }
     const url = new URL(gitlabUrl)
     let path = url.pathname
     path = path.replace(/^\/|\/$/g, '')
+    path = path.replace(/\+$/, '')
     if (path.indexOf('/-/') != -1) {
         let pathArray = path.split('/-/')
         let object = {
@@ -1557,12 +1623,44 @@ function parse(gitlabUrl) {
             type: pathArray[1].split('/')[0]
 
         }
-        object[object.type] = pathArray[1].split('/')[1].split('#')[0]
-        return object
+        if(pathArray[1].split('/')[1] == 'issues' || pathArray[1].split('/')[1] == 'merge_requests' || pathArray[1].split('/')[1] == 'epics' || pathArray[1].split('/')[1] == 'boards') {
+            object[object.type] = pathArray[1].split('/')[1].split('#')[0]
+            return object
+        }else{
+            let result = await fetch(gitlabUrl)
+            let body = await result.text()
+            let doc = new DOMParser().parseFromString(body, 'text/html');
+            return {
+                namespaceWithProject: path,
+                type: 'unknown',
+                doc: doc
+            }
+        }
     } else {
-        return {
-            namespaceWithProject: path,
-            type: 'projects'
+        let result = await fetch(gitlabUrl)
+        let body = await result.text()
+        let doc = new DOMParser().parseFromString(body, 'text/html');
+        if (doc.querySelector('.group-home-panel')) {
+            return {
+                namespaceWithProject: path,
+                type: 'groups'
+            }
+        } else if (doc.querySelector('.project-home-panel')) {
+            return {
+                namespaceWithProject: path,
+                type: 'projects'
+            }
+        } else if (doc.querySelector('.user-profile')) {
+            return {
+                namespaceWithProject: path,
+                type: 'users'
+            }
+        } else {
+            return {
+                namespaceWithProject: path,
+                type: 'unknown',
+                doc: doc
+            }
         }
     }
 }
@@ -1592,9 +1690,9 @@ function escapeQuotes(unsafe) {
 
 function timeSince(date, direction = 'since') {
     var seconds
-    if(direction == 'since') {
+    if (direction == 'since') {
         seconds = Math.floor((new Date() - date) / 1000);
-    }else if(direction == 'to') {
+    } else if (direction == 'to') {
         seconds = Math.floor((date - new Date()) / 1000);
     }
     var interval = seconds / 31536000;
