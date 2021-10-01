@@ -578,15 +578,32 @@ function openSettingsPage() {
 }
 
 async function startLogin() {
-    await mb.window.loadURL(store.host + '/oauth/authorize?client_id=2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee&redirect_uri=' + store.host + '&response_type=token&state=test&scope=read_api')
+    await mb.window.loadURL(store.host + '/oauth/authorize?client_id=2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee&redirect_uri=' + store.host + '&response_type=code&state=test&scope=read_api')
     mb.window.on('page-title-updated', handleLogin)
     mb.showWindow()
 }
 
 function handleLogin() {
-    if (mb.window.webContents.getURL().indexOf('#access_token=') != '-1') {
-        const code = mb.window.webContents.getURL().split('#access_token=')[1].replace('&token_type=Bearer&state=test', '')
-        saveUser(code)
+    if (mb.window.webContents.getURL().indexOf('?code=') != '-1') {
+        const code = mb.window.webContents.getURL().split('?code=')[1].replace('&state=test', '')
+        fetch('https://gitlab.com/oauth/token', {
+            method: "POST",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                client_id: process.env.CLIENT_ID,
+                client_secret: process.env.CLIENT_SECRET,
+                code: code,
+                grant_type: 'authorization_code',
+                redirect_uri: store.host
+            })
+        }).then(result => {
+            return result.json()
+        }).then(result => {
+            saveUser(result.access_token)
+        })
     } else {
         console.log('not loaded')
     }
