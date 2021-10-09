@@ -8,6 +8,7 @@ const { URL } = require('url');
 const ua = require('universal-analytics');
 const jsdom = require("jsdom")
 const { JSDOM } = jsdom
+const nodeCrypto = require("crypto");
 global.DOMParser = new JSDOM().window.DOMParser
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
@@ -52,6 +53,9 @@ let lastUserExecutionFinished = true
 let lastRecentlyVisitedExecutionFinished = true
 let lastLastCommitsExecutionFinished = true
 let lastRecentCommentsExecutionFinished = true
+
+let verifier = '';
+let challenge = '';
 
 const mb = menubar({
     showDockIcon: false,
@@ -499,6 +503,7 @@ if (store.access_token && store.user_id && store.username) {
     })
 } else {
     mb.on('after-create-window', () => {
+        //mb.window.webContents.openDevTools()
         mb.window.loadURL(`file://${__dirname}/login.html`).then(() => {
             changeTheme(store.theme, false)
             mb.showWindow()
@@ -578,7 +583,9 @@ function openSettingsPage() {
 }
 
 async function startLogin() {
-    await mb.window.loadURL(store.host + '/oauth/authorize?client_id=2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee&redirect_uri=' + store.host + '&response_type=code&state=test&scope=read_api')
+    verifier = base64URLEncode(nodeCrypto.randomBytes(32));
+    challenge = base64URLEncode(sha256(verifier));
+    await mb.window.loadURL(store.host + '/oauth/authorize?client_id=2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee&redirect_uri=' + store.host + '&response_type=code&state=test&scope=read_api&code_challenge=' + challenge + '&code_challenge_method=S256')
     mb.window.on('page-title-updated', handleLogin)
     mb.showWindow()
 }
@@ -593,11 +600,11 @@ function handleLogin() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                client_id: process.env.CLIENT_ID,
-                client_secret: process.env.CLIENT_SECRET,
+                client_id: '2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee',
                 code: code,
                 grant_type: 'authorization_code',
-                redirect_uri: store.host
+                redirect_uri: store.host,
+                code_verifier: verifier
             })
         }).then(result => {
             return result.json()
@@ -607,6 +614,17 @@ function handleLogin() {
     } else {
         console.log('not loaded')
     }
+}
+
+function base64URLEncode(str) {
+    return str.toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+}
+
+function sha256(buffer) {
+    return nodeCrypto.createHash('sha256').update(buffer).digest();
 }
 
 function saveUser(code, url = store.host) {
@@ -1612,12 +1630,12 @@ async function parseGitLabUrl(link) {
             web_url: link,
             added: Date.now()
         }
-        if(object.doc.querySelector('.context-header a')) {
+        if (object.doc.querySelector('.context-header a')) {
             unknownObject.parent_url = store.host + object.doc.querySelector('.context-header a').getAttribute('href')
             console.log(object.doc.querySelector('.context-header a').getAttribute('href'))
-            if(titleArray.length == 3) {
+            if (titleArray.length == 3) {
                 unknownObject.parent_name = titleArray[1]
-            }else if(titleArray.length == 4){
+            } else if (titleArray.length == 4) {
                 unknownObject.parent_name = titleArray[2]
             }
         }
@@ -1640,10 +1658,10 @@ async function parse(gitlabUrl) {
             type: pathArray[1].split('/')[0]
 
         }
-        if(pathArray[1].split('/')[1] == 'issues' || pathArray[1].split('/')[1] == 'merge_requests' || pathArray[1].split('/')[1] == 'epics' || pathArray[1].split('/')[1] == 'boards') {
+        if (pathArray[1].split('/')[1] == 'issues' || pathArray[1].split('/')[1] == 'merge_requests' || pathArray[1].split('/')[1] == 'epics' || pathArray[1].split('/')[1] == 'boards') {
             object[object.type] = pathArray[1].split('/')[1].split('#')[0]
             return object
-        }else{
+        } else {
             let result = await fetch(gitlabUrl)
             let body = await result.text()
             let doc = new DOMParser().parseFromString(body, 'text/html');
