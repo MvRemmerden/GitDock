@@ -5,6 +5,7 @@
   "description": "A better way of managing all your work on GitLab.",
   "main": "myApp.js",
   "scripts": {
+    "test": "mocha",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
@@ -27,7 +28,9 @@
     "@electron-forge/maker-squirrel": "^6.0.0-beta.59",
     "@electron-forge/maker-zip": "^6.0.0-beta.59",
     "@electron-forge/publisher-github": "^6.0.0-beta.59",
-    "electron": "^13.1.7"
+    "electron": "^13.1.7",
+    "mocha": "^9.1.2",
+    "spectron": "^15.0.0"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.0",
