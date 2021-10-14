@@ -7,7 +7,7 @@ stages:
   - release
 
 variables:
-  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/gitdock"
+  PACKAGE_REGISTRY_URL: '${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/gitdock'
 
 release-version-creation:
   stage: version
@@ -35,7 +35,7 @@ install-dependencies-windows:
   cache:
     key: $CI_COMMIT_REF_SLUG-windows
     paths:
-    - node_modules/
+      - node_modules/
 
 install-dependencies-mac:
   stage: dependencies
@@ -51,8 +51,7 @@ install-dependencies-mac:
   cache:
     key: $CI_COMMIT_REF_SLUG-mac
     paths:
-    - node_modules/
-
+      - node_modules/
 
 install-dependencies-linux:
   stage: dependencies
@@ -67,7 +66,7 @@ install-dependencies-linux:
   cache:
     key: $CI_COMMIT_REF_SLUG-linux
     paths:
-    - node_modules/
+      - node_modules/
 
 feature-tests:
   stage: test
@@ -77,8 +76,8 @@ feature-tests:
   tags:
     - linux
   image: node:latest
-  needs: ["install-dependencies-linux"]
-  cache: 
+  needs: ['install-dependencies-linux']
+  cache:
     key: $CI_COMMIT_REF_SLUG-linux
     paths:
       - node_modules/
@@ -95,6 +94,23 @@ feature-tests:
     - export DISPLAY=:99
     - npm test
 
+prettier:
+  stage: test
+  only:
+    - tags
+    - merge_requests
+  tags:
+    - linux
+  image: node:latest
+  needs: ['install-dependencies-linux']
+  cache:
+    key: $CI_COMMIT_REF_SLUG-linux
+    paths:
+      - node_modules/
+    policy: pull
+  script:
+    - npm run prettier:check
+
 build-windows:
   stage: build
   only:
@@ -104,8 +120,8 @@ build-windows:
     - windows
     - shared-windows
     - windows-1809
-  needs: ["install-dependencies-windows"]
-  cache: 
+  needs: ['install-dependencies-windows']
+  cache:
     key: $CI_COMMIT_REF_SLUG-windows
     paths:
       - node_modules/
@@ -127,8 +143,8 @@ build-mac:
   tags:
     - shared-macos-amd64
   image: macos-11-xcode-12
-  needs: ["install-dependencies-mac"]
-  cache: 
+  needs: ['install-dependencies-mac']
+  cache:
     key: $CI_COMMIT_REF_SLUG-mac
     paths:
       - node_modules/
@@ -150,8 +166,8 @@ build-linux:
   tags:
     - linux
   image: node:latest
-  needs: ["install-dependencies-linux"]
-  cache: 
+  needs: ['install-dependencies-linux']
+  cache:
     key: $CI_COMMIT_REF_SLUG-linux
     paths:
       - node_modules/
@@ -209,16 +225,16 @@ release:
     - echo "v$VERSION"
     - echo "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg"}
   release:
-      name: "v$VERSION"
-      tag_name: "v$VERSION"
-      description: "v$VERSION"
-      assets:
-        links:
-          - name: "MacOS"
-            url: "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg"
-          - name: "Windows"
-            url: "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.exe"
-          - name: "Linux deb"
-            url: "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.deb"
-          - name: "Linux rpm"
-            url: "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.rpm"
+    name: 'v$VERSION'
+    tag_name: 'v$VERSION'
+    description: 'v$VERSION'
+    assets:
+      links:
+        - name: 'MacOS'
+          url: '${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg'
+        - name: 'Windows'
+          url: '${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.exe'
+        - name: 'Linux deb'
+          url: '${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.deb'
+        - name: 'Linux rpm'
+          url: '${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.rpm'

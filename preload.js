@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron')
+const { contextBridge, ipcRenderer } = require('electron');
 
 const api = {
   goToDetail: (value) => ipcRenderer.send('detail-page', value),
@@ -21,39 +21,41 @@ const api = {
   changeAnalytics: (value) => ipcRenderer.send('change-analytics', value),
   startLogin: () => ipcRenderer.send('start-login'),
   startManualLogin: (value) => ipcRenderer.send('start-manual-login', value),
-  logout: () => ipcRenderer.send('logout')
-}
+  logout: () => ipcRenderer.send('logout'),
+};
 
 if (process.contextIsolated) {
-  contextBridge.exposeInMainWorld('electron', api)
+  contextBridge.exposeInMainWorld('electron', api);
 } else {
   function deepFreeze(o) {
-    Object.freeze(o)
+    Object.freeze(o);
 
-    Object.getOwnPropertyNames(o).forEach(prop => {
-      if (o.hasOwnProperty(prop)
-        && o[prop] !== null
-        && (typeof o[prop] === 'object' || typeof o[prop] === 'function')
-        && !Object.isFrozen(o[prop])) {
-        deepFreeze(o[prop])
+    Object.getOwnPropertyNames(o).forEach((prop) => {
+      if (
+        o.hasOwnProperty(prop) &&
+        o[prop] !== null &&
+        (typeof o[prop] === 'object' || typeof o[prop] === 'function') &&
+        !Object.isFrozen(o[prop])
+      ) {
+        deepFreeze(o[prop]);
       }
-    })
-    return o
+    });
+    return o;
   }
-  deepFreeze(api)
+  deepFreeze(api);
   // @ts-expect-error https://github.com/electron-userland/spectron#node-integration
-  window.electronRequire = require
+  window.electronRequire = require;
   // @ts-expect-error https://github.com/electron-userland/spectron/issues/693#issuecomment-747872160
-  window.electron = api
+  window.electron = api;
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   const replaceText = (selector, text) => {
-    const element = document.getElementById(selector)
-    if (element) element.innerText = text
-  }
+    const element = document.getElementById(selector);
+    if (element) element.innerText = text;
+  };
 
   for (const type of ['chrome', 'node', 'electron']) {
-    replaceText(`${type}-version`, process.versions[type])
+    replaceText(`${type}-version`, process.versions[type]);
   }
-})
+});

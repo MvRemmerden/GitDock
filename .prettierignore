@@ -1,0 +1,13 @@
+.circleci
+.github
+assets
+node_modules
+out/
+package-lock.json
+.DS_Store
+Thumbs.db
+/.vscode
+.vscode/*
+yarn.lock
+builds/
+/.idea
