@@ -1766,56 +1766,99 @@ function getProjectCommitDetails(project_id, sha, index) {
 }
 
 async function getRecentlyVisited() {
-    if (lastRecentlyVisitedExecutionFinished && lastRecentlyVisitedExecution + delay < Date.now()) {
-        lastRecentlyVisitedExecutionFinished = false
-        recentlyVisitedArray = new Array()
-        let recentlyVisitedString = ''
-        let firstItem = true
-        await BrowserHistory.getAllHistory(14320).then(async history => {
-            let item = Array.prototype.concat.apply([], history);
-            item.sort(function (a, b) {
-                if (a.utc_time > b.utc_time) {
-                    return -1
-                }
-                if (b.utc_time > a.utc_time) {
-                    return 1
-                }
-            });
-            let i = 0
-            for (let j = 0; j < item.length; j++) {
-                if (item[j].title && item[j].url.indexOf(store.host + '/') == 0 && (item[j].url.indexOf('/-/issues/') != -1 || item[j].url.indexOf('/-/merge_requests/') != -1 || item[j].url.indexOf('/-/epics/') != -1) && !recentlyVisitedArray.includes(item[j].title) && item[j].title.split('·')[0] != 'Not Found' && item[j].title.split('·')[0] != 'New Issue ' && item[j].title.split('·')[0] != 'New Merge Request ' && item[j].title.split('·')[0] != 'New merge request ' && item[j].title.split('·')[0] != 'New Epic ' && item[j].title.split('·')[0] != 'Edit ' && item[j].title.split('·')[0] != 'Merge requests ' && item[j].title.split('·')[0] != 'Issues ') {
-                    if (firstItem) {
-                        recentlyVisitedString = '<ul class=\\"list-container\\">'
-                        firstItem = false
-                    }
-                    let nameWithNamespace = item[j].url.replace(store.host + '/', '').split('/-/')[0]
-                    if (nameWithNamespace.split('/')[0] != 'groups') {
-                        url = store.host + '/api/v4/projects/' + nameWithNamespace.split('/')[0] + '%2F' + nameWithNamespace.split('/')[1] + '?access_token=' + store.access_token
-                    } else {
-                        url = store.host + '/api/v4/groups/' + nameWithNamespace.split('/')[0] + '?access_token=' + store.access_token
-                    }
-                    recentlyVisitedArray.push(item[j].title)
-                    recentlyVisitedString += '<li class=\\"history-entry\\">'
-                    recentlyVisitedString += '<a href=\\"' + item[j].url + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[0]) + '</a><span class=\\"namespace-with-time\\">' + timeSince(new Date(item[j].utc_time + ' UTC')) + ' ago &middot; <a href=\\"' + item[j].url.split('/-/')[0] + '\\" target=\\"_blank\\">' + escapeHtml(item[j].title.split('·')[2].trim()) + '</a></span></div></li>'
-                    i++
-                    if (i == numberOfRecentlyVisited) {
-                        break
-                    }
-                }
-            }
-            if (!firstItem) {
-                let moreString = "'Recently viewed'"
-                recentlyVisitedString += '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' + moreString + ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>'
-            } else {
-                recentlyVisitedString = `<p class=\\"no-results\\">Recently visited objects will show up here.<br/><span class=\\"supported-browsers\\">Supported browsers: ${BrowserHistory.supportedBrowserNames()}.</span></p>`
-            }
-            mb.window.webContents.executeJavaScript('document.getElementById("history").innerHTML = "' + recentlyVisitedString + '"')
-            lastRecentlyVisitedExecution = Date.now()
-            lastRecentlyVisitedExecutionFinished = true
-        })
-    } else {
-        console.log('Recently visited running or not out of delay')
-    }
+  if (lastRecentlyVisitedExecutionFinished && lastRecentlyVisitedExecution + delay < Date.now()) {
+    lastRecentlyVisitedExecutionFinished = false;
+    recentlyVisitedArray = new Array();
+    let recentlyVisitedString = '';
+    let firstItem = true;
+    await BrowserHistory.getAllHistory(14320).then(async (history) => {
+      let item = Array.prototype.concat.apply([], history);
+      item.sort(function (a, b) {
+        if (a.utc_time > b.utc_time) {
+          return -1;
+        }
+        if (b.utc_time > a.utc_time) {
+          return 1;
+        }
+      });
+      let i = 0;
+      for (let j = 0; j < item.length; j++) {
+        if (
+          item[j].title &&
+          item[j].url.indexOf(store.host + '/') == 0 &&
+          (item[j].url.indexOf('/-/issues/') != -1 ||
+            item[j].url.indexOf('/-/merge_requests/') != -1 ||
+            item[j].url.indexOf('/-/epics/') != -1) &&
+          !recentlyVisitedArray.includes(item[j].title) &&
+          item[j].title.split('·')[0] != 'Not Found' &&
+          item[j].title.split('·')[0] != 'New Issue ' &&
+          item[j].title.split('·')[0] != 'New Merge Request ' &&
+          item[j].title.split('·')[0] != 'New merge request ' &&
+          item[j].title.split('·')[0] != 'New Epic ' &&
+          item[j].title.split('·')[0] != 'Edit ' &&
+          item[j].title.split('·')[0] != 'Merge requests ' &&
+          item[j].title.split('·')[0] != 'Issues '
+        ) {
+          if (firstItem) {
+            recentlyVisitedString = '<ul class=\\"list-container\\">';
+            firstItem = false;
+          }
+          let nameWithNamespace = item[j].url.replace(store.host + '/', '').split('/-/')[0];
+          if (nameWithNamespace.split('/')[0] != 'groups') {
+            url =
+              store.host +
+              '/api/v4/projects/' +
+              nameWithNamespace.split('/')[0] +
+              '%2F' +
+              nameWithNamespace.split('/')[1] +
+              '?access_token=' +
+              store.access_token;
+          } else {
+            url =
+              store.host +
+              '/api/v4/groups/' +
+              nameWithNamespace.split('/')[0] +
+              '?access_token=' +
+              store.access_token;
+          }
+          recentlyVisitedArray.push(item[j].title);
+          recentlyVisitedString += '<li class=\\"history-entry\\">';
+          recentlyVisitedString +=
+            '<a href=\\"' +
+            item[j].url +
+            '\\" target=\\"_blank\\">' +
+            escapeHtml(item[j].title.split('·')[0]) +
+            '</a><span class=\\"namespace-with-time\\">' +
+            timeSince(new Date(item[j].utc_time + ' UTC')) +
+            ' ago &middot; <a href=\\"' +
+            item[j].url.split('/-/')[0] +
+            '\\" target=\\"_blank\\">' +
+            escapeHtml(item[j].title.split('·')[2].trim()) +
+            '</a></span></div></li>';
+          i++;
+          if (i == numberOfRecentlyVisited) {
+            break;
+          }
+        }
+      }
+      if (!firstItem) {
+        let moreString = "'Recently viewed'";
+        recentlyVisitedString +=
+          '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' +
+          moreString +
+          ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>';
+      } else {
+        recentlyVisitedString = `<p class=\\"no-results\\">Recently visited objects will show up here.<br/><span class=\\"supported-browsers\\">Supported browsers: ${BrowserHistory.supportedBrowserNames()}.</span></p>`;
+      }
+      mb.window.webContents.executeJavaScript(
+        'document.getElementById("history").innerHTML = "' + recentlyVisitedString + '"',
+      );
+      lastRecentlyVisitedExecution = Date.now();
+      lastRecentlyVisitedExecutionFinished = true;
+    });
+  } else {
+    console.log('Recently visited running or not out of delay');
+  }
   if (lastRecentlyVisitedExecutionFinished && lastRecentlyVisitedExecution + delay < Date.now()) {
     lastRecentlyVisitedExecutionFinished = false;
     recentlyVisitedArray = new Array();
@@ -1899,7 +1942,9 @@ async function getRecentlyVisited() {
           ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>';
       } else {
         recentlyVisitedString =
-          '<p class=\\"no-results\\">Recently visited objects will show up here.<br/><span class=\\"supported-browsers\\">Supported browsers: ' + BrowserHistory.supportedBrowserNames() + '.</span></p>';
+          '<p class=\\"no-results\\">Recently visited objects will show up here.<br/><span class=\\"supported-browsers\\">Supported browsers: ' +
+          BrowserHistory.supportedBrowserNames() +
+          '.</span></p>';
       }
       mb.window.webContents.executeJavaScript(
         'document.getElementById("history").innerHTML = "' + recentlyVisitedString + '"',
