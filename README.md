@@ -4,7 +4,7 @@ GitDock is a MacOS/Windows/Linux app that displays all your GitLab activities in
 
 You can either have a look at this walkthrough video I recorded, or just try it out yourself by downloading it from the [releases](https://gitlab.com/mvanremmerden/gitdock/-/releases).
 
-[![YouTube Video](/docs/img/youtube.png)](https://www.youtube.com/watch?v=WkVS38wo4_w "GitDock ⚓️")
+[![YouTube Video](/docs/img/youtube.png)](https://www.youtube.com/watch?v=WkVS38wo4_w 'GitDock ⚓️')
 
 ## Installation
 
@@ -40,8 +40,8 @@ Depending on whether you use GitLab.com or a self-managed instance, you can eith
 
 Just click the "Login with GitLab" button, and then enter your username and password. Afterwards, you might be seeing the GitLab homepage, but should very quickly and automatically be redirected to your GitDock overview page.
 
-| Start | Login |
-| ------ | ------ |
+| Start                              | Login                              |
+| ---------------------------------- | ---------------------------------- |
 | ![Start page](/docs/img/start.png) | ![Login page](/docs/img/login.png) |
 
 </details>
@@ -52,9 +52,9 @@ To log in with an account from a self-managed instance, you first have to create
 
 Go to the Access Tokens page by first opening the user dropdown, clicking "Preferences" and then navigating to "Access tokens" in the left sidebar.
 
-| User dropdown | Access tokens |
-| ------ | ------ |
-| ![Preferences](/docs/img/preferences.png) | ![Access tokens](/docs/img/access-tokens.png) | 
+| User dropdown                             | Access tokens                                 |
+| ----------------------------------------- | --------------------------------------------- |
+| ![Preferences](/docs/img/preferences.png) | ![Access tokens](/docs/img/access-tokens.png) |
 
 Enter a token name, mark the `read_api` checkbox and then click "Create personal access token". On the following screen, copy the newly created access token and paste it into the GitDock application, together with the URL of your self-managed instance.
 
@@ -66,8 +66,8 @@ Enter a token name, mark the `read_api` checkbox and then click "Create personal
 
 Whenever you start a new pipeline, a system notification shows up and the GitDock icon in the menu bar changes to a running pipeline icon. Once the pipeline completes, you will receive another notification with the final pipeline status.
 
-| Running | Completed |
-| ------ | ------ |
+| Running                                             | Completed                                               |
+| --------------------------------------------------- | ------------------------------------------------------- |
 | ![Running pipeline](/docs/img/running-pipeline.png) | ![Completed pipeline](/docs/img/completed-pipeline.png) |
 
 #### To-Dos
@@ -78,14 +78,14 @@ Whenever a new To-Do gets created for you, the system notification will show you
 
 ### My Issues, MRs & To-Do list
 
-At the top of the app, you will see the typical sections of issues, MRs and the To-Do list. 
+At the top of the app, you will see the typical sections of issues, MRs and the To-Do list.
 
 ![Top section](/docs/img/top-section.png)
 
 You might be used to this layout already from our GitLab UI. The only difference is that on the detail pages, you can more easily switch directly to the objects you care about by using the filters to e.g. see the last MRs you have approved and that have already been merged.
 
-| Issues | MRs | To-Do list |
-| ------ | ------ | ------ |
+| Issues                          | MRs                                             | To-Do list                     |
+| ------------------------------- | ----------------------------------------------- | ------------------------------ |
 | ![Issues](/docs/img/issues.png) | ![Merge requests](/docs/img/merge-requests.png) | ![To-Dos](/docs/img/todos.png) |
 
 ### My commits
@@ -124,7 +124,7 @@ A list of all your recent comments is also visible on the overview page. Due
 
 ![Comments](/docs/img/comments.png)
 
-*The loading time for comments is significantly longer than for other objects, as each comment requires 3 API calls to collect all necessary information.*
+_The loading time for comments is significantly longer than for other objects, as each comment requires 3 API calls to collect all necessary information._
 
 ### Bookmarks
 
@@ -138,8 +138,8 @@ If you have a specific issue or merge request you care about and know you will h
 
 To make Gitdock as accessible and usable as possible, you can switch between dark and light theme.
 
-| Dark | Light |
-| ------ | ------ |
+| Dark                        | Light                         |
+| --------------------------- | ----------------------------- |
 | ![Dark](/docs/img/dark.png) | ![Light](/docs/img/light.png) |
 
 #### Analytics
