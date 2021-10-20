@@ -1,5 +1,6 @@
 const { menubar } = require('menubar');
 const { Menu, Notification, shell, ipcMain, app } = require('electron');
+const { escapeHtml, escapeQuotes, escapeSingleQuotes, sha256hex } = require('./lib/util');
 const {
   allLabel,
   allText,
@@ -1031,14 +1032,13 @@ ipcMain.on('start-project-dialog', (event, arg) => {
   startProjectDialog();
 });
 
-ipcMain.on('delete-bookmark', (event, arg) => {
+ipcMain.on('delete-bookmark', (event, hashedUrl) => {
   if (store.analytics) {
     visitor.event('Delete bookmark').send();
   }
-  let bookmarks = store.bookmarks;
-  let newBookmarks = bookmarks.filter((bookmark) => {
-    return bookmark.web_url != arg;
-  });
+  let newBookmarks = store.bookmarks.filter(
+    (bookmark) => sha256hex(bookmark.web_url) !== hashedUrl,
+  );
   store.bookmarks = newBookmarks;
   getBookmarks();
 });
@@ -2536,19 +2536,18 @@ function getBookmarks() {
           escapeHtml(bookmark.parent_name) +
           '</a>';
       }
-      let bookmarkUrl = "'" + bookmark.web_url + "'";
       bookmarksString +=
         '<li class=\\"history-entry bookmark-entry\\"><div class=\\"bookmark-information\\"><a href=\\"' +
-        bookmark.web_url +
+        escapeSingleQuotes(escapeHtml(bookmark.web_url)) +
         '\\" id=\\"bookmark-title\\" target=\\"_blank\\">' +
         escapeHtml(bookmark.title) +
         '</a><span class=\\"namespace-with-time\\">Added ' +
         timeSince(bookmark.added) +
         ' ago' +
         namespace_link +
-        '</span></div><div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteBookmark(' +
-        bookmarkUrl +
-        ')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>';
+        '</span></div><div class=\\"bookmark-delete-wrapper\\"><div class=\\"bookmark-delete\\" onclick=\\"deleteBookmark(\'' +
+        sha256hex(bookmark.web_url) +
+        '\')\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" d=\\"M14,3 C14.5522847,3 15,3.44771525 15,4 C15,4.55228475 14.5522847,5 14,5 L13.846,5 L13.1420511,14.1534404 C13.0618518,15.1954311 12.1930072,16 11.1479,16 L4.85206,16 C3.80698826,16 2.93809469,15.1953857 2.8579545,14.1533833 L2.154,5 L2,5 C1.44771525,5 1,4.55228475 1,4 C1,3.44771525 1.44771525,3 2,3 L5,3 L5,2 C5,0.945642739 5.81588212,0.0818352903 6.85073825,0.00548576453 L7,0 L9,0 C10.0543573,0 10.9181647,0.815882118 10.9945142,1.85073825 L11,2 L11,3 L14,3 Z M11.84,5 L4.159,5 L4.85206449,14.0000111 L11.1479,14.0000111 L11.84,5 Z M9,2 L7,2 L7,3 L9,3 L9,2 Z\\"/></svg></div></div></li>';
     });
     bookmarksString +=
       '<li id=\\"add-bookmark-dialog\\" class=\\"more-link\\"><a onclick=\\"startBookmarkDialog()\\">Add another bookmark <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>';
@@ -3226,29 +3225,6 @@ async function parse(gitlabUrl) {
       };
     }
   }
-}
-
-function escapeHtml(unsafe) {
-  return unsafe
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/`/g, '&#039;')
-    .replace(/'/g, '&#039;')
-    .replace(/@/g, '&commat;')
-    .replace(/[\\]/g, '\\\\')
-    .replace(/[\"]/g, '\\"')
-    .replace(/[\/]/g, '\\/')
-    .replace(/[\b]/g, '\\b')
-    .replace(/[\f]/g, '\\f')
-    .replace(/[\n]/g, '\\n')
-    .replace(/[\r]/g, '\\r')
-    .replace(/[\t]/g, '\\t');
-}
-
-function escapeQuotes(unsafe) {
-  return unsafe.replace(/"/g, '\\"');
 }
 
 function timeSince(date, direction = 'since') {
