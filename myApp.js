@@ -32,7 +32,7 @@ const {
 const fetch = require('node-fetch');
 let { store, deleteFromStore } = require('./lib/store');
 if (process.env.ACCESS_TOKEN && process.env.LOGGED_IN === 'true') {
-  const uuid = require('uuid/v4');
+  const { v4: uuidv4 } = require('uuid');
   store = {
     access_token: process.env.ACCESS_TOKEN,
     user_id: 'mvremmerden',
@@ -40,7 +40,7 @@ if (process.env.ACCESS_TOKEN && process.env.LOGGED_IN === 'true') {
     host: 'https://gitlab.com',
     plan: 'free',
     analytics: false,
-    analytics_id: uuid(),
+    analytics_id: uuidv4(),
   };
 }
 const BrowserHistory = require('./lib/browser-history');
