@@ -42,6 +42,10 @@ install-dependencies-mac:
   only:
     - tags
     - merge_requests
+  except:
+    variables:
+      # Skip job in forks; macOS runners are in a restricted beta
+      - $CI_PROJECT_ID != "28462485"
   tags:
     - shared-macos-amd64
   image: macos-11-xcode-12
@@ -140,6 +144,10 @@ build-mac:
   only:
     - tags
     - merge_requests
+  except:
+    variables:
+      # Skip job in forks; macOS runners are in a restricted beta
+      - $CI_PROJECT_ID != "28462485"
   tags:
     - shared-macos-amd64
   image: macos-11-xcode-12
