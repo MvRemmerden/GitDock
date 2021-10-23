@@ -79,7 +79,7 @@ feature-tests:
     - merge_requests
   tags:
     - linux
-  image: node:latest
+  image: codingpaws/spectron-ci:latest
   needs: ['install-dependencies-linux']
   cache:
     key: $CI_COMMIT_REF_SLUG-linux
@@ -87,15 +87,17 @@ feature-tests:
       - node_modules/
     policy: pull
   script:
-    - wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-    - apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install ./google-chrome-stable_current_amd64.deb xorg xvfb gtk2-engines-pixbuf dbus-x11 xfonts-cyrillic
-    - wget https://chromedriver.storage.googleapis.com/2.41/chromedriver_linux64.zip
-    - unzip chromedriver_linux64.zip
-    - mv chromedriver /usr/bin/chromedriver
-    - chown root:root /usr/bin/chromedriver
-    - chmod +x /usr/bin/chromedriver
-    - Xvfb -ac :99 -screen 0 1280x1024x16 &
-    - export DISPLAY=:99
+    # The following commands are already included in the codingpaws/spectron-ci image, we are documenting them here to show the manual work required to get end-to-end tests running. Additionally, we are documenting these challenges in an [extra document](https://gitlab.com/mvanremmerden/gitdock/-/blob/main/docs/internal/challenges.md).
+    # - wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+    # - apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install ./google-chrome-stable_current_amd64.deb xorg xvfb gtk2-engines-pixbuf dbus-x11 xfonts-cyrillic
+    # - wget https://chromedriver.storage.googleapis.com/2.41/chromedriver_linux64.zip
+    # - unzip chromedriver_linux64.zip
+    # - mv chromedriver /usr/bin/chromedriver
+    # - chown root:root /usr/bin/chromedriver
+    # - chmod +x /usr/bin/chromedriver
+    # - Xvfb -ac :99 -screen 0 1280x1024x16 &
+    # - export DISPLAY=:99
+    - setup-for-spectron
     - npm test
 
 prettier:
