@@ -2910,7 +2910,7 @@ function addProject(link, target) {
     link.indexOf('gitlab.com') == 0 ||
     link.indexOf('http://gitlab.com') == 0
   ) {
-    parseGitLabUrl(link)
+    parseGitLabUrl(link, 'projects')
       .then((project) => {
         if (project.type && project.type != 'projects') {
           displayAddError('project', target);
@@ -2991,7 +2991,7 @@ function startProjectDialog() {
   );
 }
 
-async function parseGitLabUrl(link) {
+async function parseGitLabUrl(link, type) {
   if (!/^(?:f|ht)tps?\:\/\//.test(link)) {
     link = 'https://' + link;
   }
@@ -3073,7 +3073,7 @@ async function parseGitLabUrl(link) {
       type: object.type,
       parent_url: board.project.web_url,
     };
-  } else if (object.type == 'projects') {
+  } else if (object.type == 'projects' || type == 'projects') {
     let result = await fetch(
       store.host +
         '/api/v4/projects/' +
