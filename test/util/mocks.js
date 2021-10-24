@@ -11,6 +11,8 @@
 
 const mockRegistry = {
   '/lib/store.js': '__mocks__/store.js',
+  '/lib/process-info.js': '__mocks__/process-info.js',
+  '/node_modules/node-browser-history/index.js': '__mocks__/node-browser-history.js',
 };
 
 // Below is the dependency replace logic
