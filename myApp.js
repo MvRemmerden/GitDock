@@ -38,6 +38,7 @@ const ua = require('universal-analytics');
 const jsdom = require('jsdom');
 const { JSDOM } = jsdom;
 const nodeCrypto = require('crypto');
+const processInfo = require('./lib/process-info');
 global.DOMParser = new JSDOM().window.DOMParser;
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
@@ -1147,7 +1148,7 @@ function setupContextMenu() {
     },
   ];
 
-  if (process.platform === 'linux') {
+  if (processInfo.platform === 'linux') {
     setupLinuxContextMenu(baseMenuItems);
   } else {
     setupGenericContextMenu(baseMenuItems);
@@ -1156,7 +1157,11 @@ function setupContextMenu() {
 
 function setupLinuxContextMenu(baseMenuItems) {
   const menu = Menu.buildFromTemplate([
-    { label: 'Open GitDock', click: () => mb.showWindow(), visible: process.platform === 'linux' },
+    {
+      label: 'Open GitDock',
+      click: () => mb.showWindow(),
+      visible: processInfo.platform === 'linux',
+    },
     ...baseMenuItems,
   ]);
 
@@ -1835,11 +1840,14 @@ async function getRecentlyVisited() {
           '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' +
           moreString +
           ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>';
-      } else {
+      } else if (BrowserHistory.isSupported()) {
         recentlyVisitedString =
           '<p class=\\"no-results\\">Recently visited objects will show up here.<br/><span class=\\"supported-browsers\\">Supported browsers: ' +
           BrowserHistory.supportedBrowserNames() +
           '.</span></p>';
+      } else {
+        recentlyVisitedString =
+          '<p class=\\"no-results\\"><span class=\\"supported-browsers\\">No browsers are supported on your operating system yet.</span></p>';
       }
       mb.window.webContents.executeJavaScript(
         'document.getElementById("history").innerHTML = "' + recentlyVisitedString + '"',

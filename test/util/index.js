@@ -15,9 +15,9 @@ const userDataIfLoggedIn = (loggedIn = false) => {
 
 module.exports = {
   /**
-   * @param {{ theme?: 'dark' | 'light', loggedIn: boolean }}
+   * @param {{ theme?: 'dark' | 'light', loggedIn?: boolean, platform?: 'linux' | 'darwin' | 'win32', browserHistory?: import('node-browser-history').BrowserHistory[] }}
    */
-  newApp({ theme, loggedIn } = {}) {
+  newApp({ theme, loggedIn, platform = process.platform, browserHistory } = {}) {
     const store = {
       theme,
       ...userDataIfLoggedIn(loggedIn),
@@ -37,6 +37,8 @@ module.exports = {
       env: {
         NODE_ENV: 'test',
         MOCK_STORE: typeof store === 'object' ? JSON.stringify(store) : '',
+        MOCK_PLATFORM: platform,
+        MOCK_BROWSER_HISTORY: JSON.stringify(browserHistory || []),
         LOGGED_IN: loggedIn ? 'true' : '',
       },
     });
