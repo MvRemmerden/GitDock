@@ -26,7 +26,25 @@ As GitDock hasn't been digitally signed and verified (yet), the installation req
 
 <details><summary>Windows</summary>
 
-//TODO Add Windows installation instructions
+1. Grab the `GitDock.exe` file from the newest release on the [Releases page](https://gitlab.com/mvanremmerden/gitdock/-/releases).
+2. After the download has finished, Downloads will show a warning :warning: symbol, and will show a message _"Make sure you trust GitDock.exe"_.
+
+3. Click the **"..."** next to the download item, and then choose **"Keep"**.
+
+![Keep Download](/docs/img/windows-gitdock-keep-1.png)
+
+4. Click **"Show more"**, and then choose **"Keep anyway"**.
+
+![Keep Download](/docs/img/windows-gitdock-keep-2.png)
+
+5. You will now have a "GitDock.exe" in your `Downloads` folder.
+6. Click the "GitDock.exe" to open it. You will see a Windows Defender popup: _"Windows protected your PC"_
+
+![Run GitDock](/docs/img/windows-gitdock-run-1.png)
+
+7. Click **More Info**, then **Run anyway**.
+
+![Run GitDock](/docs/img/windows-gitdock-run-2.png)
 
 </details>
 
