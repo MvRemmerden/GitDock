@@ -99,6 +99,12 @@ feature-tests:
     # - export DISPLAY=:99
     - setup-for-spectron
     - npm test
+  artifacts:
+    when: always
+    paths:
+      - junit.xml
+    reports:
+      junit: junit.xml
 
 prettier:
   stage: test
