@@ -14,16 +14,13 @@ As GitDock hasn't been digitally signed and verified (yet), the installation req
 
 ### Installation options
 
-Currently GitDock can be installed in 2 ways (both currently require a workaround in order for them to work):
+Currently GitDock can be installed in 2 ways. Both currently require a workaround (explained right below the two options) in order for them to work:
 
-- Option 1: Using [Homebrew](#homebrew)
-- Option 2: [Manual](#manual) installation
-
-#### Homebrew
+#### Option 1: Homebrew
 
 1. `brew install gitdock`
 
-#### Manual
+#### Option 2: Manual
 
 1. Grab the dmg file from the newest release on the [Releases page](https://gitlab.com/mvanremmerden/gitdock/-/releases).
 1. Move the app to your Applications folder and open it. You will see a notification informing you that this app hasn't been vetted and download from the App Store. Click "Cancel" at this point.
