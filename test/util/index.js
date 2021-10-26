@@ -15,12 +15,19 @@ const userDataIfLoggedIn = (loggedIn = false) => {
 
 module.exports = {
   /**
-   * @param {{ theme?: 'dark' | 'light', loggedIn?: boolean, platform?: 'linux' | 'darwin' | 'win32', browserHistory?: import('node-browser-history').BrowserHistory[] }}
+   * @param {{
+   *  theme?: 'dark' | 'light',
+   *  loggedIn?: boolean,
+   *  platform?: 'linux' | 'darwin' | 'win32',
+   *  browserHistory?: import('node-browser-history').BrowserHistory[],
+   *  bookmarks?: { title: string, type: string, web_url: string, parent_url: string, added: number, parent_name: string }[] },
+   * }
    */
-  newApp({ theme, loggedIn, platform = process.platform, browserHistory } = {}) {
+  newApp({ theme, loggedIn, platform = process.platform, browserHistory, bookmarks = [] } = {}) {
     const store = {
       theme,
       ...userDataIfLoggedIn(loggedIn),
+      bookmarks,
     };
 
     const app = new Application({
