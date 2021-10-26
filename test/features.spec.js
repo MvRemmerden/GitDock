@@ -23,27 +23,4 @@ describe('Feature tests', function () {
     assert.equal(mrsExists, true);
     assert.equal(todosExists, true);
   });
-
-  it('adds and deletes bookmark', async function () {
-    let bookmark = await this.app.client.$('#bookmark-link');
-    await bookmark.setValue('https://gitlab.com/gitlab-org/gitlab/-/issues/1');
-    let button = await this.app.client.$('#bookmark-add-button');
-    return button
-      .click()
-      .then(async () => {})
-      .then(async () => {
-        let title = await this.app.client.$('#bookmark-title');
-        await title.waitForExist({ timeout: 5000 });
-        let text = await title.getText();
-        assert.equal(text, '500 error on MR approvers edit page (#1)');
-        let button = await this.app.client.$('.bookmark-delete');
-        return button.click();
-      })
-      .then(async () => {
-        let bookmark = await this.app.client.$('#bookmark-link');
-        await bookmark.waitForExist({ timeout: 5000 });
-        let bookmarkExists = await bookmark.isExisting();
-        assert.equal(bookmarkExists, true);
-      });
-  });
 });
