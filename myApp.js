@@ -1,6 +1,7 @@
 const { menubar } = require('menubar');
 const { Menu, Notification, shell, ipcMain, app } = require('electron');
 const { escapeHtml, escapeQuotes, escapeSingleQuotes, sha256hex } = require('./lib/util');
+const GitLab = require('./lib/gitlab');
 const {
   allLabel,
   allText,
@@ -1307,268 +1308,209 @@ function sha256(buffer) {
   return nodeCrypto.createHash('sha256').update(buffer).digest();
 }
 
-function saveUser(code, url = store.host) {
-  let temp_access_token = code;
-  fetch(url + '/api/v4/user?access_token=' + temp_access_token)
-    .then((result) => {
-      return result.json();
-    })
-    .then((result) => {
-      if (result && result.id && result.username) {
-        store.access_token = temp_access_token;
-        store.user_id = result.id;
-        store.username = result.username;
-        store.host = url;
-        store.theme = 'dark';
-        store.analytics = false;
-        getUsersProjects().then(async (projects) => {
-          if (projects && projects.length > 0) {
-            store['favorite-projects'] = projects;
-          }
-          mb.window.removeListener('page-title-updated', handleLogin);
-          await mb.window
-            .loadURL(`file://${__dirname}/index.html`)
-            .then((result) => {
-              getUser();
-              displayUsersProjects();
-              getBookmarks();
-              getRecentlyVisited();
-              getLastCommits();
-              getRecentComments();
-              mb.window.webContents.setWindowOpenHandler(({ url }) => {
-                shell.openExternal(url);
-                return { action: 'deny' };
-              });
-            })
-            .catch((error) => {
-              getUser();
-              displayUsersProjects();
-              getBookmarks();
-              getRecentlyVisited();
-              getLastCommits();
-              getRecentComments();
-              mb.window.webContents.setWindowOpenHandler(({ url }) => {
-                shell.openExternal(url);
-                return { action: 'deny' };
-              });
+async function saveUser(temp_access_token, url = store.host) {
+  try {
+    const result = await GitLab.get('user', { access_token: temp_access_token });
+    if (result && result.id && result.username) {
+      store.access_token = temp_access_token;
+      store.user_id = result.id;
+      store.username = result.username;
+      store.host = url;
+      store.theme = 'dark';
+      store.analytics = false;
+      getUsersProjects().then(async (projects) => {
+        if (projects && projects.length > 0) {
+          store['favorite-projects'] = projects;
+        }
+        mb.window.removeListener('page-title-updated', handleLogin);
+        await mb.window
+          .loadURL(`file://${__dirname}/index.html`)
+          .then((result) => {
+            getUser();
+            displayUsersProjects();
+            getBookmarks();
+            getRecentlyVisited();
+            getLastCommits();
+            getRecentComments();
+            mb.window.webContents.setWindowOpenHandler(({ url }) => {
+              shell.openExternal(url);
+              return { action: 'deny' };
             });
-        });
-      } else {
-        console.log('not valid');
-      }
-    })
-    .catch((error) => {
+          })
+          .catch((error) => {
+            getUser();
+            displayUsersProjects();
+            getBookmarks();
+            getRecentlyVisited();
+            getLastCommits();
+            getRecentComments();
+            mb.window.webContents.setWindowOpenHandler(({ url }) => {
+              shell.openExternal(url);
+              return { action: 'deny' };
+            });
+          });
+      });
+    } else {
       console.log('not valid');
-    });
+    }
+  } catch {
+    console.log('not valid');
+  }
 }
 
-function getUser() {
+async function getUser() {
   if (lastUserExecutionFinished && lastUserExecution + delay < Date.now()) {
     lastUserExecutionFinished = false;
-    fetch(store.host + '/api/v4/user?access_token=' + store.access_token)
-      .then((result) => {
-        return result.json();
-      })
-      .then((user) => {
-        if (user && !user.error) {
-          let avatar_url;
-          if (user.avatar_url) {
-            avatar_url = new URL(user.avatar_url);
-            if (avatar_url.host != 'secure.gravatar.com') {
-              avatar_url.href += '?width=64';
-            }
-          }
-          let userString =
-            '<a href=\\"' +
-            user.web_url +
-            '\\" target=\\"_blank\\"><img src=\\"' +
-            avatar_url.href +
-            '\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' +
-            escapeHtml(user.name) +
-            '</span><span class=\\"username\\">@' +
-            escapeHtml(user.username) +
-            '</span></div></a>';
-          mb.window.webContents.executeJavaScript(
-            'document.getElementById("user").innerHTML = "' + userString + '"',
-          );
-          lastUserExecution = Date.now();
-          lastUserExecutionFinished = true;
-        } else {
-          logout();
+
+    const user = await GitLab.get('user');
+    if (user && !user.error) {
+      let avatar_url;
+      if (user.avatar_url) {
+        avatar_url = new URL(user.avatar_url);
+        if (avatar_url.host != 'secure.gravatar.com') {
+          avatar_url.href += '?width=64';
         }
-      });
+      }
+      let userString =
+        '<a href=\\"' +
+        user.web_url +
+        '\\" target=\\"_blank\\"><img src=\\"' +
+        avatar_url.href +
+        '\\" /><div class=\\"user-information\\"><span class=\\"user-name\\">' +
+        escapeHtml(user.name) +
+        '</span><span class=\\"username\\">@' +
+        escapeHtml(user.username) +
+        '</span></div></a>';
+      mb.window.webContents.executeJavaScript(
+        'document.getElementById("user").innerHTML = "' + userString + '"',
+      );
+      lastUserExecution = Date.now();
+      lastUserExecutionFinished = true;
+    } else {
+      logout();
+    }
   } else {
     console.log('User running or not out of delay');
   }
 }
 
 async function getUsersPlan() {
-  fetch(store.host + '/api/v4/namespaces?access_token=' + store.access_token)
-    .then((result) => {
-      return result.json();
-    })
-    .then((namespaces) => {
-      let namespace = namespaces.filter((namespace) => namespace.kind == 'user')[0];
-      if (namespace && namespace.plan) {
-        store.plan = namespace.plan;
-      } else {
-        store.plan = 'free';
-      }
-    });
+  const namespaces = await GitLab.get('namespaces');
+  const userNamespace = namespaces.find((namespace) => namespace.kind === 'user');
+
+  store.plan = userNamespace && userNamespace.plan ? userNamespace.plan : 'free';
 }
 
-function getLastEvent() {
-  if (recentCommits && recentCommits.length > 0) {
-    fetch(
-      (url =
-        store.host + '/api/v4/events?action=pushed&per_page=1&access_token=' + store.access_token),
-    )
-      .then((result) => {
-        return result.json();
-      })
-      .then((events) => {
-        let event = events[0];
-        if (event.id != lastEventId) {
-          lastEventId = event.id;
-          getLastCommits();
-          getRecentComments();
-        }
-      });
+async function getLastEvent() {
+  if (!recentCommits || recentCommits.length === 0) {
+    return;
+  }
+
+  const [lastEvent] = await GitLab.get('events', {
+    action: 'pushed',
+    per_page: 1,
+  });
+
+  if (lastEvent && lastEvent.id !== lastEventId) {
+    lastEventId = event.id;
+    getLastCommits();
+    getRecentComments();
   }
 }
 
-function getLastTodo() {
-  fetch(store.host + '/api/v4/todos?per_page=1&access_token=' + store.access_token)
-    .then((result) => {
-      return result.json();
-    })
-    .then((todos) => {
-      todo = todos[0];
-      if (lastTodoId != todo.id) {
-        if (lastTodoId != -1 && Date.parse(todo.created_at) > Date.now() - 20000) {
-          let todoNotification = new Notification({
-            title: todo.body,
-            subtitle: todo.author.name,
-            body: todo.target.title,
-          });
-          todoNotification.on('click', (result) => {
-            shell.openExternal(todo.target_url);
-          });
-          todoNotification.show();
-        }
-        lastTodoId = todo.id;
-      }
-    });
+async function getLastTodo() {
+  const [todo] = await GitLab.get('todos', { per_page: 1 });
+
+  if (lastTodoId !== todo.id) {
+    if (lastTodoId !== -1 && Date.parse(todo.created_at) > Date.now() - 20000) {
+      const todoNotification = new Notification({
+        title: todo.body,
+        subtitle: todo.author.name,
+        body: todo.target.title,
+      });
+      todoNotification.on('click', () => {
+        shell.openExternal(todo.target_url);
+      });
+      todoNotification.show();
+    }
+    lastTodoId = todo.id;
+  }
 }
 
-function getLastCommits(count = 20) {
+async function getLastCommits(count = 20) {
   if (lastLastCommitsExecutionFinished && lastLastCommitsExecution + delay < Date.now()) {
     lastLastCommitsExecutionFinished = false;
-    fetch(
-      (url =
-        store.host +
-        '/api/v4/events?action=pushed&per_page=' +
-        count +
-        '&access_token=' +
-        store.access_token),
-    )
-      .then((result) => {
-        return result.json();
-      })
-      .then((commits) => {
-        if (commits && commits.length > 0) {
-          lastEventId = commits[0].id;
-          getLastPipelines(commits);
-          let committedArray = commits.filter((commit) => {
-            return (
-              commit.action_name == 'pushed to' ||
-              (commit.action_name == 'pushed new' &&
-                commit.push_data.commit_to &&
-                commit.push_data.commit_count > 0)
-            );
-          });
-          if (committedArray && committedArray.length > 0) {
-            currentCommit = committedArray[0];
-            recentCommits = committedArray;
-            getCommitDetails(
-              committedArray[0].project_id,
-              committedArray[0].push_data.commit_to,
-              1,
-            );
-          } else {
-            mb.window.webContents.executeJavaScript(
-              'document.getElementById("commits-pagination").innerHTML = ""',
-            );
-            mb.window.webContents.executeJavaScript(
-              'document.getElementById("pipeline").innerHTML = "<p class=\\"no-results\\">You haven&#039;t pushed any commits yet.</p>"',
-            );
-          }
-        } else {
-          mb.window.webContents.executeJavaScript(
-            'document.getElementById("commits-pagination").innerHTML = ""',
-          );
-          mb.window.webContents.executeJavaScript(
-            'document.getElementById("pipeline").innerHTML = "<p class=\\"no-results\\">You haven&#039;t pushed any commits yet.</p>"',
-          );
-        }
-        lastLastCommitsExecution = Date.now();
-        lastLastCommitsExecutionFinished = true;
+
+    const commits = await GitLab.get('events', { action: 'pushed', per_page: count });
+    if (commits && commits.length > 0) {
+      lastEventId = commits[0].id;
+      getLastPipelines(commits);
+      let committedArray = commits.filter((commit) => {
+        return (
+          commit.action_name == 'pushed to' ||
+          (commit.action_name == 'pushed new' &&
+            commit.push_data.commit_to &&
+            commit.push_data.commit_count > 0)
+        );
       });
+      if (committedArray && committedArray.length > 0) {
+        currentCommit = committedArray[0];
+        recentCommits = committedArray;
+        getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1);
+      } else {
+        mb.window.webContents.executeJavaScript(
+          'document.getElementById("commits-pagination").innerHTML = ""',
+        );
+        mb.window.webContents.executeJavaScript(
+          'document.getElementById("pipeline").innerHTML = "<p class=\\"no-results\\">You haven&#039;t pushed any commits yet.</p>"',
+        );
+      }
+    } else {
+      mb.window.webContents.executeJavaScript(
+        'document.getElementById("commits-pagination").innerHTML = ""',
+      );
+      mb.window.webContents.executeJavaScript(
+        'document.getElementById("pipeline").innerHTML = "<p class=\\"no-results\\">You haven&#039;t pushed any commits yet.</p>"',
+      );
+    }
+    lastLastCommitsExecution = Date.now();
+    lastLastCommitsExecutionFinished = true;
   }
 }
 
-function getProjectCommits(project, count = 20) {
-  fetch(
-    store.host +
-      '/api/v4/projects/' +
-      project.id +
-      '/repository/commits/?per_page=' +
-      count +
-      '&access_token=' +
-      store.access_token,
-  )
-    .then((result) => {
-      return result.json();
-    })
-    .then((commits) => {
-      if (commits && commits.length > 0) {
-        recentProjectCommits = commits;
-        currentProjectCommit = commits[0];
-        fetch(
-          store.host +
-            '/api/v4/projects/' +
-            project.id +
-            '/repository/commits/' +
-            commits[0].id +
-            '?access_token=' +
-            store.access_token,
-        )
-          .then((result) => {
-            return result.json();
-          })
-          .then((commit) => {
-            let pagination =
-              '<div id=\\"project-commits-pagination\\"><span class=\\"name\\">Commits</span><div id=\\"commits-pagination\\"><span id=\\"project-commits-count\\">1/' +
-              recentProjectCommits.length +
-              '</span><button onclick=\\"changeProjectCommit(false)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\" /></svg></button><button onclick=\\"changeProjectCommit(true)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg></button></div></div>';
-            mb.window.webContents.executeJavaScript(
-              'document.getElementById("detail-headline").innerHTML = "' + pagination + '"',
-            );
-            mb.window.webContents.executeJavaScript(
-              'document.getElementById("project-pipeline").innerHTML = "' +
-                displayCommit(commit, project, 'author') +
-                '"',
-            );
-          });
-      } else {
-        mb.window.webContents.executeJavaScript(
-          'document.getElementById("project-commits-pagination").innerHTML = "<span class=\\"name\\">Commits</span>"',
-        );
-        mb.window.webContents.executeJavaScript(
-          'document.getElementById("project-pipeline").innerHTML = "<p class=\\"no-results\\">No commits pushed yet.</p>"',
-        );
-      }
+async function getProjectCommits(project, count = 20) {
+  const commits = await GitLab.get(`projects/${project.id}/repository/commits`, {
+    per_page: count,
+  });
+
+  if (commits && commits.length > 0) {
+    recentProjectCommits = commits;
+    currentProjectCommit = commits[0];
+
+    const commit = await GitLab.get(`projects/${project.id}/repository/commits/${commits[0].id}`, {
+      per_page: count,
     });
+
+    let pagination =
+      '<div id=\\"project-commits-pagination\\"><span class=\\"name\\">Commits</span><div id=\\"commits-pagination\\"><span id=\\"project-commits-count\\">1/' +
+      recentProjectCommits.length +
+      '</span><button onclick=\\"changeProjectCommit(false)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M10.707085,3.70711 C11.097605,3.31658 11.097605,2.68342 10.707085,2.29289 C10.316555,1.90237 9.683395,1.90237 9.292865,2.29289 L4.292875,7.29289 C3.902375,7.68342 3.902375,8.31658 4.292875,8.70711 L9.292865,13.7071 C9.683395,14.0976 10.316555,14.0976 10.707085,13.7071 C11.097605,13.3166 11.097605,12.6834 10.707085,12.2929 L6.414185,8 L10.707085,3.70711 Z\\" /></svg></button><button onclick=\\"changeProjectCommit(true)\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"16\\" height=\\"16\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon\\" fill-rule=\\"evenodd\\" d=\\"M5.29289,3.70711 C4.90237,3.31658 4.90237,2.68342 5.29289,2.29289 C5.68342,1.90237 6.31658,1.90237 6.70711,2.29289 L11.7071,7.29289 C12.0976,7.68342 12.0976,8.31658 11.7071,8.70711 L6.70711,13.7071 C6.31658,14.0976 5.68342,14.0976 5.29289,13.7071 C4.90237,13.3166 4.90237,12.6834 5.29289,12.2929 L9.58579,8 L5.29289,3.70711 Z\\" /></svg></button></div></div>';
+    mb.window.webContents.executeJavaScript(
+      'document.getElementById("detail-headline").innerHTML = "' + pagination + '"',
+    );
+    mb.window.webContents.executeJavaScript(
+      'document.getElementById("project-pipeline").innerHTML = "' +
+        displayCommit(commit, project, 'author') +
+        '"',
+    );
+  } else {
+    mb.window.webContents.executeJavaScript(
+      'document.getElementById("project-commits-pagination").innerHTML = "<span class=\\"name\\">Commits</span>"',
+    );
+    mb.window.webContents.executeJavaScript(
+      'document.getElementById("project-pipeline").innerHTML = "<p class=\\"no-results\\">No commits pushed yet.</p>"',
+    );
+  }
 }
 
 async function getLastPipelines(commits) {
@@ -1577,16 +1519,12 @@ async function getLastPipelines(commits) {
     for (let commit of commits) {
       if (!projectArray.includes(commit.project_id)) {
         projectArray.push(commit.project_id);
-        let result = await fetch(
-          store.host +
-            '/api/v4/projects/' +
-            commit.project_id +
-            '/pipelines?status=running&username=' +
-            store.username +
-            '&per_page=1&page=1&access_token=' +
-            store.access_token,
-        );
-        let pipelines = await result.json();
+        const pipelines = await GitLab.get(`projects/${commit.project_id}/pipelines`, {
+          status: 'running',
+          username: store.username,
+          per_page: 1,
+          page: 1,
+        });
         if (pipelines && pipelines.length > 0) {
           mb.tray.setImage(__dirname + '/assets/runningTemplate.png');
           for (let pipeline of pipelines) {
@@ -1595,16 +1533,9 @@ async function getLastPipelines(commits) {
                 (subscriptionPipeline) => subscriptionPipeline.id == pipeline.id,
               ) == -1
             ) {
-              let result = await fetch(
-                store.host +
-                  '/api/v4/projects/' +
-                  pipeline.project_id +
-                  '/repository/commits/' +
-                  pipeline.sha +
-                  '?access_token=' +
-                  store.access_token,
+              const commit = await GitLab.get(
+                `projects/${pipeline.project_id}/repository/commits/${pipeline.sha}`,
               );
-              let commit = await result.json();
               pipeline.commit_title = commit.title;
               runningPipelineSubscriptions.push(pipeline);
               let runningNotification = new Notification({
@@ -1612,7 +1543,7 @@ async function getLastPipelines(commits) {
                 subtitle: parse(pipeline.web_url).namespaceWithProject,
                 body: pipeline.commit_title,
               });
-              runningNotification.on('click', (result) => {
+              runningNotification.on('click', () => {
                 shell.openExternal(pipeline.web_url);
               });
               runningNotification.show();
@@ -1628,16 +1559,9 @@ async function getLastPipelines(commits) {
 async function subscribeToRunningPipeline() {
   let interval = setInterval(async function () {
     for (let runningPipeline of runningPipelineSubscriptions) {
-      let result = await fetch(
-        store.host +
-          '/api/v4/projects/' +
-          runningPipeline.project_id +
-          '/pipelines/' +
-          runningPipeline.id +
-          '?access_token=' +
-          store.access_token,
+      const pipeline = await GitLab.get(
+        `projects/${runningPipeline.project_id}/pipelines/${runningPipeline.id}`,
       );
-      let pipeline = await result.json();
       if (pipeline.status != 'running') {
         if (pipeline.status == 'success') {
           pipelineStatus = 'succeeded';
@@ -1688,7 +1612,7 @@ function changeCommit(forward = true, commitArray, chosenCommit) {
   return nextCommit;
 }
 
-function getCommitDetails(project_id, sha, index) {
+async function getCommitDetails(project_id, sha, index) {
   mb.window.webContents.executeJavaScript(
     'document.getElementById("commits-count").classList.remove("empty")',
   );
@@ -1699,34 +1623,14 @@ function getCommitDetails(project_id, sha, index) {
       recentCommits.length +
       '"',
   );
-  fetch(store.host + '/api/v4/projects/' + project_id + '?access_token=' + store.access_token)
-    .then((result) => {
-      return result.json();
-    })
-    .then((project) => {
-      fetch(
-        store.host +
-          '/api/v4/projects/' +
-          project.id +
-          '/repository/commits/' +
-          sha +
-          '?access_token=' +
-          store.access_token,
-      )
-        .then((result) => {
-          return result.json();
-        })
-        .then((commit) => {
-          mb.window.webContents.executeJavaScript(
-            'document.getElementById("pipeline").innerHTML = "' +
-              displayCommit(commit, project) +
-              '"',
-          );
-        });
-    });
+  const project = await GitLab.get(`projects/${project_id}`);
+  const commit = await GitLab.get(`projects/${project.id}/repository/commits/${sha}`);
+  mb.window.webContents.executeJavaScript(
+    'document.getElementById("pipeline").innerHTML = "' + displayCommit(commit, project) + '"',
+  );
 }
 
-function getProjectCommitDetails(project_id, sha, index) {
+async function getProjectCommitDetails(project_id, sha, index) {
   mb.window.webContents.executeJavaScript(
     'document.getElementById("project-commits-count").classList.remove("empty")',
   );
@@ -1737,25 +1641,13 @@ function getProjectCommitDetails(project_id, sha, index) {
       recentProjectCommits.length +
       '"',
   );
-  fetch(
-    store.host +
-      '/api/v4/projects/' +
-      project_id +
-      '/repository/commits/' +
-      sha +
-      '?access_token=' +
-      store.access_token,
-  )
-    .then((result) => {
-      return result.json();
-    })
-    .then((commit) => {
-      mb.window.webContents.executeJavaScript(
-        'document.getElementById("project-pipeline").innerHTML = "' +
-          displayCommit(commit, currentProject, 'author') +
-          '"',
-      );
-    });
+
+  const commit = await GitLab.get(`projects/${project.id}/repository/commits/${sha}`);
+  mb.window.webContents.executeJavaScript(
+    'document.getElementById("project-pipeline").innerHTML = "' +
+      displayCommit(commit, currentProject, 'author') +
+      '"',
+  );
 }
 
 async function getRecentlyVisited() {
@@ -2011,43 +1903,27 @@ function searchRecentlyVisited(searchterm) {
 }
 
 async function getUsersProjects() {
-  let result = await fetch(
-    store.host +
-      '/api/v4/users/' +
-      store.user_id +
-      '/starred_projects?min_access_level=30&per_page=' +
-      numberOfFavoriteProjects +
-      '&order_by=updated_at&access_token=' +
-      store.access_token,
-  );
-  let projects = await result.json();
-  let projectsArray = [];
-  if (projects && projects.length > 0) {
-    for (let project of projects) {
-      //TODO Figure out a way to see avatars of private repositories
-      /*if(project.visibility == 'public') {
-                favoriteProjectsString += '<li><img src=\\"' + project.avatar_url + '\\">'
-            }*/
-      let projectObject = {
-        id: project.id,
-        visibility: project.visibility,
-        web_url: project.web_url,
-        name: project.name,
-        namespace: {
-          name: project.namespace.name,
-        },
-        added: Date.now(),
-        name_with_namespace: project.name_with_namespace,
-        open_issues_count: project.open_issues_count,
-        last_activity_at: project.last_activity_at,
-        avatar_url: project.avatar_url,
-        star_count: project.star_count,
-        forks_count: project.forks_count,
-      };
-      projectsArray.push(projectObject);
-    }
-  }
-  return projectsArray;
+  const projects = await GitLab.get(`users/${store.user_id}/starred_projects`, {
+    min_access_level: 30,
+    per_page: numberOfFavoriteProjects,
+    order_by: 'updated_at',
+  });
+  return projects.map((project) => ({
+    id: project.id,
+    visibility: project.visibility,
+    web_url: project.web_url,
+    name: project.name,
+    namespace: {
+      name: project.namespace.name,
+    },
+    added: Date.now(),
+    name_with_namespace: project.name_with_namespace,
+    open_issues_count: project.open_issues_count,
+    last_activity_at: project.last_activity_at,
+    avatar_url: project.avatar_url,
+    star_count: project.star_count,
+    forks_count: project.forks_count,
+  }));
 }
 
 function displayUsersProjects() {
