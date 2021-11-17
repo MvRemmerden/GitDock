@@ -212,13 +212,13 @@ upload:
     - tags
   script:
     - |
-      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/GitDock-${VERSION}.dmg ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/GitDock-${VERSION}.dmg ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock-${VERSION}.dmg
     - |
-      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/squirrel.windows/x64/GitDock.exe ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.exe
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/squirrel.windows/x64/GitDock.exe ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock-${VERSION}.exe
     - |
-      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/rpm/x64/GitDock-${VERSION}-1.x86_64.rpm ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.rpm
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/rpm/x64/GitDock-${VERSION}-1.x86_64.rpm ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock-${VERSION}.rpm
     - |
-      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/deb/x64/gitdock_${VERSION}_amd64.deb ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.deb
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/deb/x64/gitdock_${VERSION}_amd64.deb ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock-${VERSION}.deb
 
 release:
   stage: release
@@ -239,7 +239,7 @@ release:
     - branches
   script:
     - echo "v$VERSION"
-    - echo "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg"}
+    - echo "${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock-${VERSION}.dmg"
   release:
     name: 'v$VERSION'
     tag_name: 'v$VERSION'
@@ -247,18 +247,18 @@ release:
     assets:
       links:
         - name: 'MacOS'
-          url: '${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.dmg'
-          filepath: '/GitDock.dmg'
+          url: '${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock-${VERSION}.dmg'
+          filepath: '/GitDock-${VERSION}.dmg'
           link_type: 'other'
         - name: 'Windows'
-          url: '${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.exe'
-          filepath: '/GitDock.exe'
+          url: '${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock-${VERSION}.exe'
+          filepath: '/GitDock-${VERSION}.exe'
           link_type: 'other'
         - name: 'Linux deb'
-          url: '${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.deb'
-          filepath: '/GitDock.deb'
+          url: '${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock-${VERSION}.deb'
+          filepath: '/GitDock-${VERSION}.deb'
           link_type: 'other'
         - name: 'Linux rpm'
-          url: '${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock.rpm'
-          filepath: '/GitDock.rpm'
+          url: '${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock-${VERSION}.rpm'
+          filepath: '/GitDock-${VERSION}.rpm'
           link_type: 'other'
