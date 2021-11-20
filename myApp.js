@@ -2719,48 +2719,55 @@ function displayCommit(commit, project, focus = 'project') {
 }
 
 function addBookmark(link) {
-  let spinner =
-    '<svg class=\\"button-spinner\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 14 14\\"><g fill=\\"none\\" fill-rule=\\"evenodd\\"><circle cx=\\"7\\" cy=\\"7\\" r=\\"6\\" stroke=\\"#c9d1d9\\" stroke-opacity=\\".4\\" stroke-width=\\"2\\"/><path class=\\"icon\\" fill-opacity=\\".4\\" fill-rule=\\"nonzero\\" d=\\"M7 0a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V0z\\"/></g></svg>';
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("bookmark-add-button").disabled = "disabled"',
-  );
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("bookmark-link").disabled = "disabled"',
-  );
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("bookmark-add-button").innerHTML = "' + spinner + ' Add"',
-  );
-  if (
-    link.indexOf(store.host + '') == 0 ||
-    link.indexOf('gitlab.com') == 0 ||
-    link.indexOf('http://gitlab.com') == 0
-  ) {
-    parseGitLabUrl(link)
-      .then((bookmark) => {
-        if (
-          !bookmark.type ||
-          (bookmark.type != 'issues' &&
-            bookmark.type != 'merge_requests' &&
-            bookmark.type != 'epics' &&
-            bookmark.type != 'projects' &&
-            bookmark.type != 'groups' &&
-            bookmark.type != 'boards' &&
-            bookmark.type != 'users' &&
-            bookmark.type != 'unknown')
-        ) {
-          displayAddError('bookmark', '-');
-        } else {
-          let bookmarks = store.bookmarks || [];
-          bookmarks.push(bookmark);
-          store.bookmarks = bookmarks;
-          getBookmarks();
-        }
-      })
-      .catch((error) => {
-        displayAddError('bookmark', '-');
-      });
+  let sameBookmarks = store.bookmarks.filter((item) => {
+    return item.web_url === link;
+  });
+  if (sameBookmarks.length > 0) {
+    displayAddError('bookmark', '-', 'This bookmark has already been added.');
   } else {
-    displayAddError('bookmark', '-');
+    let spinner =
+      '<svg class=\\"button-spinner\\" xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 14 14\\"><g fill=\\"none\\" fill-rule=\\"evenodd\\"><circle cx=\\"7\\" cy=\\"7\\" r=\\"6\\" stroke=\\"#c9d1d9\\" stroke-opacity=\\".4\\" stroke-width=\\"2\\"/><path class=\\"icon\\" fill-opacity=\\".4\\" fill-rule=\\"nonzero\\" d=\\"M7 0a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V0z\\"/></g></svg>';
+    mb.window.webContents.executeJavaScript(
+      'document.getElementById("bookmark-add-button").disabled = "disabled"',
+    );
+    mb.window.webContents.executeJavaScript(
+      'document.getElementById("bookmark-link").disabled = "disabled"',
+    );
+    mb.window.webContents.executeJavaScript(
+      'document.getElementById("bookmark-add-button").innerHTML = "' + spinner + ' Add"',
+    );
+    if (
+      link.indexOf(store.host + '') == 0 ||
+      link.indexOf('gitlab.com') == 0 ||
+      link.indexOf('http://gitlab.com') == 0
+    ) {
+      parseGitLabUrl(link)
+        .then((bookmark) => {
+          if (
+            !bookmark.type ||
+            (bookmark.type != 'issues' &&
+              bookmark.type != 'merge_requests' &&
+              bookmark.type != 'epics' &&
+              bookmark.type != 'projects' &&
+              bookmark.type != 'groups' &&
+              bookmark.type != 'boards' &&
+              bookmark.type != 'users' &&
+              bookmark.type != 'unknown')
+          ) {
+            displayAddError('bookmark', '-');
+          } else {
+            let bookmarks = store.bookmarks || [];
+            bookmarks.push(bookmark);
+            store.bookmarks = bookmarks;
+            getBookmarks();
+          }
+        })
+        .catch((error) => {
+          displayAddError('bookmark', '-');
+        });
+    } else {
+      displayAddError('bookmark', '-');
+    }
   }
 }
 
@@ -2808,18 +2815,29 @@ function addProject(link, target) {
   }
 }
 
-function displayAddError(type, target) {
+function displayAddError(type, target, customMessage) {
   mb.window.webContents.executeJavaScript(
     'document.getElementById("add-' + type + target + 'error").style.display = "block"',
   );
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("add-' +
-      type +
-      target +
-      'error").innerHTML = "This is not a valid GitLab ' +
-      type +
-      ' URL."',
-  );
+  if (customMessage) {
+    mb.window.webContents.executeJavaScript(
+      'document.getElementById("add-' +
+        type +
+        target +
+        'error").innerHTML = "' +
+        customMessage +
+        '"',
+    );
+  } else {
+    mb.window.webContents.executeJavaScript(
+      'document.getElementById("add-' +
+        type +
+        target +
+        'error").innerHTML = "This is not a valid GitLab ' +
+        type +
+        ' URL."',
+    );
+  }
   mb.window.webContents.executeJavaScript(
     'document.getElementById("' + type + target + 'add-button").disabled = false',
   );
@@ -3029,7 +3047,6 @@ async function parseGitLabUrl(link, type) {
     if (object.doc.querySelector('.context-header a')) {
       unknownObject.parent_url =
         store.host + object.doc.querySelector('.context-header a').getAttribute('href');
-      console.log(object.doc.querySelector('.context-header a').getAttribute('href'));
       if (titleArray.length == 3) {
         unknownObject.parent_name = titleArray[1];
       } else if (titleArray.length == 4) {
