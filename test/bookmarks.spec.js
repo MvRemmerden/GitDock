@@ -72,5 +72,14 @@ describe('"Bookmarks" section', function () {
       const titles = await this.app.client.$$('.bookmark-information a');
       assert.equal(titles.length, 2);
     });
+
+    it('cannot add a bookmark twice', async function () {
+      const addBookmarksButton = await this.app.client.$('#add-bookmark-dialog a');
+      await addBookmarksButton.click();
+
+      await addBookmark(this.app, 'https://gitlab.com/user/project/-/merge_requests/1');
+      const error = await this.app.client.$('#add-bookmark-error');
+      assert.equal(await error.getText(), 'This bookmark has already been added.');
+    });
   });
 });
