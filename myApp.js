@@ -1540,7 +1540,7 @@ async function getLastPipelines(commits) {
               runningPipelineSubscriptions.push(pipeline);
               let runningNotification = new Notification({
                 title: 'Pipeline running',
-                subtitle: parse(pipeline.web_url).namespaceWithProject,
+                subtitle: GitLab.fetchUrlInfo(pipeline.web_url).namespaceWithProject,
                 body: pipeline.commit_title,
               });
               runningNotification.on('click', () => {
@@ -1570,7 +1570,7 @@ async function subscribeToRunningPipeline() {
         }
         let updateNotification = new Notification({
           title: 'Pipeline ' + pipelineStatus,
-          subtitle: parse(pipeline.web_url).namespaceWithProject,
+          subtitle: GitLab.fetchUrlInfo(pipeline.web_url).namespaceWithProject,
           body: runningPipeline.commit_title,
         });
         updateNotification.on('click', () => {
@@ -2410,11 +2410,19 @@ function getBookmarks() {
           escapeHtml(bookmark.parent_name) +
           '</a>';
       }
+
+      let title = bookmark.title;
+
+      if (bookmark.id && ['merge_requests', 'issues'].includes(bookmark.type)) {
+        const typeIndicator = GitLab.indicatorForType(bookmark.type);
+        title += ` (${typeIndicator}${bookmark.id})`;
+      }
+
       bookmarksString +=
         '<li class=\\"history-entry bookmark-entry\\"><div class=\\"bookmark-information\\"><a href=\\"' +
         escapeSingleQuotes(escapeHtml(bookmark.web_url)) +
         '\\" id=\\"bookmark-title\\" target=\\"_blank\\">' +
-        escapeHtml(bookmark.title) +
+        escapeHtml(title) +
         '</a><span class=\\"namespace-with-time\\">Added ' +
         timeSince(bookmark.added) +
         ' ago' +
@@ -2736,30 +2744,27 @@ function addBookmark(link) {
     mb.window.webContents.executeJavaScript(
       'document.getElementById("bookmark-add-button").innerHTML = "' + spinner + ' Add"',
     );
-    if (
-      link.indexOf(store.host + '') == 0 ||
-      link.indexOf('gitlab.com') == 0 ||
-      link.indexOf('http://gitlab.com') == 0
-    ) {
-      parseGitLabUrl(link)
+    if (GitLab.urlHasValidHost(link)) {
+      GitLab.parseUrl(link)
         .then((bookmark) => {
-          if (
-            !bookmark.type ||
-            (bookmark.type != 'issues' &&
-              bookmark.type != 'merge_requests' &&
-              bookmark.type != 'epics' &&
-              bookmark.type != 'projects' &&
-              bookmark.type != 'groups' &&
-              bookmark.type != 'boards' &&
-              bookmark.type != 'users' &&
-              bookmark.type != 'unknown')
-          ) {
-            displayAddError('bookmark', '-');
-          } else {
-            let bookmarks = store.bookmarks || [];
+          const allowedTypes = [
+            'issues',
+            'merge_requests',
+            'epics',
+            'projects',
+            'groups',
+            'boards',
+            'users',
+            'unknown',
+          ];
+
+          if (allowedTypes.includes(bookmark.type)) {
+            const bookmarks = store.bookmarks || [];
             bookmarks.push(bookmark);
             store.bookmarks = bookmarks;
             getBookmarks();
+          } else {
+            displayAddError('bookmark', '-');
           }
         })
         .catch((error) => {
@@ -2788,12 +2793,8 @@ function addProject(link, target) {
   mb.window.webContents.executeJavaScript(
     'document.getElementById("project' + target + 'add-button").innerHTML = "' + spinner + ' Add"',
   );
-  if (
-    link.indexOf(store.host + '') == 0 ||
-    link.indexOf('gitlab.com') == 0 ||
-    link.indexOf('http://gitlab.com') == 0
-  ) {
-    parseGitLabUrl(link, 'projects')
+  if (GitLab.urlHasValidHost(link)) {
+    GitLab.parseUrl(link)
       .then((project) => {
         if (project.type && project.type != 'projects') {
           displayAddError('project', target);
@@ -2883,239 +2884,6 @@ function startProjectDialog() {
   mb.window.webContents.executeJavaScript(
     'document.getElementById("project-settings-link").focus()',
   );
-}
-
-async function parseGitLabUrl(link, type) {
-  if (!/^(?:f|ht)tps?\:\/\//.test(link)) {
-    link = 'https://' + link;
-  }
-  let object = await parse(link);
-  let issuable;
-  if (object.type == 'issues' || object.type == 'merge_requests') {
-    let result = await fetch(
-      store.host +
-        '/api/v4/projects/' +
-        encodeURIComponent(object.namespaceWithProject) +
-        '/' +
-        object.type +
-        '/' +
-        object[object.type] +
-        '?access_token=' +
-        store.access_token,
-    );
-    issuable = await result.json();
-    let result2 = await fetch(
-      store.host +
-        '/api/v4/projects/' +
-        issuable.project_id +
-        '?access_token=' +
-        store.access_token,
-    );
-    let project = await result2.json();
-    return {
-      web_url: link,
-      parent_name: project.name_with_namespace,
-      project: project.name,
-      title: issuable.title,
-      added: Date.now(),
-      type: object.type,
-      parent_url: project.web_url,
-    };
-  } else if (object.type == 'epics') {
-    let result = await fetch(
-      store.host +
-        '/api/v4/groups/' +
-        encodeURIComponent(object.namespaceWithProject.replace('groups/', '')) +
-        '/' +
-        object.type +
-        '/' +
-        object[object.type] +
-        '?access_token=' +
-        store.access_token,
-    );
-    issuable = await result.json();
-    let result2 = await fetch(
-      store.host + '/api/v4/groups/' + issuable.group_id + '?access_token=' + store.access_token,
-    );
-    let group = await result2.json();
-    return {
-      web_url: link,
-      parent_name: group.full_name,
-      title: issuable.title,
-      added: Date.now(),
-      type: object.type,
-      parent_url: group.web_url,
-    };
-  } else if (object.type == 'boards') {
-    let result = await fetch(
-      store.host +
-        '/api/v4/projects/' +
-        encodeURIComponent(object.namespaceWithProject) +
-        '/' +
-        object.type +
-        '/' +
-        object[object.type] +
-        '?access_token=' +
-        store.access_token,
-    );
-    board = await result.json();
-    return {
-      web_url: link,
-      parent_name: board.project.name_with_namespace,
-      title: board.name,
-      added: Date.now(),
-      type: object.type,
-      parent_url: board.project.web_url,
-    };
-  } else if (object.type == 'projects' || type == 'projects') {
-    let result = await fetch(
-      store.host +
-        '/api/v4/projects/' +
-        encodeURIComponent(object.namespaceWithProject) +
-        '?access_token=' +
-        store.access_token,
-    );
-    let project = await result.json();
-    return {
-      id: project.id,
-      visibility: project.visibility,
-      web_url: project.web_url,
-      name: project.name,
-      title: project.name,
-      namespace: {
-        name: project.namespace.name,
-      },
-      parent_name: project.name_with_namespace,
-      parent_url: project.namespace.web_url,
-      added: Date.now(),
-      name_with_namespace: project.name_with_namespace,
-      open_issues_count: project.open_issues_count,
-      last_activity_at: project.last_activity_at,
-      avatar_url: project.avatar_url,
-      star_count: project.star_count,
-      forks_count: project.forks_count,
-      type: 'projects',
-    };
-  } else if (object.type == 'groups') {
-    let result = await fetch(
-      store.host +
-        '/api/v4/groups/' +
-        encodeURIComponent(object.namespaceWithProject) +
-        '?access_token=' +
-        store.access_token,
-    );
-    let group = await result.json();
-    let groupObject = {
-      id: group.id,
-      visibility: group.visibility,
-      web_url: group.web_url,
-      title: group.name,
-      name: group.name,
-      namespace: {
-        name: group.name,
-      },
-      added: Date.now(),
-      name_with_namespace: group.name_with_namespace,
-      avatar_url: group.avatar_url,
-      type: 'groups',
-    };
-    if (group.full_name.indexOf(' / ' + group.name) != -1) {
-      groupObject.parent_name = group.full_name.replace(' / ' + group.name, '');
-      groupObject.parent_url = group.web_url.replace('/' + group.path, '');
-    }
-    return groupObject;
-  } else if (object.type == 'users') {
-    let result = await fetch(
-      store.host + '/api/v4/users?username=' + encodeURIComponent(object.namespaceWithProject),
-    );
-    let user = await result.json();
-    user = user[0];
-    return {
-      title: user.name,
-      type: object.type,
-      web_url: user.web_url,
-      added: Date.now(),
-    };
-  } else if (object.type == 'unknown') {
-    let titleArray = object.doc.querySelector('title').text.split(' · ');
-    let unknownObject = {
-      title: titleArray[0],
-      type: object.type,
-      web_url: link,
-      added: Date.now(),
-    };
-    if (object.doc.querySelector('.context-header a')) {
-      unknownObject.parent_url =
-        store.host + object.doc.querySelector('.context-header a').getAttribute('href');
-      if (titleArray.length == 3) {
-        unknownObject.parent_name = titleArray[1];
-      } else if (titleArray.length == 4) {
-        unknownObject.parent_name = titleArray[2];
-      }
-    }
-    return unknownObject;
-  }
-}
-
-async function parse(gitlabUrl) {
-  if (typeof gitlabUrl !== 'string') {
-    throw new Error('Expected gitLabUrl of type string');
-  }
-  const url = new URL(gitlabUrl);
-  let path = url.pathname;
-  path = path.replace(/^\/|\/$/g, '');
-  path = path.replace(/\+$/, '');
-  if (path.indexOf('/-/') != -1) {
-    let pathArray = path.split('/-/');
-    let object = {
-      namespaceWithProject: pathArray[0],
-      type: pathArray[1].split('/')[0],
-    };
-    if (
-      pathArray[1].split('/')[1] == 'issues' ||
-      pathArray[1].split('/')[1] == 'merge_requests' ||
-      pathArray[1].split('/')[1] == 'epics' ||
-      pathArray[1].split('/')[1] == 'boards'
-    ) {
-      object[object.type] = pathArray[1].split('/')[1].split('#')[0];
-      return object;
-    } else {
-      let result = await fetch(gitlabUrl);
-      let body = await result.text();
-      let doc = new DOMParser().parseFromString(body, 'text/html');
-      return {
-        namespaceWithProject: path,
-        type: 'unknown',
-        doc: doc,
-      };
-    }
-  } else {
-    let result = await fetch(gitlabUrl);
-    let body = await result.text();
-    let doc = new DOMParser().parseFromString(body, 'text/html');
-    if (doc.querySelector('.group-home-panel')) {
-      return {
-        namespaceWithProject: path,
-        type: 'groups',
-      };
-    } else if (doc.querySelector('.project-home-panel')) {
-      return {
-        namespaceWithProject: path,
-        type: 'projects',
-      };
-    } else if (doc.querySelector('.user-profile')) {
-      return {
-        namespaceWithProject: path,
-        type: 'users',
-      };
-    } else {
-      return {
-        namespaceWithProject: path,
-        type: 'unknown',
-        doc: doc,
-      };
-    }
-  }
 }
 
 function timeSince(date, direction = 'since') {
