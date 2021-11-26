@@ -1970,132 +1970,44 @@ function displayUsersProjects() {
   );
 }
 
-function getRecentComments() {
+async function getRecentComments() {
   if (lastRecentCommentsExecutionFinished && lastRecentCommentsExecution + delay < Date.now()) {
     lastRecentCommentsExecutionFinished = false;
     let recentCommentsString = '';
-    fetch(
-      store.host +
-        '/api/v4/events?action=commented&per_page=' +
-        numberOfRecentComments +
-        '&access_token=' +
-        store.access_token,
-    )
-      .then((result) => {
-        return result.json();
-      })
-      .then(async (comments) => {
-        if (comments && comments.length > 0) {
-          recentCommentsString += '<ul class=\\"list-container\\">';
-          for (let comment of comments) {
-            let url = '';
-            if (comment.note.noteable_type == 'MergeRequest') {
-              url =
-                store.host +
-                '/api/v4/projects/' +
-                comment.project_id +
-                '/merge_requests/' +
-                comment.note.noteable_iid +
-                '?access_token=' +
-                store.access_token;
-            } else if (comment.note.noteable_type == 'Issue') {
-              url =
-                store.host +
-                '/api/v4/projects/' +
-                comment.project_id +
-                '/issues/' +
-                comment.note.noteable_iid +
-                '?access_token=' +
-                store.access_token;
-            } else if (comment.note.noteable_type == 'Commit') {
-              url =
-                store.host +
-                '/api/v4/projects/' +
-                comment.project_id +
-                '/repository/commits/' +
-                comment.note.position.head_sha +
-                '?access_token=' +
-                store.access_token;
-            } else if (comment.note.noteable_type == 'Snippet') {
-              url =
-                store.host +
-                '/api/v4/projects/' +
-                comment.project_id +
-                '/snippets/' +
-                comment.note.noteable_id +
-                '?access_token=' +
-                store.access_token;
-            } else if (comment.note.noteable_type == 'DesignManagement::Design') {
-              url =
-                store.host +
-                '/api/v4/projects/' +
-                comment.project_id +
-                '/issues/' +
-                comment.note.position.new_path.split('/')[1].split('-')[1] +
-                '?access_token=' +
-                store.access_token;
-            } else {
-              continue;
-            }
-            await fetch(url)
-              .then((result) => {
-                return result.json();
-              })
-              .then((collabject) => {
-                if (collabject.message && collabject.message == '404 Not found') {
-                  console.log('deleted');
-                } else {
-                  if (comment.note.noteable_type == 'DesignManagement::Design') {
-                    collabject.web_url += '/designs/' + comment.target_title;
-                    recentCommentsString +=
-                      '<li class=\\"comment\\"><a href=\\"' +
-                      collabject.web_url +
-                      '#note_' +
-                      comment.note.id +
-                      '\\" target=\\"_blank\\">' +
-                      escapeHtml(comment.note.body) +
-                      '</a><span class=\\"namespace-with-time\\">' +
-                      timeSince(new Date(comment.created_at)) +
-                      ' ago &middot; <a href=\\"' +
-                      collabject.web_url.split('#note')[0] +
-                      '\\" target=\\"_blank\\">' +
-                      escapeHtml(comment.target_title) +
-                      '</a></span></div></li>';
-                  } else {
-                    recentCommentsString +=
-                      '<li class=\\"comment\\"><a href=\\"' +
-                      collabject.web_url +
-                      '#note_' +
-                      comment.note.id +
-                      '\\" target=\\"_blank\\">' +
-                      escapeHtml(comment.note.body) +
-                      '</a><span class=\\"namespace-with-time\\">' +
-                      timeSince(new Date(comment.created_at)) +
-                      ' ago &middot; <a href=\\"' +
-                      collabject.web_url.split('#note')[0] +
-                      '\\" target=\\"_blank\\">' +
-                      escapeHtml(comment.target_title) +
-                      '</a></span></div></li>';
-                  }
-                }
-              });
-          }
-          let moreString = "'Comments'";
-          recentCommentsString +=
-            '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' +
-            moreString +
-            ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>';
-          mb.window.webContents.executeJavaScript(
-            'document.getElementById("comments").innerHTML = "' + recentCommentsString + '"',
-          );
-        } else {
-          mb.window.webContents.executeJavaScript(
-            'document.getElementById("comments").innerHTML = "<p class=\\"no-results\\">You haven&#039;t written any comments yet.</p>"',
-          );
+
+    const comments = await GitLab.get('events', {
+      action: 'commented',
+      per_page: numberOfRecentComments,
+    });
+
+    if (comments && comments.length > 0) {
+      recentCommentsString += '<ul class=\\"list-container\\">';
+      for (let comment of comments) {
+        const path = GitLab.commentToNoteableUrl(comment);
+
+        if (!path) {
+          continue;
         }
-        lastRecentCommentsExecution = Date.now();
-        lastRecentCommentsExecutionFinished = true;
-      });
+
+        const collabject = await GitLab.get(path);
+
+        recentCommentsString += renderCollabject(comment, collabject);
+      }
+      let moreString = "'Comments'";
+      recentCommentsString +=
+        '<li class=\\"more-link\\"><a onclick=\\"goToDetail(' +
+        moreString +
+        ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li></ul>';
+      mb.window.webContents.executeJavaScript(
+        'document.getElementById("comments").innerHTML = "' + recentCommentsString + '"',
+      );
+    } else {
+      mb.window.webContents.executeJavaScript(
+        'document.getElementById("comments").innerHTML = "<p class=\\"no-results\\">You haven&#039;t written any comments yet.</p>"',
+      );
+    }
+    lastRecentCommentsExecution = Date.now();
+    lastRecentCommentsExecutionFinished = true;
   } else {
     console.log('Recent comments running or not out of delay');
   }
@@ -2118,103 +2030,55 @@ function getMoreRecentComments(
     })
     .then(async (comments) => {
       for (let comment of comments) {
-        let url = '';
-        if (comment.note.noteable_type == 'MergeRequest') {
-          url =
-            store.host +
-            '/api/v4/projects/' +
-            comment.project_id +
-            '/merge_requests/' +
-            comment.note.noteable_iid +
-            '?access_token=' +
-            store.access_token;
-        } else if (comment.note.noteable_type == 'Issue') {
-          url =
-            store.host +
-            '/api/v4/projects/' +
-            comment.project_id +
-            '/issues/' +
-            comment.note.noteable_iid +
-            '?access_token=' +
-            store.access_token;
-        } else if (comment.note.noteable_type == 'Commit') {
-          url =
-            store.host +
-            '/api/v4/projects/' +
-            comment.project_id +
-            '/repository/commits/' +
-            comment.note.position.head_sha +
-            '?access_token=' +
-            store.access_token;
-        } else if (comment.note.noteable_type == 'Snippet') {
-          url =
-            store.host +
-            '/api/v4/projects/' +
-            comment.project_id +
-            '/snippets/' +
-            comment.note.noteable_id +
-            '?access_token=' +
-            store.access_token;
-        } else if (comment.note.noteable_type == 'DesignManagement::Design') {
-          url =
-            store.host +
-            '/api/v4/projects/' +
-            comment.project_id +
-            '/issues/' +
-            comment.note.position.new_path.split('/')[1].split('-')[1] +
-            '?access_token=' +
-            store.access_token;
-        } else {
-          continue;
-        }
-        await fetch(url)
-          .then((result) => {
-            return result.json();
-          })
-          .then((collabject) => {
-            if (collabject.message && collabject.message == '404 Not found') {
-              console.log('deleted');
-            } else {
-              if (comment.note.noteable_type == 'DesignManagement::Design') {
-                collabject.web_url += '/designs/' + comment.target_title;
-                recentCommentsString +=
-                  '<li class=\\"comment\\"><a href=\\"' +
-                  collabject.web_url +
-                  '#note_' +
-                  comment.note.id +
-                  '\\" target=\\"_blank\\">' +
-                  escapeHtml(comment.note.body) +
-                  '</a><span class=\\"namespace-with-time\\">' +
-                  timeSince(new Date(comment.created_at)) +
-                  ' ago &middot; <a href=\\"' +
-                  collabject.web_url.split('#note')[0] +
-                  '\\" target=\\"_blank\\">' +
-                  escapeHtml(comment.target_title) +
-                  '</a></span></div></li>';
-              } else {
-                recentCommentsString +=
-                  '<li class=\\"comment\\"><a href=\\"' +
-                  collabject.web_url +
-                  '#note_' +
-                  comment.note.id +
-                  '\\" target=\\"_blank\\">' +
-                  escapeHtml(comment.note.body) +
-                  '</a><span class=\\"namespace-with-time\\">' +
-                  timeSince(new Date(comment.created_at)) +
-                  ' ago &middot; <a href=\\"' +
-                  collabject.web_url.split('#note')[0] +
-                  '\\" target=\\"_blank\\">' +
-                  escapeHtml(comment.target_title) +
-                  '</a></span></div></li>';
-              }
-            }
-          });
+        const path = GitLab.commentToNoteableUrl(comment);
+        const collabject = await GitLab.get(path);
+
+        recentCommentsString += renderCollabject(comment, collabject);
       }
       recentCommentsString += '</ul>' + displayPagination(keysetLinks, type);
       mb.window.webContents.executeJavaScript(
         'document.getElementById("detail-content").innerHTML = "' + recentCommentsString + '"',
       );
     });
+}
+
+function renderCollabject(comment, collabject) {
+  if (collabject.message && collabject.message === '404 Not found') {
+    console.log('deleted', collabject.id);
+  } else if (comment.note.noteable_type === 'DesignManagement::Design') {
+    collabject.web_url += '/designs/' + comment.target_title;
+    return (
+      '<li class=\\"comment\\"><a href=\\"' +
+      collabject.web_url +
+      '#note_' +
+      comment.note.id +
+      '\\" target=\\"_blank\\">' +
+      escapeHtml(comment.note.body) +
+      '</a><span class=\\"namespace-with-time\\">' +
+      timeSince(new Date(comment.created_at)) +
+      ' ago &middot; <a href=\\"' +
+      collabject.web_url.split('#note')[0] +
+      '\\" target=\\"_blank\\">' +
+      escapeHtml(comment.target_title) +
+      '</a></span></div></li>'
+    );
+  } else {
+    return (
+      '<li class=\\"comment\\"><a href=\\"' +
+      collabject.web_url +
+      '#note_' +
+      comment.note.id +
+      '\\" target=\\"_blank\\">' +
+      escapeHtml(comment.note.body) +
+      '</a><span class=\\"namespace-with-time\\">' +
+      timeSince(new Date(comment.created_at)) +
+      ' ago &middot; <a href=\\"' +
+      collabject.web_url.split('#note')[0] +
+      '\\" target=\\"_blank\\">' +
+      escapeHtml(comment.target_title) +
+      '</a></span></div></li>'
+    );
+  }
 }
 
 function getIssues(
@@ -2543,7 +2407,7 @@ function displayProjectPage(project) {
   );
 }
 
-function getProjectIssues(project) {
+async function getProjectIssues(project) {
   let projectIssuesString = '';
   let jsonProjectObject = JSON.parse(JSON.stringify(project));
   jsonProjectObject.name_with_namespace = escapeQuotes(project.name_with_namespace);
@@ -2551,57 +2415,49 @@ function getProjectIssues(project) {
   jsonProjectObject.name = escapeQuotes(project.name);
   let projectString = "'" + escapeHtml(JSON.stringify(jsonProjectObject)) + "'";
   let issuesString = "'Issues'";
-  fetch(
-    store.host +
-      '/api/v4/projects/' +
-      project.id +
-      '/issues?state=opened&order_by=created_at&per_page=3&access_token=' +
-      store.access_token,
-  )
-    .then((result) => {
-      return result.json();
-    })
-    .then((issues) => {
-      if (issues.length > 0) {
-        projectIssuesString = '<ul class=\\"list-container\\">';
-        for (let issue of issues) {
-          projectIssuesString += '<li class=\\"history-entry\\">';
-          projectIssuesString +=
-            '<a href=\\"' +
-            issue.web_url +
-            '\\" target=\\"_blank\\">' +
-            escapeHtml(issue.title) +
-            '</a><span class=\\"namespace-with-time\\">Created ' +
-            timeSince(new Date(issue.created_at)) +
-            ' ago &middot; ' +
-            escapeHtml(issue.author.name) +
-            '</span></div></li>';
-        }
-        projectIssuesString +=
-          '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' +
-          issuesString +
-          ', ' +
-          projectString +
-          ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>';
-        projectIssuesString += '</ul>';
-      } else {
-        projectIssuesString = '<p class=\\"no-results with-all-link\\">No open issues.</p>';
-        projectIssuesString +=
-          '<div class=\\"all-link\\"><a onclick=\\"goToSubDetail(' +
-          issuesString +
-          ', ' +
-          projectString +
-          ', true)\\">View all <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></div>';
-      }
-      mb.window.webContents.executeJavaScript(
-        'document.getElementById("project-recent-issues").innerHTML = "' +
-          projectIssuesString +
-          '"',
-      );
-    });
+
+  const issues = await GitLab.get(`projects/${project.id}/issues`, {
+    state: 'opened',
+    order_by: 'created_at',
+    per_page: 3,
+  });
+  if (issues.length > 0) {
+    projectIssuesString = '<ul class=\\"list-container\\">';
+    for (let issue of issues) {
+      projectIssuesString += '<li class=\\"history-entry\\">';
+      projectIssuesString +=
+        '<a href=\\"' +
+        issue.web_url +
+        '\\" target=\\"_blank\\">' +
+        escapeHtml(issue.title) +
+        '</a><span class=\\"namespace-with-time\\">Created ' +
+        timeSince(new Date(issue.created_at)) +
+        ' ago &middot; ' +
+        escapeHtml(issue.author.name) +
+        '</span></div></li>';
+    }
+    projectIssuesString +=
+      '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' +
+      issuesString +
+      ', ' +
+      projectString +
+      ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>';
+    projectIssuesString += '</ul>';
+  } else {
+    projectIssuesString = '<p class=\\"no-results with-all-link\\">No open issues.</p>';
+    projectIssuesString +=
+      '<div class=\\"all-link\\"><a onclick=\\"goToSubDetail(' +
+      issuesString +
+      ', ' +
+      projectString +
+      ', true)\\">View all <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></div>';
+  }
+  mb.window.webContents.executeJavaScript(
+    'document.getElementById("project-recent-issues").innerHTML = "' + projectIssuesString + '"',
+  );
 }
 
-function getProjectMRs(project) {
+async function getProjectMRs(project) {
   let projectMRsString = '';
   let jsonProjectObject = JSON.parse(JSON.stringify(project));
   jsonProjectObject.name_with_namespace = escapeQuotes(project.name_with_namespace);
@@ -2609,52 +2465,47 @@ function getProjectMRs(project) {
   jsonProjectObject.name = escapeQuotes(project.name);
   let projectString = "'" + escapeHtml(JSON.stringify(jsonProjectObject)) + "'";
   let mrsString = "'Merge Requests'";
-  fetch(
-    store.host +
-      '/api/v4/projects/' +
-      project.id +
-      '/merge_requests?state=opened&order_by=created_at&per_page=3&access_token=' +
-      store.access_token,
-  )
-    .then((result) => {
-      return result.json();
-    })
-    .then((mrs) => {
-      if (mrs.length > 0) {
-        projectMRsString += '<ul class=\\"list-container\\">';
-        for (let mr of mrs) {
-          projectMRsString += '<li class=\\"history-entry\\">';
-          projectMRsString +=
-            '<a href=\\"' +
-            mr.web_url +
-            '\\" target=\\"_blank\\">' +
-            escapeHtml(mr.title) +
-            '</a><span class=\\"namespace-with-time\\">Created ' +
-            timeSince(new Date(mr.created_at)) +
-            ' ago &middot; ' +
-            escapeHtml(mr.author.name) +
-            '</span></div></li>';
-        }
-        projectMRsString +=
-          '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' +
-          mrsString +
-          ', ' +
-          projectString +
-          ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>';
-        projectMRsString += '</ul>';
-      } else {
-        projectMRsString = '<p class=\\"no-results with-all-link\\">No open merge requests.</p>';
-        projectMRsString +=
-          '<div class=\\"all-link\\"><a onclick=\\"goToSubDetail(' +
-          mrsString +
-          ', ' +
-          projectString +
-          ', true)\\">View all <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></div>';
-      }
-      mb.window.webContents.executeJavaScript(
-        'document.getElementById("project-recent-mrs").innerHTML = "' + projectMRsString + '"',
-      );
-    });
+
+  const mrs = await GitLab.get(`projects/${project.id}/merge_requests`, {
+    state: 'opened',
+    order_by: 'created_at',
+    per_page: 3,
+  });
+
+  if (mrs.length > 0) {
+    projectMRsString += '<ul class=\\"list-container\\">';
+    for (let mr of mrs) {
+      projectMRsString += '<li class=\\"history-entry\\">';
+      projectMRsString +=
+        '<a href=\\"' +
+        mr.web_url +
+        '\\" target=\\"_blank\\">' +
+        escapeHtml(mr.title) +
+        '</a><span class=\\"namespace-with-time\\">Created ' +
+        timeSince(new Date(mr.created_at)) +
+        ' ago &middot; ' +
+        escapeHtml(mr.author.name) +
+        '</span></div></li>';
+    }
+    projectMRsString +=
+      '<li class=\\"more-link\\"><a onclick=\\"goToSubDetail(' +
+      mrsString +
+      ', ' +
+      projectString +
+      ')\\">View more <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path class=\\"icon-muted\\" fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></li>';
+    projectMRsString += '</ul>';
+  } else {
+    projectMRsString = '<p class=\\"no-results with-all-link\\">No open merge requests.</p>';
+    projectMRsString +=
+      '<div class=\\"all-link\\"><a onclick=\\"goToSubDetail(' +
+      mrsString +
+      ', ' +
+      projectString +
+      ', true)\\">View all <svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 16 16\\"><path fill-rule=\\"evenodd\\" d=\\"M10.7071,7.29289 C11.0976,7.68342 11.0976,8.31658 10.7071,8.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 C5.90237,11.3166 5.90237,10.6834 6.29289,10.2929 L8.58579,8 L6.29289,5.70711 C5.90237,5.31658 5.90237,4.68342 6.29289,4.29289 C6.68342,3.90237 7.31658,3.90237 7.70711,4.29289 L10.7071,7.29289 Z\\"/></svg></a></div>';
+  }
+  mb.window.webContents.executeJavaScript(
+    'document.getElementById("project-recent-mrs").innerHTML = "' + projectMRsString + '"',
+  );
 }
 
 function displayCommit(commit, project, focus = 'project') {
