@@ -1412,7 +1412,7 @@ async function getLastEvent() {
   });
 
   if (lastEvent && lastEvent.id !== lastEventId) {
-    lastEventId = event.id;
+    lastEventId = lastEvent.id;
     getLastCommits();
     getRecentComments();
   }
