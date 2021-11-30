@@ -1262,9 +1262,7 @@ async function startLogin() {
   challenge = base64URLEncode(sha256(verifier));
   await mb.window.loadURL(
     store.host +
-      '/oauth/authorize?client_id=2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee&redirect_uri=' +
-      store.host +
-      '&response_type=code&state=test&scope=read_api&code_challenge=' +
+      '/oauth/authorize?client_id=2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee&redirect_uri=https://gitdock.org/login-screen/&response_type=code&state=test&scope=read_api&code_challenge=' +
       challenge +
       '&code_challenge_method=S256',
   );
@@ -1285,7 +1283,7 @@ function handleLogin() {
         client_id: '2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee',
         code: code,
         grant_type: 'authorization_code',
-        redirect_uri: store.host,
+        redirect_uri: 'https://gitdock.org/login-screen/',
         code_verifier: verifier,
       }),
     })
