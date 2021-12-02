@@ -89,7 +89,7 @@ let verifier = '';
 let challenge = '';
 
 const mb = menubar({
-  showDockIcon: false,
+  showDockIcon: true,
   showOnAllWorkspaces: false,
   icon: __dirname + '/assets/gitlabTemplate.png',
   preloadWindow: true,
