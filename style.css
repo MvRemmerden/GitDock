@@ -812,6 +812,10 @@ a:hover {
   width: 100%;
   box-sizing: border-box;
 }
+.detail-view .detail-content .version-number {
+  font-size: 14px;
+  color: var(--disabled-background-color);
+}
 .detail-view .headline {
   margin: 1rem 0 0.5rem;
   display: inline-block;
