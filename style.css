@@ -105,7 +105,7 @@ a:hover {
   flex-direction: column;
   margin-bottom: 1rem;
 }
-.icon {
+svg {
   fill: var(--text-color);
 }
 .icon-muted {
@@ -439,7 +439,6 @@ a:hover {
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
-  width: fit-content;
 }
 .todo,
 .history-entry,
@@ -565,6 +564,7 @@ a:hover {
 }
 .list-container li.more-link a svg {
   margin: 2px 0 0 0;
+  fill: var(--muted-text-color);
 }
 .list-container li.more-link.empty .more-link-button {
   width: 30%;
@@ -577,11 +577,6 @@ a:hover {
   height: 1rem;
   margin: 0 1rem 0 0.5rem;
 }
-.list-container li svg.chevron {
-  width: 1rem;
-  margin: 0;
-  margin-left: auto;
-}
 .list-container li .name-with-namespace {
   display: flex;
   flex-direction: column;
@@ -591,6 +586,13 @@ a:hover {
   font-weight: normal;
   font-size: 0.825rem;
   color: var(--muted-text-color);
+}
+.list-container li .chevron-right-wrapper {
+  display: flex;
+  margin-left: auto;
+}
+.list-container li .chevron-right-wrapper svg {
+  margin: 0;
 }
 .all-link {
   margin-bottom: 1rem;
@@ -799,8 +801,10 @@ a:hover {
   cursor: pointer;
 }
 .detail-view .detail-header .detail-external-link a svg {
+  height: 1rem;
   cursor: pointer;
   fill: var(--text-color);
+  margin-right: 0;
 }
 .detail-view .detail-header .detail-external-link a:hover {
   background-color: var(--border-color);
@@ -911,6 +915,7 @@ a:hover {
 }
 .detail-view .detail-content #pagination button svg {
   width: 0.875rem;
+  height: 1rem;
   margin-right: 0.25rem;
 }
 .detail-view .detail-content #pagination button.next {
