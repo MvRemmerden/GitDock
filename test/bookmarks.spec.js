@@ -23,6 +23,7 @@ describe('"Bookmarks" section', function () {
       await addBookmark(this.app, 'https://gitlab.com/gitlab-org/gitlab/-/issues/1');
 
       const title = await this.app.client.$('#bookmark-title');
+      assert.equal(await title.isExisting(), true);
       assert.equal(await title.getText(), '500 error on MR approvers edit page (#1)');
 
       const deleteButton = await this.app.client.$('.bookmark-delete');
