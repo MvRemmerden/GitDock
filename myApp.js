@@ -52,6 +52,8 @@ const { JSDOM } = jsdom;
 const nodeCrypto = require('crypto');
 const processInfo = require('./lib/process-info');
 const version = require('./package.json').version;
+const QuickActions = require('./src/quick-actions');
+let quickActions;
 global.DOMParser = new JSDOM().window.DOMParser;
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
@@ -819,6 +821,10 @@ ipcMain.on('go-to-overview', (event, arg) => {
   currentProject = null;
 });
 
+ipcMain.on('go-to-settings', (event, arg) => {
+  openSettingsPage();
+});
+
 ipcMain.on('switch-issues', (event, arg) => {
   if (store.analytics) {
     visitor.event('Switch issues', arg.type, arg.label).send();
@@ -1122,6 +1128,10 @@ ipcMain.on('logout', (event, arg) => {
 
 mb.on('ready', () => {
   setupContextMenu();
+  quickActions = new QuickActions({
+    shortcut: ['CommandOrControl+Option+G', 'CommandOrControl+Option+P'],
+  });
+  quickActions.register();
 });
 
 if (store.access_token && store.user_id && store.username) {
