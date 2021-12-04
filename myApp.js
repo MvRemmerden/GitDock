@@ -1263,6 +1263,11 @@ function openSettingsPage() {
       '<div class="headline"><span class="name">Favorite projects</span></div><div id="favorite-projects"><ul class="list-container">';
     if (projects && projects.length > 0) {
       for (let project of projects) {
+        const icon =
+          project.visibility === 'public' && project.avatar_url
+            ? `<img class=\\"project-avatar\\" src=\\"${project.avatar_url}\\">`
+            : `<svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" class=\\"icon\\"/></svg>`;
+
         favoriteProjects +=
           '<li>' +
           projectIcon +
@@ -2051,6 +2056,10 @@ function displayUsersProjects() {
       jsonProjectObject.namespace.name = projectObject.namespace.name;
       jsonProjectObject.name = projectObject.name;
       let projectJson = "'" + escapeHtml(JSON.stringify(jsonProjectObject)) + "'";
+      const icon =
+        projectObject.visibility === 'public' && projectObject.avatar_url
+          ? `<img class=\\"project-avatar\\" src=\\"${projectObject.avatar_url}\\">`
+          : `<svg xmlns=\\"http://www.w3.org/2000/svg\\"><path fill-rule=\\"evenodd\\" clip-rule=\\"evenodd\\" d=\\"M2 13.122a1 1 0 00.741.966l7 1.876A1 1 0 0011 14.998V14h2a1 1 0 001-1V3a1 1 0 00-1-1h-2v-.994A1 1 0 009.741.04l-7 1.876A1 1 0 002 2.882v10.24zM9 2.31v11.384l-5-1.34V3.65l5-1.34zM11 12V4h1v8h-1z\\" class=\\"icon\\"/></svg>`;
       favoriteProjectsString +=
         '<li onclick="goToDetail(' + projectString + ', ' + projectJson + ')">' + projectIcon;
       favoriteProjectsString +=
@@ -2778,7 +2787,37 @@ function addProject(link, target) {
     GitLab.parseUrl(link)
       .then((project) => {
         if (project.type && project.type != 'projects') {
-          displayAddError('project', target);
+          let projectWithNamespace = encodeURIComponent(link.split(store.host + '/')[1]);
+          GitLab.get('projects/' + projectWithNamespace)
+            .then((project) => {
+              let projects = store['favorite-projects'] || [];
+              projects.push({
+                id: project.id,
+                visibility: project.visibility,
+                web_url: project.web_url,
+                name: project.name,
+                title: project.name,
+                namespace: {
+                  name: project.namespace.name,
+                },
+                parent_name: project.name_with_namespace,
+                parent_url: project.namespace.web_url,
+                name_with_namespace: project.name_with_namespace,
+                open_issues_count: project.open_issues_count,
+                last_activity_at: project.last_activity_at,
+                avatar_url: project.avatar_url,
+                star_count: project.star_count,
+                forks_count: project.forks_count,
+              });
+              store['favorite-projects'] = projects;
+              if (target == '-settings-') {
+                openSettingsPage();
+              }
+              displayUsersProjects(projects);
+            })
+            .catch((error) => {
+              displayAddError('project', target);
+            });
         } else {
           let projects = store['favorite-projects'] || [];
           projects.push(project);

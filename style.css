@@ -577,6 +577,12 @@ svg {
   height: 1rem;
   margin: 0 1rem 0 0.5rem;
 }
+.list-container li img.project-avatar {
+  width: 20px;
+  height: 20px;
+  margin: 0 14px 0 6px;
+  border-radius: 0.25rem;
+}
 .list-container li .name-with-namespace {
   display: flex;
   flex-direction: column;
@@ -761,8 +767,7 @@ svg {
 .detail-view .detail-header #project-detail-information img {
   width: 1.5rem;
   height: 1.5rem;
-  background-color: var(--border-color);
-  border-radius: 1rem;
+  border-radius: 0.375rem;
   margin-right: 0.75rem;
 }
 .detail-view .detail-header #project-detail-information div {
