@@ -1,7 +1,7 @@
 {
   "name": "gitdock",
   "productName": "GitDock",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "A better way of managing all your work on GitLab.",
   "main": "myApp.js",
   "scripts": {
