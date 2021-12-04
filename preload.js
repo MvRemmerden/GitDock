@@ -5,6 +5,7 @@ const api = {
   goToSubDetail: (value) => ipcRenderer.send('sub-detail-page', value),
   goBackToDetail: () => ipcRenderer.send('back-to-detail-page'),
   goToOverview: () => ipcRenderer.send('go-to-overview'),
+  goToSettings: () => ipcRenderer.send('go-to-settings'),
   switchIssues: (value) => ipcRenderer.send('switch-issues', value),
   switchMRs: (value) => ipcRenderer.send('switch-mrs', value),
   switchPage: (value) => ipcRenderer.send('switch-page', value),

@@ -31,6 +31,10 @@ function goToOverview() {
   document.body.style.overflow = 'auto';
 }
 
+function goToSettings() {
+  window.electron.goToSettings();
+}
+
 function switchIssues(value, type, text) {
   let object = {
     label: value,

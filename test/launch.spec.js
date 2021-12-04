@@ -11,10 +11,9 @@ describe('Application launch', function () {
 
   stopAppAfterEach();
 
-  it('shows an initial window', function () {
-    return this.app.client.getWindowCount().then(function (count) {
-      assert.equal(count, 1);
-    });
+  it('starts the menubar and quick actions windows', async function () {
+    const count = await this.app.client.getWindowCount();
+    assert.equal(count, 2);
   });
   it('has the right size', function () {
     return this.app.client.browserWindow.getSize().then(function (sizes) {
