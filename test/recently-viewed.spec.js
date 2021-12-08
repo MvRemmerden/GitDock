@@ -19,14 +19,14 @@ describe('"Recently viewed" section', function () {
     },
   ];
 
-  const supportedBrowsersText = async (app) => {
-    const element = await app.client.$('.supported-browsers');
-    return element.getText();
+  const supportedBrowsersText = async (page) => {
+    const element = await page.$('.supported-browsers');
+    return element.innerText();
   };
 
-  const historyTexts = async (app) => {
-    const elements = await app.client.$$('.history-entry');
-    const texts = await Promise.all(elements.map((element) => element.getText()));
+  const historyTexts = async (page) => {
+    const elements = await page.$$('.history-entry');
+    const texts = await Promise.all(elements.map((element) => element.innerText()));
     return texts;
   };
 
@@ -35,12 +35,11 @@ describe('"Recently viewed" section', function () {
       describe('without history', function () {
         stopAppAfterEach();
         this.beforeEach(async function () {
-          this.app = newApp({ platform, loggedIn: true });
-          await this.app.start();
+          await newApp(this, { platform, loggedIn: true });
         });
 
         it('renders the correct message', async function () {
-          const actual = await supportedBrowsersText(this.app);
+          const actual = await supportedBrowsersText(this.window);
           assert.equal(actual, emptyMessage);
         });
       });
@@ -48,7 +47,7 @@ describe('"Recently viewed" section', function () {
       describe('with history', function () {
         stopAppAfterEach();
         this.beforeEach(async function () {
-          this.app = newApp({
+          await newApp(this, {
             platform,
             loggedIn: true,
             browserHistory: [
@@ -62,11 +61,10 @@ describe('"Recently viewed" section', function () {
               ],
             ],
           });
-          await this.app.start();
         });
 
         it('renders the history', async function () {
-          const actual = await historyTexts(this.app);
+          const actual = await historyTexts(this.window);
 
           assert.equal(actual.length, 1);
           assert.equal(actual[0].includes('Test Issue (#1)'), 1);
@@ -83,12 +81,11 @@ describe('"Recently viewed" section', function () {
     describe('without history', function () {
       stopAppAfterEach();
       this.beforeEach(async function () {
-        this.app = newApp({ platform, loggedIn: true });
-        await this.app.start();
+        await newApp(this, { platform, loggedIn: true });
       });
 
       it('renders the correct message', async function () {
-        const actual = await supportedBrowsersText(this.app);
+        const actual = await supportedBrowsersText(this.window);
         assert.equal(actual, emptyMessage);
       });
     });
@@ -96,18 +93,17 @@ describe('"Recently viewed" section', function () {
     describe('with history', function () {
       stopAppAfterEach();
       this.beforeEach(async function () {
-        this.app = newApp({
+        await newApp(this, {
           platform,
           loggedIn: true,
           browserHistory: [
             { title: 'Test Issue #1', url: 'https://gitlab.com/user/project/-/issues/1' },
           ],
         });
-        await this.app.start();
       });
 
       it('renders the info message as if there was no history', async function () {
-        const actual = await supportedBrowsersText(this.app);
+        const actual = await supportedBrowsersText(this.window);
         assert.equal(actual, emptyMessage);
       });
     });

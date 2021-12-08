@@ -4,40 +4,38 @@ const { stopAppAfterEach, newApp } = require('./util');
 describe('"Bookmarks" section', function () {
   this.timeout(25000);
 
-  const addBookmark = async (app, link) => {
-    const bookmarkInput = await app.client.$('#bookmark-link');
-    await bookmarkInput.setValue(link);
-    const addButton = await app.client.$('#bookmark-add-button');
-    await addButton.click();
+  const addBookmark = async (window, link) => {
+    let element = await window.$('#bookmark-link');
+    await element.fill(link);
+    await window.click('#bookmark-add-button');
   };
 
   describe('without bookmarks', function () {
     beforeEach(async function () {
-      this.app = newApp({ loggedIn: true });
-      await this.app.start();
+      await newApp(this, { loggedIn: true });
     });
 
     stopAppAfterEach();
 
     it('can add and delete a bookmark', async function () {
-      await addBookmark(this.app, 'https://gitlab.com/gitlab-org/gitlab/-/issues/1');
+      await addBookmark(this.window, 'https://gitlab.com/gitlab-org/gitlab/-/issues/1');
 
-      const title = await this.app.client.$('#bookmark-title');
-      assert.equal(await title.isExisting(), true);
-      assert.equal(await title.getText(), '500 error on MR approvers edit page (#1)');
+      const title = this.window.locator('#bookmark-title');
+      assert.equal(await title.innerText(), '500 error on MR approvers edit page (#1)');
 
-      const deleteButton = await this.app.client.$('.bookmark-delete');
-      await deleteButton.click();
+      await this.window.click('.bookmark-delete');
 
-      const bookmarkInput = await this.app.client.$('#bookmark-link');
-      assert.equal(await bookmarkInput.isExisting(), true);
-      assert.equal(await title.isExisting(), false);
+      const bookmarkInput = this.window.locator('#bookmark-link');
+      assert.equal(await bookmarkInput.count(), 1);
+      assert.equal(await title.count(), 0);
     });
   });
 
   describe('with bookmarks', function () {
+    const FIRST_BOOKMARK_URL = 'https://gitlab.com/user/project/-/merge_requests/1';
+
     beforeEach(async function () {
-      this.app = newApp({
+      await newApp(this, {
         loggedIn: true,
         bookmarks: [
           {
@@ -46,41 +44,41 @@ describe('"Bookmarks" section', function () {
             parent_name: 'Test Project',
             parent_url: 'https://gitlab.com/user/project',
             type: 'merge_request',
-            web_url: 'https://gitlab.com/user/project/-/merge_requests/1',
+            web_url: FIRST_BOOKMARK_URL,
           },
         ],
       });
-      await this.app.start();
     });
 
     stopAppAfterEach();
 
     it('can delete a bookmark', async function () {
-      const title = await this.app.client.$('#bookmark-title');
-      assert.equal(await title.isExisting(), true);
+      const title = this.window.locator('#bookmark-title');
+      assert.equal(await title.count(), 1);
 
-      const deleteButton = await this.app.client.$('.bookmark-delete');
-      await deleteButton.click();
+      await this.window.click('.bookmark-delete');
 
-      assert.equal(await title.isExisting(), false);
+      assert.equal(await title.count(), 0);
     });
 
     it('can add a bookmark', async function () {
-      const addBookmarksButton = await this.app.client.$('#add-bookmark-dialog a');
-      await addBookmarksButton.click();
+      await this.window.click('#add-bookmark-dialog a');
 
-      await addBookmark(this.app, 'https://gitlab.com/gitlab-org/gitlab/-/issues/1');
-      const titles = await this.app.client.$$('.bookmark-information a');
-      assert.equal(titles.length, 2);
+      await addBookmark(this.window, 'https://gitlab.com/gitlab-org/gitlab/-/issues/1');
+
+      const titles = this.window.locator('.bookmark-information a');
+      assert.equal(await titles.count(), 2);
     });
 
     it('cannot add a bookmark twice', async function () {
-      const addBookmarksButton = await this.app.client.$('#add-bookmark-dialog a');
-      await addBookmarksButton.click();
+      await this.window.click('#add-bookmark-dialog a');
 
-      await addBookmark(this.app, 'https://gitlab.com/user/project/-/merge_requests/1');
-      const error = await this.app.client.$('#add-bookmark-error');
-      assert.equal(await error.getText(), 'This bookmark has already been added.');
+      await addBookmark(this.window, FIRST_BOOKMARK_URL);
+
+      assert.equal(
+        await this.window.textContent('#add-bookmark-error'),
+        'This bookmark has already been added.',
+      );
     });
   });
 });

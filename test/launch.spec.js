@@ -5,44 +5,32 @@ describe('Application launch', function () {
   this.timeout(25000);
 
   beforeEach(async function () {
-    this.app = newApp();
-    return this.app.start();
+    await newApp(this);
   });
 
   stopAppAfterEach();
 
   it('starts the menubar and quick actions windows', async function () {
-    const count = await this.app.client.getWindowCount();
-    assert.equal(count, 2);
-  });
-  it('has the right size', function () {
-    return this.app.client.browserWindow.getSize().then(function (sizes) {
-      assert.equal(sizes[0], 550) && assert.equal(sizes[1], 700);
-    });
+    const windows = await this.app.windows();
+    assert.equal(windows.length, 1);
   });
   it('can log in', async function () {
-    let element = await this.app.client.$('#instance-checkbox');
-    return element
-      .click()
-      .then(async () => {
-        let token = await this.app.client.$('#access-token-input');
-        let url = await this.app.client.$('#instance-url-input');
-        await token.setValue(process.env.ACCESS_TOKEN);
-        await url.setValue('https://gitlab.com');
-        let button = await this.app.client.$('#login-instance-button');
-        return button.click();
-      })
-      .then(async () => {
-        let issues = await this.app.client.$('#issues-count');
-        let mrs = await this.app.client.$('#mrs-count');
-        let todos = await this.app.client.$('#todos-count');
-        await issues.waitForExist({ timeout: 5000 });
-        let issuesExists = await issues.isExisting();
-        let mrsExists = await mrs.isExisting();
-        let todosExists = await todos.isExisting();
-        assert.equal(issuesExists, true);
-        assert.equal(mrsExists, true);
-        assert.equal(todosExists, true);
-      });
+    await this.window.click('#instance-checkbox');
+    this.window.$eval(
+      '#access-token-input',
+      (el, token) => (el.value = token),
+      process.env.ACCESS_TOKEN,
+    );
+    this.window.$eval('#instance-url-input', (el) => (el.value = 'https://gitlab.com'));
+    await this.window.click('#login-instance-button');
+    await this.window.waitForNavigation();
+
+    const issues = this.window.locator('#issues-count');
+    const mrs = this.window.locator('#mrs-count');
+    const todos = this.window.locator('#todos-count');
+
+    assert.equal(await issues.count(), 1);
+    assert.equal(await mrs.count(), 1);
+    assert.equal(await todos.count(), 1);
   });
 });
