@@ -1,6 +1,5 @@
-const electronPath = require('electron');
 const path = require('path');
-const Application = require('spectron').Application;
+const { _electron: electron } = require('playwright-core');
 
 const userDataIfLoggedIn = (loggedIn = false) => {
   if (!loggedIn) {
@@ -23,25 +22,20 @@ module.exports = {
    *  bookmarks?: { title: string, type: string, web_url: string, parent_url: string, added: number, parent_name: string }[] },
    * }
    */
-  newApp({ theme, loggedIn, platform = process.platform, browserHistory, bookmarks = [] } = {}) {
+  async newApp(
+    thisValue,
+    { theme, loggedIn, platform = process.platform, browserHistory, bookmarks = [] } = {},
+  ) {
     const store = {
       theme,
       ...userDataIfLoggedIn(loggedIn),
       bookmarks,
     };
 
-    const app = new Application({
-      path: electronPath,
-      args: [
-        '-r',
-        `${__dirname}/mocks.js`,
-        '--no-sandbox',
-        '--ignore-certificate-error',
-        '--disable-dev-shm-usage',
-        '--whitelisted-ips=',
-        path.join(__dirname, '..', '..'),
-      ],
+    const app = await electron.launch({
+      args: ['-r', `${__dirname}/mocks.js`, path.join(__dirname, '..', '..', 'myApp.js')],
       env: {
+        ...process.env,
         NODE_ENV: 'test',
         MOCK_STORE: typeof store === 'object' ? JSON.stringify(store) : '',
         MOCK_PLATFORM: platform,
@@ -49,12 +43,22 @@ module.exports = {
         LOGGED_IN: loggedIn ? 'true' : '',
       },
     });
-    return app;
+    const window = await app.firstWindow();
+    await window.waitForSelector('[data-testid="gitdock"]');
+    window.setDefaultTimeout(5000);
+
+    if (thisValue) {
+      thisValue.app = app;
+      thisValue.window = window;
+    }
+
+    return { app, window };
   },
   stopAppAfterEach() {
     afterEach(async function () {
-      if (this.app && this.app.isRunning()) {
-        await this.app.stop();
+      if (this.app) {
+        await this.app.close();
+        this.app = null;
       }
     });
   },
