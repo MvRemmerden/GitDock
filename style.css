@@ -6,6 +6,7 @@ body {
   font-family: var(--font-family);
   font-size: 15px;
   line-height: 1.25rem;
+  -webkit-app-region: drag;
 }
 :focus {
   outline: 0;
@@ -19,6 +20,12 @@ a {
 }
 a:hover {
   text-decoration: underline;
+}
+a,
+button,
+*[onclick],
+.custom-select {
+  -webkit-app-region: no-drag;
 }
 #login-page-wrapper {
   display: flex;
