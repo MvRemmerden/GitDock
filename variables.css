@@ -13,3 +13,14 @@
   --disabled-background-color: #484f58;
   --font-family: 'Inter', sans-serif !important;
 }
+[data-theme='light'] {
+  --background-color: #fff;
+  --text-color: #24292f;
+  --muted-text-color: #57606a;
+  --placeholder-text-color: #6e7781;
+  --panel-background-color: #fff;
+  --hover-color: #f6f8fa;
+  --dropdown-hover-color: #f0f2f4;
+  --border-color: #d0d7de;
+  --lighter-background-color: #d8dee4;
+}

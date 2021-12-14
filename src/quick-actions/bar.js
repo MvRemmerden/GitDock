@@ -318,28 +318,9 @@ function scroll(element, up) {
 
 function changeTheme() {
   if (gitdock.getTheme() == 'light') {
-    document.documentElement.style.setProperty('--background-color', '#fff');
-    document.documentElement.style.setProperty('--text-color', '#24292f');
-    document.documentElement.style.setProperty('--muted-text-color', '#57606a');
-    document.documentElement.style.setProperty('--placeholder-text-color', '#6e7781');
-    document.documentElement.style.setProperty('--panel-background-color', '#fff');
-    document.documentElement.style.setProperty('--hover-color', '#f6f8fa');
-    document.documentElement.style.setProperty('--dropdown-hover-color', '#f0f2f4');
-    document.documentElement.style.setProperty('--border-color', '#d0d7de');
-    document.documentElement.style.setProperty('--lighter-background-color', '#d8dee4');
+    document.documentElement.setAttribute('data-theme', 'light');
   } else if (gitdock.getTheme() == 'dark') {
-    document.documentElement.style.setProperty('--background-color', '#090c10');
-    document.documentElement.style.setProperty('--text-color', '#c9d1d9');
-    document.documentElement.style.setProperty('--muted-text-color', '#aaa');
-    document.documentElement.style.setProperty(
-      '--placeholder-text-color',
-      'rgba(255, 255, 255, .7)',
-    );
-    document.documentElement.style.setProperty('--panel-background-color', '#0d1117');
-    document.documentElement.style.setProperty('--hover-color', '#161b22');
-    document.documentElement.style.setProperty('--dropdown-hover-color', '#1f242c');
-    document.documentElement.style.setProperty('--border-color', '#30363d');
-    document.documentElement.style.setProperty('--lighter-background-color', '#21262d');
+    document.documentElement.setAttribute('data-theme', 'light');
   }
 }
 
