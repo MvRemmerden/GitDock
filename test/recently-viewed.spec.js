@@ -20,14 +20,12 @@ describe('"Recently viewed" section', function () {
   ];
 
   const supportedBrowsersText = async (page) => {
-    const element = await page.$('.supported-browsers');
-    return element.innerText();
+    return page.innerText('.supported-browsers');
   };
 
   const historyTexts = async (page) => {
-    const elements = await page.$$('.history-entry');
-    const texts = await Promise.all(elements.map((element) => element.innerText()));
-    return texts;
+    const elements = await page.locator('.history-entry');
+    return elements.allInnerTexts();
   };
 
   SUPPORTED_PLATFORMS.forEach(function ({ platform, emptyMessage }) {

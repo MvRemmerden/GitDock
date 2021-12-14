@@ -4,10 +4,10 @@ const { newApp, stopAppAfterEach } = require('./util');
 describe('Themes', function () {
   this.timeout(25000);
 
-  const getBackgroundColor = async (page) =>
-    await page.evaluate(() =>
-      document.documentElement.style.getPropertyValue('--background-color'),
-    );
+  const getBackgroundColor = async (page) => {
+    const body = await page.waitForSelector('body');
+    return await body.evaluate((button) => getComputedStyle(button).backgroundColor);
+  };
 
   describe('dark theme', function () {
     stopAppAfterEach();
@@ -19,7 +19,7 @@ describe('Themes', function () {
     it('has the correct background color', async function () {
       const color = await getBackgroundColor(this.window);
 
-      assert.equal(color, '#090c10');
+      assert.equal(color, 'rgb(9, 12, 16)');
     });
   });
 
@@ -33,7 +33,7 @@ describe('Themes', function () {
     it('has the correct background color', async function () {
       const color = await getBackgroundColor(this.window);
 
-      assert.equal(color, '#fff');
+      assert.equal(color, 'rgb(255, 255, 255)');
     });
   });
 });

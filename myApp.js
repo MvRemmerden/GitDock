@@ -3001,59 +3001,11 @@ function changeTheme(option = 'light', manual = false) {
   store.theme = option;
   if (option == 'light') {
     mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--background-color", "#fff")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--text-color", "#24292f")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--muted-text-color", "#57606a")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--placeholder-text-color", "#6e7781")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--panel-background-color", "#fff")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--hover-color", "#f6f8fa")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--dropdown-hover-color", "#f0f2f4")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--border-color", "#d0d7de")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--lighter-background-color", "#d8dee4")',
+      'document.documentElement.setAttribute("data-theme", "light");',
     );
   } else if (option == 'dark') {
     mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--background-color", "#090c10")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--text-color", "#c9d1d9")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--muted-text-color", "#aaa")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--placeholder-text-color", "rgba(255, 255, 255, .7)")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--panel-background-color", "#0d1117")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--hover-color", "#161b22")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--dropdown-hover-color", "#1f242c")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--border-color", "#30363d")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.style.setProperty("--lighter-background-color", "#21262d")',
+      'document.documentElement.setAttribute("data-theme", "dark");',
     );
   }
   if (manual) {

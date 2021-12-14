@@ -5,8 +5,7 @@ describe('"Bookmarks" section', function () {
   this.timeout(25000);
 
   const addBookmark = async (window, link) => {
-    let element = await window.$('#bookmark-link');
-    await element.fill(link);
+    await window.fill('#bookmark-link', link);
     await window.click('#bookmark-add-button');
   };
 
