@@ -20,6 +20,7 @@ const api = {
   deleteProject: (value) => ipcRenderer.send('delete-project', value),
   changeTheme: (value) => ipcRenderer.send('change-theme', value),
   changeAnalytics: (value) => ipcRenderer.send('change-analytics', value),
+  changeKeepVisible: (value) => ipcRenderer.send('change-keep-visible', value),
   startLogin: () => ipcRenderer.send('start-login'),
   startManualLogin: (value) => ipcRenderer.send('start-manual-login', value),
   logout: () => ipcRenderer.send('logout'),

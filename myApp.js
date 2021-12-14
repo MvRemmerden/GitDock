@@ -118,6 +118,7 @@ const mb = menubar({
       contextIsolation: process.env.NODE_ENV !== 'test',
       enableRemoteModule: process.env.NODE_ENV === 'test',
     },
+    alwaysOnTop: store.keep_visible,
   },
 });
 
@@ -1111,6 +1112,11 @@ ipcMain.on('change-analytics', (event, arg) => {
   }
 });
 
+ipcMain.on('change-keep-visible', (event, arg) => {
+  store.keep_visible = arg;
+  mb.window.setAlwaysOnTop(arg);
+});
+
 ipcMain.on('start-login', (event, arg) => {
   startLogin();
 });
@@ -1298,6 +1304,13 @@ function openSettingsPage() {
       '<li id="add-project-dialog" class="more-link"><a onclick="startProjectDialog()">Add another project ' +
       chevronRightIcon +
       '</a></li></ul></div>';
+    let preferences =
+      '<div class="headline"><span class="name">Preferences</span></div><div id="preferences"><form id="prerefences-form"><div><input type="checkbox" id="keep-visible" name="keep-visible" ';
+    if (store.keep_visible) {
+      preferences += ' checked="checked"';
+    }
+    preferences +=
+      'onchange="changeKeepVisible(this.checked)"/><label for="keep-visible">Keep GitDock visible, even when losing focus.</label></div></form></div>';
     let analyticsString =
       '<div class="headline"><span class="name">Analytics</span></div><div id="analytics">';
     analyticsString +=
@@ -1305,12 +1318,12 @@ function openSettingsPage() {
     analyticsString +=
       '<form id="analytics-form"><div><input type="radio" id="analytics-yes" name="analytics" value="yes"' +
       (store.analytics ? ' checked' : '') +
-      ' onclick="changeAnalytics(true)"><label for="analytics-yes">Yes, collect anonymous data</label></div><div><input type="radio" id="analytics-no" name="analytics" value="no"' +
+      ' onclick="changeAnalytics(true)"><label for="analytics-yes">Yes, collect anonymous data.</label></div><div><input type="radio" id="analytics-no" name="analytics" value="no"' +
       (!store.analytics ? ' checked' : '') +
-      ' onclick="changeAnalytics(false)"><label for="analytics-no">No, do not collect any data</label></div></form>';
+      ' onclick="changeAnalytics(false)"><label for="analytics-no">No, do not collect any data.</label></div></form>';
     let logout =
       '<div class="headline"><span class="name">User</span></div><div id="user-administration"><button id="logout-button" onclick="logout()">Log out</button></div>';
-    settingsString = theme + favoriteProjects + analyticsString + logout;
+    settingsString = theme + favoriteProjects + preferences + analyticsString + logout;
   } else {
     settingsString = theme;
   }
@@ -1421,6 +1434,7 @@ async function saveUser(temp_access_token, url = store.host) {
       store.host = url;
       store.theme = 'dark';
       store.analytics = false;
+      store.keep_visible = false;
       getUsersProjects().then(async (projects) => {
         if (projects && projects.length > 0) {
           store['favorite-projects'] = projects;
@@ -3063,6 +3077,7 @@ function logout() {
   deleteFromStore('bookmarks');
   deleteFromStore('host');
   deleteFromStore('plan');
+  deleteFromStore('keep-visible');
   deleteFromStore('analytics');
   deleteFromStore('analytics_id');
   mb.window.webContents.session.clearCache();

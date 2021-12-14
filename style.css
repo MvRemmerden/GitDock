@@ -984,6 +984,17 @@ svg {
   margin-left: 0;
   margin-right: 0.5rem;
 }
+#preferences {
+  margin-bottom: 1rem;
+}
+#preferences div {
+  display: flex;
+  align-items: center;
+  line-height: 100%;
+}
+#preferences input {
+  margin: 0 0.5rem 0 0;
+}
 @-moz-keyframes spin {
   100% {
     -moz-transform: rotate(360deg);
