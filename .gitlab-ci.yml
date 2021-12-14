@@ -48,7 +48,7 @@ install-dependencies-mac:
       - $CI_PROJECT_ID != "28462485"
   tags:
     - shared-macos-amd64
-  image: macos-11-xcode-12
+  image: macos-12-xcode-13
   script:
     - npm install -g npm@latest
     - npm ci
@@ -158,7 +158,7 @@ build-mac:
       - $CI_PROJECT_ID != "28462485"
   tags:
     - shared-macos-amd64
-  image: macos-11-xcode-12
+  image: macos-12-xcode-13
   needs: ['install-dependencies-mac']
   cache:
     key: $CI_COMMIT_REF_SLUG-mac
