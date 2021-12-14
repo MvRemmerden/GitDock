@@ -109,6 +109,10 @@ function changeAnalytics(value) {
   window.electron.changeAnalytics(value);
 }
 
+function changeKeepVisible(value) {
+  window.electron.changeKeepVisible(value);
+}
+
 function startLogin() {
   window.electron.startLogin();
 }
