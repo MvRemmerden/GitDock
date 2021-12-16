@@ -1426,7 +1426,7 @@ function sha256(buffer) {
 
 async function saveUser(temp_access_token, url = store.host) {
   try {
-    const result = await GitLab.get('user', { access_token: temp_access_token });
+    const result = await GitLab.get('user', { access_token: temp_access_token }, url);
     if (result && result.id && result.username) {
       store.access_token = temp_access_token;
       store.user_id = result.id;
