@@ -320,7 +320,7 @@ function changeTheme() {
   if (gitdock.getTheme() == 'light') {
     document.documentElement.setAttribute('data-theme', 'light');
   } else if (gitdock.getTheme() == 'dark') {
-    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.setAttribute('data-theme', 'dark');
   }
 }
 
