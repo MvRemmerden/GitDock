@@ -23,6 +23,8 @@ a:hover {
 }
 a,
 button,
+label,
+input,
 *[onclick],
 .custom-select {
   -webkit-app-region: no-drag;
