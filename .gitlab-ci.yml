@@ -5,6 +5,7 @@ stages:
   - build
   - upload
   - release
+  - bump
 
 variables:
   PACKAGE_REGISTRY_URL: '${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/gitdock'
@@ -223,14 +224,6 @@ upload:
 release:
   stage: release
   needs:
-    - job: build-mac
-      artifacts: true
-    - job: build-linux
-      artifacts: true
-    - job: build-windows
-      artifacts: true
-    - job: release-version-creation
-      artifacts: true
     - upload
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   only:
@@ -262,3 +255,13 @@ release:
           url: '${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock-${VERSION}.rpm'
           filepath: '/GitDock-${VERSION}.rpm'
           link_type: 'other'
+
+bump:
+  stage: bump
+  only:
+    - tags
+  tags:
+    - shared-macos-amd64
+  image: macos-12-xcode-13
+  script:
+    - brew bump-cask-pr --version v${VERSION} --url https://gitlab.com/mvanremmerden/gitdock/-/releases/v${VERSION}downloads/GitDock-${VERSION}.dmg gitdock
