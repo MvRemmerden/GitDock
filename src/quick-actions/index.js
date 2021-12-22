@@ -7,19 +7,18 @@ const PRELOAD_PATH = path.join(__dirname, 'preload.js');
 let cpWindow;
 
 module.exports = class QuickActions {
-  constructor({ shortcut }) {
-    this.shortcut = shortcut;
+  constructor() {
     cpWindow = this.newWindow();
     cpWindow.on('blur', () => {
       cpWindow.hide();
     });
   }
 
-  async register() {
-    globalShortcut.registerAll(this.shortcut, async () => this.open());
+  async register({ shortcut }) {
+    this.unregister();
 
-    ipcMain.removeAllListeners('open-gitlab');
-    ipcMain.removeAllListeners('hide-quick-actions');
+    globalShortcut.registerAll(shortcut, async () => this.open());
+
     ipcMain.on('open-gitlab', (_, arg) => {
       if (arg.indexOf(store.host) !== -1) {
         shell.openExternal(`${arg}`);
@@ -30,6 +29,13 @@ module.exports = class QuickActions {
     ipcMain.on('hide-quick-actions', () => {
       cpWindow.hide();
     });
+  }
+
+  async unregister() {
+    globalShortcut.unregisterAll();
+
+    ipcMain.removeAllListeners('open-gitlab');
+    ipcMain.removeAllListeners('hide-quick-actions');
   }
 
   async open() {

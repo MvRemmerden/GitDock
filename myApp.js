@@ -1061,12 +1061,23 @@ ipcMain.on('add-project', (event, arg) => {
   addProject(arg.input, arg.target);
 });
 
+ipcMain.on('add-shortcut', (event, arg) => {
+  if (store.analytics) {
+    visitor.event('Add shortcut').send();
+  }
+  addShortcut(arg);
+});
+
 ipcMain.on('start-bookmark-dialog', (event, arg) => {
   startBookmarkDialog();
 });
 
 ipcMain.on('start-project-dialog', (event, arg) => {
   startProjectDialog();
+});
+
+ipcMain.on('start-shortcut-dialog', (event, arg) => {
+  startShortcutDialog();
 });
 
 ipcMain.on('delete-bookmark', (event, hashedUrl) => {
@@ -1094,6 +1105,12 @@ ipcMain.on('delete-project', (event, arg) => {
   //TODO Implement better way to refresh view after deleting project
   displayUsersProjects();
   openSettingsPage();
+});
+
+ipcMain.on('delete-shortcut', (event, arg) => {
+  store.shortcuts = store.shortcuts.filter((keys) => keys !== arg);
+  setupQuickActions();
+  repaintShortcuts();
 });
 
 ipcMain.on('change-theme', (event, arg) => {
@@ -1134,15 +1151,12 @@ ipcMain.on('logout', (event, arg) => {
 
 mb.on('ready', () => {
   setupContextMenu();
-  quickActions = new QuickActions({
-    shortcut: ['CommandOrControl+Option+G', 'CommandOrControl+Option+P'],
-  });
-  quickActions.register();
+  setupQuickActions();
 });
 
 if (store.access_token && store.user_id && store.username) {
   mb.on('after-create-window', () => {
-    //mb.window.webContents.openDevTools();
+    mb.window.webContents.openDevTools();
     mb.showWindow();
     changeTheme(store.theme, false);
 
@@ -1241,6 +1255,16 @@ function setupGenericContextMenu(baseMenuItems) {
   });
 }
 
+function setupQuickActions() {
+  if (!quickActions) {
+    quickActions = new QuickActions();
+  }
+
+  quickActions.register({
+    shortcut: store.shortcuts,
+  });
+}
+
 function openSettingsPage() {
   if (!mb._isVisible) {
     mb.showWindow();
@@ -1311,6 +1335,26 @@ function openSettingsPage() {
     }
     preferences +=
       'onchange="changeKeepVisible(this.checked)"/><label for="keep-visible">Keep GitDock visible, even when losing focus.</label></div></form></div>';
+    let shortcut =
+      '<div class="headline"><span class="name">Command Palette shortcuts</span></div><div id="shortcut"><p>To learn more about which keyboard shortcuts you can configure, visit the <a href="https://www.electronjs.org/docs/latest/api/accelerator" target="_blank">Electron Accelerator page</a>.</p>';
+    if (store.shortcuts) {
+      shortcut += '<ul class="list-container">';
+      store.shortcuts.forEach((keys, index) => {
+        shortcut +=
+          '<li>' +
+          keys +
+          '<div class="bookmark-delete-wrapper"><div class="bookmark-delete" onclick="deleteShortcut(\'' +
+          keys +
+          '\')">' +
+          removeIcon +
+          '</div></li>';
+      });
+      shortcut +=
+        '<li id="add-shortcut-dialog" class="more-link"><a onclick="startShortcutDialog()">Add another shortcut ' +
+        chevronRightIcon +
+        '</a></li></ul>';
+    }
+    shortcut += '</div>';
     let analyticsString =
       '<div class="headline"><span class="name">Analytics</span></div><div id="analytics">';
     analyticsString +=
@@ -1323,7 +1367,7 @@ function openSettingsPage() {
       ' onclick="changeAnalytics(false)"><label for="analytics-no">No, do not collect any data.</label></div></form>';
     let logout =
       '<div class="headline"><span class="name">User</span></div><div id="user-administration"><button id="logout-button" onclick="logout()">Log out</button></div>';
-    settingsString = theme + favoriteProjects + preferences + analyticsString + logout;
+    settingsString = theme + favoriteProjects + preferences + shortcut + analyticsString + logout;
   } else {
     settingsString = theme;
   }
@@ -1341,6 +1385,31 @@ function openSettingsPage() {
   );
   mb.window.webContents.executeJavaScript(
     'document.getElementById("' + store.theme + '-mode").classList.add("active")',
+  );
+}
+
+function repaintShortcuts() {
+  let shortcut =
+    '<p>To learn more about which keyboard shortcuts you can configure, visit the <a href="https://www.electronjs.org/docs/latest/api/accelerator" target="_blank">Electron Accelerator page</a>.</p><ul class="list-container">';
+  if (store.shortcuts) {
+    store.shortcuts.forEach((keys, index) => {
+      shortcut +=
+        '<li>' +
+        keys +
+        '<div class="bookmark-delete-wrapper"><div class="bookmark-delete" onclick="deleteShortcut(\'' +
+        keys +
+        '\')">' +
+        removeIcon +
+        '</div></li>';
+    });
+    shortcut +=
+      '<li id="add-shortcut-dialog" class="more-link"><a onclick="startShortcutDialog()">Add another shortcut ' +
+      chevronRightIcon +
+      '</a></li></ul>';
+  }
+  shortcut += '</div>';
+  mb.window.webContents.executeJavaScript(
+    'document.getElementById("shortcut").innerHTML = "' + escapeQuotes(shortcut) + '"',
   );
 }
 
@@ -1432,9 +1501,6 @@ async function saveUser(temp_access_token, url = store.host) {
       store.user_id = result.id;
       store.username = result.username;
       store.host = url;
-      store.theme = 'dark';
-      store.analytics = false;
-      store.keep_visible = false;
       getUsersProjects().then(async (projects) => {
         if (projects && projects.length > 0) {
           store['favorite-projects'] = projects;
@@ -2860,6 +2926,26 @@ function addProject(link, target) {
   }
 }
 
+function addShortcut(link) {
+  const tempArray = [link];
+  store.shortcuts = store.shortcuts.concat(tempArray);
+  let spinner =
+    '<svg class="button-spinner" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14"><g fill="none" fill-rule="evenodd"><circle cx="7" cy="7" r="6" stroke="#c9d1d9" stroke-opacity=".4" stroke-width="2"/><path class="icon" fill-opacity=".4" fill-rule="nonzero" d="M7 0a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V0z"/></g></svg>';
+  mb.window.webContents.executeJavaScript(
+    'document.getElementById("shortcut-add-button").disabled = "disabled"',
+  );
+  mb.window.webContents.executeJavaScript(
+    'document.getElementById("shortcut-link").disabled = "disabled"',
+  );
+  mb.window.webContents.executeJavaScript(
+    'document.getElementById("shortcut-add-button").innerHTML = "' +
+      escapeQuotes(spinner) +
+      ' Add"',
+  );
+  setupQuickActions();
+  repaintShortcuts();
+}
+
 function displayAddError(type, target, customMessage) {
   mb.window.webContents.executeJavaScript(
     'document.getElementById("add-' + type + target + 'error").style.display = "block"',
@@ -2932,6 +3018,24 @@ function startProjectDialog() {
   mb.window.webContents.executeJavaScript(
     'document.getElementById("project-settings-link").focus()',
   );
+}
+
+function startShortcutDialog() {
+  let shortcutLink = "'shortcut-link'";
+  let shortcutInput =
+    '<form action="#" class="shortcut-input" onsubmit="addShortcut(document.getElementById(' +
+    shortcutLink +
+    ').value);return false;"><input class="shortcut-link" id="shortcut-link" placeholder="Enter the keyboard shortcut here..." /><button class="add-button" id="shortcut-add-button" type="submit">Add</button></form><div class="add-shortcut-error" id="add-shortcut-error"></div>';
+  mb.window.webContents.executeJavaScript(
+    'document.getElementById("add-shortcut-dialog").classList.add("opened")',
+  );
+  mb.window.webContents.executeJavaScript(
+    'document.getElementById("add-shortcut-dialog").innerHTML = "' +
+      escapeQuotes(shortcutInput) +
+      '"',
+  );
+  mb.window.webContents.executeJavaScript('window.scrollBy(0, 14)');
+  mb.window.webContents.executeJavaScript('document.getElementById("shortcut-link").focus()');
 }
 
 function timeSince(date, direction = 'since') {
@@ -3032,6 +3136,7 @@ function logout() {
   deleteFromStore('keep-visible');
   deleteFromStore('analytics');
   deleteFromStore('analytics_id');
+  deleteFromStore('shortcuts');
   mb.window.webContents.session.clearCache();
   mb.window.webContents.session.clearStorageData();
   app.quit();
