@@ -5,6 +5,9 @@ const defaults = {
   plan: 'free',
   analytics: false,
   analytics_id: uuidv4(),
+  theme: 'dark',
+  shortcuts: ['CommandOrControl+Option+G', 'CommandOrControl+Option+P'],
+  keep_visible: false,
 };
 
 const store = JSON.parse(process.env.MOCK_STORE || '{}');

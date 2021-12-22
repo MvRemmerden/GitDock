@@ -9,6 +9,20 @@ describe('Themes', function () {
     return await body.evaluate((button) => getComputedStyle(button).backgroundColor);
   };
 
+  describe('default theme', function () {
+    stopAppAfterEach();
+
+    beforeEach(async function () {
+      await newApp(this);
+    });
+
+    it('has the correct background color', async function () {
+      const color = await getBackgroundColor(this.window);
+
+      assert.equal(color, 'rgb(9, 12, 16)');
+    });
+  });
+
   describe('dark theme', function () {
     stopAppAfterEach();
 

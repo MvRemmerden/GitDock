@@ -635,14 +635,16 @@ svg {
   margin-bottom: 1rem;
 }
 #bookmarks #bookmark-input,
-.new-project .project-input {
+.new-project .project-input,
+#shortcut .project-input {
   display: flex;
   align-items: center;
   width: 100%;
 }
 #bookmarks #add-bookmark-error,
 .new-project .add-project-error,
-#favorite-projects .add-project-error {
+#favorite-projects .add-project-error,
+#shortcut .add-shortcut-error {
   margin: 0.5rem auto 0 0;
   font-weight: normal;
   color: #f85149;
@@ -650,19 +652,22 @@ svg {
   display: none;
 }
 #bookmarks #add-bookmark-dialog.opened,
-#favorite-projects #add-project-dialog.opened {
+#favorite-projects #add-project-dialog.opened,
+#shortcut #add-shortcut-dialog.opened {
   background-color: var(--panel-background-color);
   display: flex;
   flex-direction: column;
 }
 #bookmarks #add-bookmark-dialog #bookmark-input,
-#favorite-projects #add-project-dialog .project-input {
+#favorite-projects #add-project-dialog .project-input,
+#shortcut #add-shortcut-dialog .shortcut-input {
   display: flex;
   align-items: center;
   width: 100%;
 }
 #bookmarks #bookmark-link,
-.project-input .project-link {
+.project-input .project-link,
+.shortcut-input .shortcut-link {
   width: 100%;
   margin-right: 0.5rem;
   border: 1px solid var(--border-color);
@@ -676,12 +681,14 @@ svg {
 }
 #bookmarks #bookmark-link::placeholder,
 .new-project .project-link::placeholder,
-#favorite-projects .project-link::placeholder {
+#favorite-projects .project-link::placeholder,
+#shortcut .shortcut-link::placeholder {
   color: var(--placeholder-text-color);
 }
 #bookmarks #bookmark-link:disabled,
 .new-project .project-link:disabled,
-#favorite-projects .project-link:disabled {
+#favorite-projects .project-link:disabled,
+#shortcut .shortcut-link:disabled {
   color: var(--disabled-background-color);
   cursor: not-allowed;
 }
@@ -976,6 +983,11 @@ svg {
 .detail-view .detail-content #theme-selection .theme-option.active .indicator {
   background-color: #1f6feb;
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16"><path fill="white" fill-rule="evenodd" d="M13.7071,4.29289 C14.0976,4.68342 14.0976,5.31658 13.7071,5.70711 L7.70711,11.7071 C7.31658,12.0976 6.68342,12.0976 6.29289,11.7071 L3.29289,8.70711 C2.90237,8.31658 2.90237,7.68342 3.29289,7.29289 C3.68342,6.90237 4.31658,6.90237 4.70711,7.29289 L7,9.58579 L12.2929,4.29289 C12.6834,3.90237 13.3166,3.90237 13.7071,4.29289 Z"/></svg>');
+}
+#shortcut p {
+  margin: 0 0 1rem;
+  color: var(--muted-text-color);
+  font-size: 0.825rem;
 }
 #analytics {
   margin-top: -0.5rem;

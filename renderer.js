@@ -85,6 +85,10 @@ function addProject(input, target) {
   window.electron.addProject(value);
 }
 
+function addShortcut(value) {
+  window.electron.addShortcut(value);
+}
+
 function startBookmarkDialog() {
   window.electron.startBookmarkDialog();
 }
@@ -93,12 +97,20 @@ function startProjectDialog() {
   window.electron.startProjectDialog();
 }
 
+function startShortcutDialog() {
+  window.electron.startShortcutDialog();
+}
+
 function deleteBookmark(value) {
   window.electron.deleteBookmark(value);
 }
 
 function deleteProject(value) {
   window.electron.deleteProject(value);
+}
+
+function deleteShortcut(value) {
+  window.electron.deleteShortcut(value);
 }
 
 function changeTheme(value) {
