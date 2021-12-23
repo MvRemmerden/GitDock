@@ -7,6 +7,7 @@ const api = {
   getUsername: () => store.username,
   getFavorites: () => store['favorite-projects'],
   getBookmarks: () => store['bookmarks'],
+  getRecents: () => store['recently-visited'],
   getTheme: () => store.theme,
 };
 
