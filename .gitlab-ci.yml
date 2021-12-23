@@ -284,4 +284,3 @@ bump:
   image: macos-12-xcode-13
   script:
     - brew bump-cask-pr --version v${VERSION} --url https://gitlab.com/mvanremmerden/gitdock/-/releases/v${VERSION}downloads/GitDock-${VERSION}.dmg gitdock
-    

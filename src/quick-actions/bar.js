@@ -107,8 +107,20 @@ function loadBookmarks() {
     .sort(([, bookmarkA], [, bookmarkB]) => matcher(bookmarkB) - matcher(bookmarkA));
 }
 
+function loadRecents() {
+  const recents = ALL_RECENTS.map((recent) => [
+    `open-recent::${new Date(recent.utc_time).getTime()}`,
+    { title: `${recent.title}`, type: `${recent.type}` },
+  ]);
+
+  return [...recents]
+    .filter(([, recent]) => matcher(recent))
+    .sort(([, recentA], [, recentB]) => matcher(recentB) - matcher(recentA));
+}
+
 let ALL_FAVORITES = gitdock.getFavorites() || [];
 let ALL_BOOKMARKS = gitdock.getBookmarks() || [];
+let ALL_RECENTS = gitdock.getRecents() || [];
 
 function search() {
   html = [];
@@ -116,11 +128,13 @@ function search() {
 
   ALL_FAVORITES = gitdock.getFavorites() || [];
   ALL_BOOKMARKS = gitdock.getBookmarks() || [];
+  ALL_RECENTS = gitdock.getRecents() || [];
 
   const availableActions = loadActions();
   const availableOverviews = loadOverviews();
   const availableFavorites = loadFavorites();
   const availableBookmarks = loadBookmarks();
+  const availableRecents = loadRecents();
 
   if (availableOverviews.length > 0) {
     html.push(`<h5>Overview</h5>`);
@@ -158,6 +172,29 @@ function search() {
     html.push(`<h5>Bookmarks</h5>`);
 
     for (const [key, action] of availableBookmarks) {
+      let icon;
+      if (action.type == 'issues') {
+        icon = issueIcon;
+      } else if (action.type == 'merge_requests') {
+        icon = mrIcon;
+      } else {
+        icon = `<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M15.747 9.441a.611.611 0 0 0 .224-.682l-.896-2.755-1.277-3.931-.14-.434-.06-.186-.226-.695-.003-.007-.068-.211a.307.307 0 0 0-.582 0l-.068.21-.003.008-.226.696-.06.185-.14.433-1.277 3.929H5.052L3.777 2.074l-.142-.435-.062-.19L3.35.755 3.347.75 3.278.54a.306.306 0 0 0-.58 0l-.07.21-.001.006-.224.691-.062.192-.141.435L.926 6.001.03 8.759a.61.61 0 0 0 .22.682L8 15.071l7.747-5.63Zm-7.748 3.776 6.345-4.61-.696-2.139L13.01 4.5l-.638 1.963A1.5 1.5 0 0 1 10.945 7.5H5.052a1.5 1.5 0 0 1-1.427-1.037l-.636-1.96-.636 1.96-.697 2.144L8 13.218Z"/></svg>`;
+      }
+      html.push(
+        `<li id="item-${i}" class="${
+          i === $selected ? 'selected' : ''
+        }" data-action="${key}" onclick="handleClick(this)" onmouseover="changeHighlight(${i})" tabindex="0">${icon}
+          <div class="action-title">${action.title}</div>
+        </li>`,
+      );
+      i++;
+    }
+  }
+
+  if (availableRecents.length > 0) {
+    html.push(`<h5>Recently viewed</h5>`);
+
+    for (const [key, action] of availableRecents) {
       let icon;
       if (action.type == 'issues') {
         icon = issueIcon;
@@ -234,6 +271,12 @@ function handleClick(target) {
     const bookmarkAdded = parseInt(key.split('::')[1], 10);
     const { web_url } = ALL_BOOKMARKS.find((bookmark) => bookmark.added === bookmarkAdded);
     gitdock.openGitLab(web_url);
+  } else if (key.startsWith('open-recent::')) {
+    const recentVisited = parseInt(key.split('::')[1], 10);
+    const { url } = ALL_RECENTS.find(
+      (recent) => new Date(recent.utc_time).getTime() === recentVisited,
+    );
+    gitdock.openGitLab(url);
   } else if (key.startsWith('new')) {
     ALL_ACTIONS[key].execute();
   } else if (key.startsWith('overview')) {

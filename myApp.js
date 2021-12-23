@@ -1156,7 +1156,7 @@ mb.on('ready', () => {
 
 if (store.access_token && store.user_id && store.username) {
   mb.on('after-create-window', () => {
-    mb.window.webContents.openDevTools();
+    //mb.window.webContents.openDevTools();
     mb.showWindow();
     changeTheme(store.theme, false);
 
@@ -1853,7 +1853,7 @@ async function getRecentlyVisited() {
     recentlyVisitedArray = new Array();
     let recentlyVisitedString = '';
     let firstItem = true;
-    await BrowserHistory.getAllHistory(14320).then(async (history) => {
+    await BrowserHistory.getAllHistory().then(async (history) => {
       let item = Array.prototype.concat.apply([], history);
       item.sort(function (a, b) {
         if (a.utc_time > b.utc_time) {
@@ -1957,7 +1957,7 @@ async function getMoreRecentlyVisited() {
   recentlyVisitedString = '';
   let moreRecentlyVisitedTitlesArray = [];
   let firstItem = true;
-  await BrowserHistory.getAllHistory(14320).then(async (history) => {
+  await BrowserHistory.getAllHistory().then(async (history) => {
     let item = Array.prototype.concat.apply([], history);
     item.sort(function (a, b) {
       if (a.utc_time > b.utc_time) {
@@ -1977,22 +1977,33 @@ async function getMoreRecentlyVisited() {
     );
     let previousDate = 0;
     for (let j = 0; j < item.length; j++) {
+      const { title } = item[j];
+      let { url } = item[j];
+      const isHostUrl = url.startsWith(`${store.host}/`);
+      const isIssuable =
+        url.includes('/-/issues/') ||
+        url.includes('/-/merge_requests/') ||
+        url.includes('/-/epics/');
+      const wasNotProcessed = !recentlyVisitedArray.includes(title);
+      const ignoredTitlePrefixes = [
+        'Not Found ',
+        'New Issue ',
+        'New Merge Request ',
+        'New merge request ',
+        'New Epic ',
+        'Edit ',
+        'Merge requests ',
+        'Issues ',
+        '500 Error - GitLab',
+        'Checking your Browser - GitLab',
+      ];
+      const titlePrefix = (title || '').split('·')[0];
       if (
-        item[j].title &&
-        item[j].url.indexOf(store.host + '/') == 0 &&
-        (item[j].url.indexOf('/-/issues/') != -1 ||
-          item[j].url.indexOf('/-/merge_requests/') != -1 ||
-          item[j].url.indexOf('/-/epics/') != -1) &&
-        !moreRecentlyVisitedTitlesArray.includes(item[j].title) &&
-        item[j].title.split('·')[0] != 'Not Found' &&
-        item[j].title.split('·')[0] != 'New Issue ' &&
-        item[j].title.split('·')[0] != 'New Merge Request ' &&
-        item[j].title.split('·')[0] != 'New merge request ' &&
-        item[j].title.split('·')[0] != 'New Epic ' &&
-        item[j].title.split('·')[0] != 'Edit ' &&
-        item[j].title.split('·')[0] != 'Merge requests ' &&
-        item[j].title.split('·')[0] != 'Issues ' &&
-        item[j].title.split('·')[0] != '500 Error - GitLab'
+        title &&
+        isHostUrl &&
+        isIssuable &&
+        wasNotProcessed &&
+        !ignoredTitlePrefixes.includes(titlePrefix)
       ) {
         let nameWithNamespace = item[j].url.replace(store.host + '/', '').split('/-/')[0];
         if (nameWithNamespace.split('/')[0] != 'groups') {
@@ -2041,6 +2052,8 @@ async function getMoreRecentlyVisited() {
         moreRecentlyVisitedArray.push(item[j]);
         moreRecentlyVisitedTitlesArray.push(item[j].title);
         recentlyVisitedString += '<li class="history-entry">';
+        console.log(item[j].title);
+        console.log(item[j].title.split('·'));
         recentlyVisitedString +=
           '<a href="' +
           item[j].url +
