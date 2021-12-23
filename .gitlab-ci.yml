@@ -223,6 +223,14 @@ upload:
 release:
   stage: release
   needs:
+    - job: build-mac
+      artifacts: true
+    - job: build-linux
+      artifacts: true
+    - job: build-windows
+      artifacts: true
+    - job: release-version-creation
+      artifacts: true
     - upload
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   only:
