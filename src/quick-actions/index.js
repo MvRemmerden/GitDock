@@ -29,7 +29,8 @@ async function getRecentlyVisited() {
         url.includes('/-/issues/') ||
         url.includes('/-/merge_requests/') ||
         url.includes('/-/epics/');
-      const wasNotProcessed = !recentlyVisitedArray.includes(title);
+      const displayedTitle = (title || '').split(' · ')[0].split(' (')[0];
+      const wasNotProcessed = !recentlyVisitedArray.some((item) => item.title == displayedTitle);
       const ignoredTitlePrefixes = [
         'Not Found ',
         'New Issue ',
