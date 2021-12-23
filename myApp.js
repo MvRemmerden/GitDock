@@ -1955,7 +1955,6 @@ async function getRecentlyVisited() {
 
 async function getMoreRecentlyVisited() {
   recentlyVisitedString = '';
-  let moreRecentlyVisitedTitlesArray = [];
   let firstItem = true;
   await BrowserHistory.getAllHistory().then(async (history) => {
     let item = Array.prototype.concat.apply([], history);
@@ -1984,7 +1983,7 @@ async function getMoreRecentlyVisited() {
         url.includes('/-/issues/') ||
         url.includes('/-/merge_requests/') ||
         url.includes('/-/epics/');
-      const wasNotProcessed = !recentlyVisitedArray.includes(title);
+      const wasNotProcessed = !moreRecentlyVisitedArray.some((item) => item.title == title);
       const ignoredTitlePrefixes = [
         'Not Found ',
         'New Issue ',
@@ -2050,10 +2049,7 @@ async function getMoreRecentlyVisited() {
           previousDate = currentDate;
         }
         moreRecentlyVisitedArray.push(item[j]);
-        moreRecentlyVisitedTitlesArray.push(item[j].title);
         recentlyVisitedString += '<li class="history-entry">';
-        console.log(item[j].title);
-        console.log(item[j].title.split('·'));
         recentlyVisitedString +=
           '<a href="' +
           item[j].url +
