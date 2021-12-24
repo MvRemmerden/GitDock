@@ -276,4 +276,7 @@ bump:
     - security default-keychain -s ~/test.keychain
     - security -i unlock-keychain -p test ~/test.keychain
     - security add-internet-password -a root -s github.com -w ${GITHUB_TOKEN}
+    - git config --global credential.helper osxkeychain
+    - git config --global user.name "Marcel van Remmerden"
+    - git config --global user.email 'maclbb@hotmail.de'
     - brew bump-cask-pr gitdock --version 0.1.16
