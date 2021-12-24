@@ -268,20 +268,11 @@ bump:
   stage: bump
   only:
     - tags
-  needs:
-    - job: build-mac
-      artifacts: true
-    - job: build-linux
-      artifacts: true
-    - job: build-windows
-      artifacts: true
-    - job: release-version-creation
-      artifacts: true
-    - upload
-    - release
   tags:
     - shared-macos-amd64
   image: macos-12-xcode-13
   script:
-    - echo 'export HOMEBREW_GITHUB_API_TOKEN=$GITHUB_TOKEN' >> ~/.zshrc
-    - brew bump-cask-pr gitdock --version ${VERSION}
+    - export HOMEBREW_GITHUB_API_TOKEN=${GITHUB_TOKEN}
+    - git config --global user.email "maclbb@hotmail.de"
+    - git config --global user.name "Marcel van Remmerden"
+    - brew bump-cask-pr --version ${VERSION} gitdock --no-browse
