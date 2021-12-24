@@ -1,11 +1,11 @@
 stages:
+  - bump
   - version
   - dependencies
   - test
   - build
   - upload
   - release
-  - bump
 
 variables:
   PACKAGE_REGISTRY_URL: '${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/gitdock'
@@ -283,5 +283,5 @@ bump:
     - shared-macos-amd64
   image: macos-12-xcode-13
   script:
-    - echo 'export HOMEBREW_GITHUB_API_TOKEN=${GITHUB_TOKEN}' >> ~/.zshrc
-    - brew bump-cask-pr gitdock --version ${VERSION}
+    - sudo security add-internet-password -a root -s github.com -w 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
+    - brew bump-cask-pr gitdock --version 0.1.16
