@@ -1,5 +1,4 @@
 stages:
-  - bump
   - version
   - dependencies
   - test
@@ -263,20 +262,3 @@ release:
           url: '${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock-${VERSION}.rpm'
           filepath: '/GitDock-${VERSION}.rpm'
           link_type: 'other'
-
-bump:
-  stage: bump
-  only:
-    - tags
-  tags:
-    - shared-macos-amd64
-  image: macos-12-xcode-13
-  script:
-    - security -i create-keychain -p test ~/test.keychain
-    - security default-keychain -s ~/test.keychain
-    - security -i unlock-keychain -p test ~/test.keychain
-    - security add-internet-password -a root -s github.com -w ${GITHUB_TOKEN}
-    - git config --global credential.helper osxkeychain
-    - git config --global user.name "Marcel van Remmerden"
-    - git config --global user.email 'maclbb@hotmail.de'
-    - brew bump-cask-pr gitdock --version 0.1.16
