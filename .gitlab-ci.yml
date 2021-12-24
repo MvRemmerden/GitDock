@@ -1,11 +1,11 @@
 stages:
-  - bump
   - version
   - dependencies
   - test
   - build
   - upload
   - release
+  - bump
 
 variables:
   PACKAGE_REGISTRY_URL: '${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/gitdock'
@@ -275,4 +275,4 @@ bump:
     - export HOMEBREW_GITHUB_API_TOKEN=${GITHUB_TOKEN}
     - git config --global user.email "maclbb@hotmail.de"
     - git config --global user.name "Marcel van Remmerden"
-    - brew bump-cask-pr --version 0.1.16 gitdock
+    - brew bump-cask-pr --version ${VERSION} gitdock
