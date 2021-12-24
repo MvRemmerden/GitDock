@@ -1435,9 +1435,9 @@ function openAboutPage() {
     'document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">About GitDock ⚓️</span>"',
   );
   let aboutString = `<p>GitDock is a MacOS/Windows/Linux app that displays all your GitLab activities in one place. Instead of the GitLab typical project- or group-centric approach, it collects all your information from a user-centric perspective.</p>`;
-  aboutString += `<p>If you want to learn more about why we built this app, you can have a look at our <a href=\\"https://about.gitlab.com/blog/2021/10/05/gitpod-desktop-app-personal-activities\\">blog post</a>.</p>`;
-  aboutString += `<p>We use issues to collect bugs, feature requests, and more. You can <a href=\\"https://gitlab.com/mvanremmerden/gitdock/-/issues\\">browse through existing issues</a>. To report a bug, suggest an improvement, or propose a feature, please <a href=\\"https://gitlab.com/mvanremmerden/gitdock/-/issues/new\\">create a new issue</a> if there is not already an issue for it.</p>`;
-  aboutString += `<p>If you are thinking about contributing directly, check out our <a href=\\"https://gitlab.com/mvanremmerden/gitdock/-/blob/main/CONTRIBUTING.md\\">contribution guidelines</a>.</p>`;
+  aboutString += `<p>If you want to learn more about why we built this app, you can have a look at our <a href=\\"https://about.gitlab.com/blog/2021/10/05/gitpod-desktop-app-personal-activities\\" target=\\"_blank\\">blog post</a>.</p>`;
+  aboutString += `<p>We use issues to collect bugs, feature requests, and more. You can <a href=\\"https://gitlab.com/mvanremmerden/gitdock/-/issues\\" target=\\"_blank\\">browse through existing issues</a>. To report a bug, suggest an improvement, or propose a feature, please <a href=\\"https://gitlab.com/mvanremmerden/gitdock/-/issues/new\\">create a new issue</a> if there is not already an issue for it.</p>`;
+  aboutString += `<p>If you are thinking about contributing directly, check out our <a href=\\"https://gitlab.com/mvanremmerden/gitdock/-/blob/main/CONTRIBUTING.md\\" target=\\"_blank\\">contribution guidelines</a>.</p>`;
   aboutString += '<p class=\\"version-number\\">Version ' + version + '</p>';
   mb.window.webContents.executeJavaScript(
     'document.getElementById("detail-content").innerHTML = "' + aboutString + '</div>"',
