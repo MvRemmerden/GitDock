@@ -1,4 +1,5 @@
 stages:
+  - bump
   - version
   - dependencies
   - test
@@ -262,3 +263,14 @@ release:
           url: '${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock-${VERSION}.rpm'
           filepath: '/GitDock-${VERSION}.rpm'
           link_type: 'other'
+
+bump:
+  stage: bump
+  only:
+    - tags
+  tags:
+    - shared-macos-amd64
+  image: macos-12-xcode-13
+  script:
+    - export HOMEBREW_GITHUB_API_TOKEN=${GITHUB_TOKEN}
+    - brew bump-cask-pr --version 0.1.16 gitdock
