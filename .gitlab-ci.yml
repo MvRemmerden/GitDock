@@ -275,4 +275,4 @@ bump:
     - export HOMEBREW_GITHUB_API_TOKEN=${GITHUB_TOKEN}
     - git config --global user.email "maclbb@hotmail.de"
     - git config --global user.name "Marcel van Remmerden"
-    - brew bump-cask-pr --version ${VERSION} gitdock --no-browse
+    - brew update && brew bump-cask-pr --version ${VERSION} gitdock --no-browse
