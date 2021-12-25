@@ -125,6 +125,10 @@ function changeKeepVisible(value) {
   window.electron.changeKeepVisible(value);
 }
 
+function changeShowDockIcon(value) {
+  window.electron.changeShowDockIcon(value);
+}
+
 function startLogin() {
   window.electron.startLogin();
 }

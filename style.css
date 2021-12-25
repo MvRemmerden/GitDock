@@ -1014,6 +1014,9 @@ svg {
   align-items: center;
   line-height: 100%;
 }
+#preferences div:not(last) {
+  margin-bottom: 1rem;
+}
 #preferences input {
   margin: 0 0.5rem 0 0;
 }

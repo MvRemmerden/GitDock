@@ -8,13 +8,18 @@ const defaults = {
   theme: 'dark',
   shortcuts: ['CommandOrControl+Option+G', 'CommandOrControl+Option+P'],
   keep_visible: false,
+  show_dock_icon: true,
 };
 
 const store = JSON.parse(process.env.MOCK_STORE || '{}');
 
 const proxy = new Proxy(store, {
   get(target, key) {
-    return target[key] || defaults[key];
+    if (target[key] == undefined) {
+      return defaults[key];
+    } else {
+      return target[key];
+    }
   },
   set(target, key, value) {
     target[key] = value;

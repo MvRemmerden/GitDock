@@ -103,7 +103,7 @@ let verifier = '';
 let challenge = '';
 
 const mb = menubar({
-  showDockIcon: true,
+  showDockIcon: store.show_dock_icon,
   showOnAllWorkspaces: false,
   icon: __dirname + '/assets/gitlabTemplate.png',
   preloadWindow: true,
@@ -1134,6 +1134,23 @@ ipcMain.on('change-keep-visible', (event, arg) => {
   mb.window.setAlwaysOnTop(arg);
 });
 
+ipcMain.on('change-show-dock-icon', (event, arg) => {
+  mb.window.setAlwaysOnTop(true);
+  store.show_dock_icon = arg;
+  if (arg) {
+    app.dock.show().then(() => {
+      mb.window.setAlwaysOnTop(store.keep_visible);
+    });
+  } else {
+    app.dock.hide();
+    app.focus({ steal: true });
+    setTimeout(() => {
+      app.focus({ steal: true });
+      mb.window.setAlwaysOnTop(store.keep_visible);
+    }, 200);
+  }
+});
+
 ipcMain.on('start-login', (event, arg) => {
   startLogin();
 });
@@ -1156,7 +1173,8 @@ mb.on('ready', () => {
 
 if (store.access_token && store.user_id && store.username) {
   mb.on('after-create-window', () => {
-    //mb.window.webContents.openDevTools();
+    mb.window.webContents.openDevTools();
+
     mb.showWindow();
     changeTheme(store.theme, false);
 
@@ -1329,12 +1347,22 @@ function openSettingsPage() {
       chevronRightIcon +
       '</a></li></ul></div>';
     let preferences =
-      '<div class="headline"><span class="name">Preferences</span></div><div id="preferences"><form id="prerefences-form"><div><input type="checkbox" id="keep-visible" name="keep-visible" ';
+      '<div class="headline"><span class="name">Preferences</span></div><div id="preferences"><form id="prerefences-form">';
+    preferences += '<div><input type="checkbox" id="keep-visible" name="keep-visible" ';
     if (store.keep_visible) {
       preferences += ' checked="checked"';
     }
     preferences +=
-      'onchange="changeKeepVisible(this.checked)"/><label for="keep-visible">Keep GitDock visible, even when losing focus.</label></div></form></div>';
+      'onchange="changeKeepVisible(this.checked)"/><label for="keep-visible">Keep GitDock visible, even when losing focus.</label></div>';
+    if (processInfo.platform == 'darwin') {
+      preferences += '<div><input type="checkbox" id="show-dock-icon" name="show-dock-icon" ';
+      if (store.show_dock_icon) {
+        preferences += ' checked="checked"';
+      }
+      preferences +=
+        'onchange="changeShowDockIcon(this.checked)"/><label for="show-dock-icon">Show icon also in dock, not only in menubar.</label></div>';
+    }
+    preferences += '</form></div>';
     let shortcut =
       '<div class="headline"><span class="name">Command Palette shortcuts</span></div><div id="shortcut"><p>To learn more about which keyboard shortcuts you can configure, visit the <a href="https://www.electronjs.org/docs/latest/api/accelerator" target="_blank">Electron Accelerator page</a>.</p>';
     if (store.shortcuts) {
@@ -3142,7 +3170,8 @@ function logout() {
   deleteFromStore('bookmarks');
   deleteFromStore('host');
   deleteFromStore('plan');
-  deleteFromStore('keep-visible');
+  deleteFromStore('keep_visible');
+  deleteFromStore('show_dock_icon');
   deleteFromStore('analytics');
   deleteFromStore('analytics_id');
   deleteFromStore('shortcuts');
