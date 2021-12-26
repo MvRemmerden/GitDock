@@ -52,8 +52,8 @@ const { JSDOM } = jsdom;
 const nodeCrypto = require('crypto');
 const processInfo = require('./lib/process-info');
 const version = require('./package.json').version;
-const QuickActions = require('./src/quick-actions');
-let quickActions;
+const CommandPalette = require('./src/command-palette');
+let commandPalette;
 global.DOMParser = new JSDOM().window.DOMParser;
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
@@ -1109,7 +1109,7 @@ ipcMain.on('delete-project', (event, arg) => {
 
 ipcMain.on('delete-shortcut', (event, arg) => {
   store.shortcuts = store.shortcuts.filter((keys) => keys !== arg);
-  setupQuickActions();
+  setupCommandPalette();
   repaintShortcuts();
 });
 
@@ -1168,7 +1168,7 @@ ipcMain.on('logout', (event, arg) => {
 
 mb.on('ready', () => {
   setupContextMenu();
-  setupQuickActions();
+  setupCommandPalette();
 });
 
 if (store.access_token && store.user_id && store.username) {
@@ -1273,12 +1273,12 @@ function setupGenericContextMenu(baseMenuItems) {
   });
 }
 
-function setupQuickActions() {
-  if (!quickActions) {
-    quickActions = new QuickActions();
+function setupCommandPalette() {
+  if (!commandPalette) {
+    commandPalette = new CommandPalette();
   }
 
-  quickActions.register({
+  commandPalette.register({
     shortcut: store.shortcuts,
   });
 }
@@ -2979,7 +2979,7 @@ function addShortcut(link) {
       escapeQuotes(spinner) +
       ' Add"',
   );
-  setupQuickActions();
+  setupCommandPalette();
   repaintShortcuts();
 }
 

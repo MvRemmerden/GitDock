@@ -376,7 +376,7 @@ window.addEventListener('focus', () => {
 });
 
 const hide = () => {
-  gitdock.hideQuickActions();
+  gitdock.hideCommandPalette();
   $search.value = '';
   search();
 };
