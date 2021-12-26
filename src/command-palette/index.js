@@ -89,7 +89,7 @@ setInterval(() => {
 }, 15000);
 getRecentlyVisited();
 
-module.exports = class QuickActions {
+module.exports = class CommandPalette {
   constructor() {
     cpWindow = this.newWindow();
     cpWindow.on('blur', () => {
@@ -109,7 +109,7 @@ module.exports = class QuickActions {
         shell.openExternal(`${store.host}${arg}`);
       }
     });
-    ipcMain.on('hide-quick-actions', () => {
+    ipcMain.on('hide-command-palette', () => {
       cpWindow.hide();
     });
   }
@@ -118,7 +118,7 @@ module.exports = class QuickActions {
     globalShortcut.unregisterAll();
 
     ipcMain.removeAllListeners('open-gitlab');
-    ipcMain.removeAllListeners('hide-quick-actions');
+    ipcMain.removeAllListeners('hide-command-palette');
   }
 
   async open() {
@@ -145,7 +145,7 @@ module.exports = class QuickActions {
       webPreferences: {
         preload: PRELOAD_PATH,
       },
-      title: 'GitDock Quick Actions',
+      title: 'GitDock Command Palette',
     });
     if (show) {
       window.once('ready-to-show', () => {

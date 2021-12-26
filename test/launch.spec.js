@@ -10,7 +10,7 @@ describe('Application launch', function () {
 
   stopAppAfterEach();
 
-  it('starts the menubar and quick actions windows', async function () {
+  it('starts the menubar window', async function () {
     const windows = await this.app.windows();
     assert.equal(windows.length, 1);
   });
