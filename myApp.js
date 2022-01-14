@@ -1173,7 +1173,7 @@ mb.on('ready', () => {
 
 if (store.access_token && store.user_id && store.username) {
   mb.on('after-create-window', () => {
-    mb.window.webContents.openDevTools();
+    //mb.window.webContents.openDevTools();
 
     mb.showWindow();
     changeTheme(store.theme, false);
@@ -1932,22 +1932,25 @@ async function getRecentlyVisited() {
               store.access_token;
           }
           recentlyVisitedArray.push(item[j].title);
-          recentlyVisitedString += '<li class="history-entry">';
-          recentlyVisitedString +=
-            '<a href="' +
-            item[j].url +
-            '" target="_blank">' +
-            escapeHtml(item[j].title.split('·')[0]) +
-            '</a><span class="namespace-with-time">' +
-            timeSince(new Date(item[j].utc_time + ' UTC')) +
-            ' ago &middot; <a href="' +
-            item[j].url.split('/-/')[0] +
-            '" target="_blank">' +
-            escapeHtml(item[j].title.split('·')[2].trim()) +
-            '</a></span></div></li>';
-          i++;
-          if (i == numberOfRecentlyVisited) {
-            break;
+          console.log(item[j].title);
+          if (item[j].title != 'Checking your Browser - GitLab') {
+            recentlyVisitedString += '<li class="history-entry">';
+            recentlyVisitedString +=
+              '<a href="' +
+              item[j].url +
+              '" target="_blank">' +
+              escapeHtml(item[j].title.split('·')[0]) +
+              '</a><span class="namespace-with-time">' +
+              timeSince(new Date(item[j].utc_time + ' UTC')) +
+              ' ago &middot; <a href="' +
+              item[j].url.split('/-/')[0] +
+              '" target="_blank">' +
+              escapeHtml(item[j].title.split('·')[2].trim()) +
+              '</a></span></div></li>';
+            i++;
+            if (i == numberOfRecentlyVisited) {
+              break;
+            }
           }
         }
       }
