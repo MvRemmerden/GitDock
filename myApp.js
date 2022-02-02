@@ -2177,7 +2177,8 @@ function displayUsersProjects() {
   let favoriteProjectsString = '';
   let projects = store['favorite-projects'];
   if (projects && projects.length > 0) {
-    favoriteProjectsString += '<ul id="projects" class="list-container clickable">';
+    favoriteProjectsString +=
+      '<ul class="list-container clickable" data-testid="favorite-projects">';
     let chevron = chevronLgRightIcon;
     for (let projectObject of projects) {
       let projectString = "'Project'";
