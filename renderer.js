@@ -133,10 +133,11 @@ function startLogin() {
   window.electron.startLogin();
 }
 
-function startManualLogin(access_token, host) {
+function startManualLogin(access_token, host, custom_cert_path) {
   let value = {
     access_token: access_token,
     host: host,
+    custom_cert_path: custom_cert_path,
   };
   window.electron.startManualLogin(value);
 }

@@ -1156,7 +1156,7 @@ ipcMain.on('start-login', (event, arg) => {
 });
 
 ipcMain.on('start-manual-login', (event, arg) => {
-  saveUser(arg.access_token, arg.host);
+  saveUser(arg.access_token, arg.host, arg.custom_cert_path);
 });
 
 ipcMain.on('logout', (event, arg) => {
@@ -1521,14 +1521,15 @@ function sha256(buffer) {
   return nodeCrypto.createHash('sha256').update(buffer).digest();
 }
 
-async function saveUser(temp_access_token, url = store.host) {
+async function saveUser(temp_access_token, url = store.host, custom_cert_path=undefined) {
   try {
-    const result = await GitLab.get('user', { access_token: temp_access_token }, url);
+    const result = await GitLab.get('user', { access_token: temp_access_token, custom_cert_path: custom_cert_path }, url);
     if (result && result.id && result.username) {
       store.access_token = temp_access_token;
       store.user_id = result.id;
       store.username = result.username;
       store.host = url;
+      store.custom_cert_path = custom_cert_path;
       getUsersProjects().then(async (projects) => {
         if (projects && projects.length > 0) {
           store['favorite-projects'] = projects;
@@ -1562,10 +1563,11 @@ async function saveUser(temp_access_token, url = store.host) {
           });
       });
     } else {
-      console.log('not valid');
+      console.log('not valid 1');
     }
-  } catch {
-    console.log('not valid');
+  } catch(e) {
+    console.log('not valid 2');
+    console.log(e);
   }
 }
 
