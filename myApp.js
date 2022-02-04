@@ -1521,9 +1521,13 @@ function sha256(buffer) {
   return nodeCrypto.createHash('sha256').update(buffer).digest();
 }
 
-async function saveUser(temp_access_token, url = store.host, custom_cert_path=undefined) {
+async function saveUser(temp_access_token, url = store.host, custom_cert_path = undefined) {
   try {
-    const result = await GitLab.get('user', { access_token: temp_access_token, custom_cert_path: custom_cert_path }, url);
+    const result = await GitLab.get(
+      'user',
+      { access_token: temp_access_token, custom_cert_path: custom_cert_path },
+      url,
+    );
     if (result && result.id && result.username) {
       store.access_token = temp_access_token;
       store.user_id = result.id;
@@ -1565,7 +1569,7 @@ async function saveUser(temp_access_token, url = store.host, custom_cert_path=un
     } else {
       console.log('not valid 1');
     }
-  } catch(e) {
+  } catch (e) {
     console.log('not valid 2');
     console.log(e);
   }
