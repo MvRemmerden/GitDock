@@ -124,6 +124,24 @@ prettier:
   script:
     - npm run prettier:check
 
+eslint:
+  stage: test
+  only:
+    - tags
+    - merge_requests
+  tags:
+    - linux
+  image: node:latest
+  needs: ['install-dependencies-linux']
+  cache:
+    key: $CI_COMMIT_REF_SLUG-linux
+    paths:
+      - node_modules/
+    policy: pull
+  script:
+    - npm run lint:check
+  allow_failure: true
+
 build-windows:
   stage: build
   only:
