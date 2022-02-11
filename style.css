@@ -6,7 +6,6 @@ body {
   font-family: var(--font-family);
   font-size: 15px;
   line-height: 1.25rem;
-  -webkit-app-region: drag;
 }
 :focus {
   outline: 0;
@@ -117,6 +116,7 @@ svg {
   border-bottom: 1px solid var(--border-color);
   margin: -1.5rem -1.5rem -0.5rem -1.5rem;
   padding: 1.5rem 1.5rem 1.5rem 1.5rem;
+  -webkit-app-region: drag;
 }
 #header #user {
   flex-grow: 1;
