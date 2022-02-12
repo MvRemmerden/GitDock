@@ -1386,7 +1386,7 @@ function openSettingsPage() {
     let analyticsString =
       '<div class="headline"><span class="name">Analytics</span></div><div id="analytics">';
     analyticsString +=
-      'To better understand how you navigate around GitLab, we would love to collect insights about your usage. All data is 100% anonymous and we do not track the specific content (projects, issues...) you are interacting with, only which kind of areas you are using.</div>';
+      'To better understand how you make use of GitDock features to navigate around your issues, MRs, and other areas, we would love to collect insights about your usage. All data is 100% anonymous and we do not track the specific content (projects, issues...) you are interacting with, only which kind of areas you are using.</div>';
     analyticsString +=
       '<form id="analytics-form"><div><input type="radio" id="analytics-yes" name="analytics" value="yes"' +
       (store.analytics ? ' checked' : '') +
