@@ -63,6 +63,7 @@ install-dependencies-linux:
   only:
     - tags
     - merge_requests
+    - master
   tags:
     - linux
   image: node:latest
@@ -78,6 +79,7 @@ feature-tests:
   only:
     - tags
     - merge_requests
+    - master
   tags:
     - linux
   image: codingpaws/spectron-ci:latest
@@ -112,6 +114,7 @@ prettier:
   only:
     - tags
     - merge_requests
+    - master
   tags:
     - linux
   image: node:latest
@@ -129,6 +132,7 @@ eslint:
   only:
     - tags
     - merge_requests
+    - master
   tags:
     - linux
   image: node:latest
