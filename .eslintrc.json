@@ -9,6 +9,9 @@
   "parserOptions": {
     "ecmaVersion": 13
   },
+  "settings": {
+    "import/core-modules": ["electron"]
+  },
   "ignorePatterns": ["test/"],
   "rules": {
     "prettier/prettier": "error",
