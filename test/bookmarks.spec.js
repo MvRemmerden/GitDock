@@ -9,9 +9,11 @@ describe('"Bookmarks" section', function () {
     await window.click('#bookmark-add-button');
   };
 
-  describe('without bookmarks', function () {
+  describe('without bookmarks', () => {
     beforeEach(async function () {
-      await newApp(this, { loggedIn: true });
+      await newApp(this, {
+        loggedIn: true,
+      });
     });
 
     stopAppAfterEach();
@@ -30,7 +32,7 @@ describe('"Bookmarks" section', function () {
     });
   });
 
-  describe('with bookmarks', function () {
+  describe('with bookmarks', () => {
     const FIRST_BOOKMARK_URL = 'https://gitlab.com/user/project/-/merge_requests/1';
 
     beforeEach(async function () {

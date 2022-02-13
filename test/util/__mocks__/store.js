@@ -15,11 +15,10 @@ const store = JSON.parse(process.env.MOCK_STORE || '{}');
 
 const proxy = new Proxy(store, {
   get(target, key) {
-    if (target[key] == undefined) {
+    if (target[key] === undefined) {
       return defaults[key];
-    } else {
-      return target[key];
     }
+    return target[key];
   },
   set(target, key, value) {
     target[key] = value;

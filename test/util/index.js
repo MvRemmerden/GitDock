@@ -71,7 +71,10 @@ module.exports = {
       thisValue.window = window;
     }
 
-    return { app, window };
+    return {
+      app,
+      window,
+    };
   },
   stopAppAfterEach() {
     afterEach(async function () {

@@ -5,7 +5,9 @@ describe('Feature tests', function () {
   this.timeout(25000);
 
   beforeEach(async function () {
-    await newApp(this, { loggedIn: true });
+    await newApp(this, {
+      loggedIn: true,
+    });
   });
 
   stopAppAfterEach();

@@ -141,6 +141,9 @@ eslint:
   script:
     - npm run lint:check
   allow_failure: true
+  artifacts:
+    reports:
+      codequality: gl-codequality.json
 
 build-windows:
   stage: build
