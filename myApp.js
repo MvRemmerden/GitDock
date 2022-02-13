@@ -682,7 +682,11 @@ ipcMain.on('start-login', () => {
 });
 
 ipcMain.on('start-manual-login', (event, arg) => {
-  saveUser(arg.access_token, arg.host, arg.custom_cert_path);
+  if (arg.custom_cert_path) {
+    saveUser(arg.access_token, arg.host, arg.custom_cert_path);
+  } else {
+    saveUser(arg.access_token, arg.host);
+  }
 });
 
 ipcMain.on('logout', () => {
@@ -1004,20 +1008,17 @@ function sha256(buffer) {
 
 async function saveUser(accessToken, url = store.host, customCertPath = undefined) {
   try {
-    const result = await GitLab.get(
-      'user',
-      {
-        accessToken,
-        customCertPath,
-      },
-      url,
-    );
+    /* eslint-disable-next-line object-curly-newline, max-len, prettier/prettier */
+    const options = customCertPath ? { access_token: accessToken, custom_cert_path: customCertPath } : { access_token: accessToken };
+    const result = await GitLab.get('user', options, url);
     if (result && result.id && result.username) {
       store.access_token = accessToken;
       store.user_id = result.id;
       store.username = result.username;
       store.host = url;
-      store.custom_cert_path = customCertPath;
+      if (customCertPath) {
+        store.custom_cert_path = customCertPath;
+      }
       getUsersProjects().then(async (projects) => {
         if (projects && projects.length > 0) {
           store['favorite-projects'] = projects;
@@ -2388,6 +2389,7 @@ function logout() {
   deleteFromStore('user_id');
   deleteFromStore('username');
   deleteFromStore('access_token');
+  deleteFromStore('custom_cert_path');
   deleteFromStore('favorite-projects');
   deleteFromStore('bookmarks');
   deleteFromStore('host');
