@@ -29,6 +29,9 @@ input,
 .custom-select {
   -webkit-app-region: no-drag;
 }
+.hidden {
+  display: none;
+}
 #login-page-wrapper {
   display: flex;
   justify-content: center;

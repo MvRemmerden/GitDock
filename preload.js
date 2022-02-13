@@ -25,6 +25,7 @@ const api = {
   changeAnalytics: (value) => ipcRenderer.send('change-analytics', value),
   changeKeepVisible: (value) => ipcRenderer.send('change-keep-visible', value),
   changeShowDockIcon: (value) => ipcRenderer.send('change-show-dock-icon', value),
+  chooseCertificate: () => ipcRenderer.send('choose-certificate'),
   startLogin: () => ipcRenderer.send('start-login'),
   startManualLogin: (value) => ipcRenderer.send('start-manual-login', value),
   logout: () => ipcRenderer.send('logout'),

@@ -129,6 +129,10 @@ function changeShowDockIcon(value) {
   window.electron.changeShowDockIcon(value);
 }
 
+function chooseCertificate() {
+  window.electron.chooseCertificate();
+}
+
 function startLogin() {
   window.electron.startLogin();
 }

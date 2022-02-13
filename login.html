@@ -217,17 +217,16 @@
                   />
                 </div>
                 <div id="custom-cert-path" class="instance-details-input">
-                  <label>Custom CA</label>
-                  <input
-                    id="custom-cert-path-input"
-                    name="custom-cert-path-input"
-                    placeholder="Absolute filepath to a custom certificate"
-                  />
+                  <label>Custom Certificate <small>optional</small></label>
+                  <button onclick="chooseCertificate()" id="custom-cert-path-button">
+                    Choose certificate file
+                  </button>
+                  <p class="hidden" id="custom-cert-path-text">Custom cert</p>
                 </div>
                 <button
                   type="submit"
                   id="login-instance-button"
-                  onclick="startManualLogin(document.getElementById('access-token-input').value, document.getElementById('instance-url-input').value, document.getElementById('custom-cert-path-input').value)"
+                  onclick="startManualLogin(document.getElementById('access-token-input').value, document.getElementById('instance-url-input').value, document.getElementById('custom-cert-path-text').innerText)"
                 >
                   Log in with access token
                 </button>

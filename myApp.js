@@ -1,5 +1,5 @@
 const { menubar } = require('menubar');
-const { Menu, Notification, shell, ipcMain, app } = require('electron');
+const { Menu, Notification, shell, ipcMain, dialog, app } = require('electron');
 const { escapeHtml, escapeQuotes, escapeSingleQuotes, sha256hex } = require('./lib/util');
 const GitLab = require('./lib/gitlab');
 const {
@@ -1151,6 +1151,22 @@ ipcMain.on('change-show-dock-icon', (event, arg) => {
   }
 });
 
+ipcMain.on('choose-certificate', (event, arg) => {
+  const filepaths = dialog.showOpenDialogSync();
+  if (filepaths) {
+    const filepath = filepaths[0].replace(/\\/g, '/'); // convert \ to / otherwise separators get lost on windows
+    mb.window.webContents.executeJavaScript(
+      'document.getElementById("custom-cert-path-button").classList.add("hidden")',
+    );
+    mb.window.webContents.executeJavaScript(
+      'document.getElementById("custom-cert-path-text").classList.remove("hidden")',
+    );
+    mb.window.webContents.executeJavaScript(
+      'document.getElementById("custom-cert-path-text").innerText="' + filepath + '"',
+    );
+  }
+});
+
 ipcMain.on('start-login', (event, arg) => {
   startLogin();
 });
@@ -1215,7 +1231,7 @@ if (store.access_token && store.user_id && store.username) {
   });
 } else {
   mb.on('after-create-window', () => {
-    //mb.window.webContents.openDevTools()
+    mb.window.webContents.openDevTools();
     mb.window.loadURL(`file://${__dirname}/login.html`).then(() => {
       changeTheme(store.theme, false);
       mb.showWindow();
