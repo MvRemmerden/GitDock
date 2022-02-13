@@ -138,11 +138,11 @@ function startLogin() {
   window.electron.startLogin();
 }
 
-function startManualLogin(accessToken, host, custom_cert_path) {
-  let value = {
+function startManualLogin(accessToken, host, customCertPath) {
+  const value = {
     access_token: accessToken,
-    host: host,
-    custom_cert_path: custom_cert_path,
+    host,
+    custom_cert_path: customCertPath,
   };
   window.electron.startManualLogin(value);
 }

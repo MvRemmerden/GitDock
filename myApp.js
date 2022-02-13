@@ -661,7 +661,7 @@ ipcMain.on('change-show-dock-icon', (event, arg) => {
   }
 });
 
-ipcMain.on('choose-certificate', (event, arg) => {
+ipcMain.on('choose-certificate', () => {
   const filepaths = dialog.showOpenDialogSync();
   if (filepaths) {
     const filepath = filepaths[0].replace(/\\/g, '/'); // convert \ to / otherwise separators get lost on windows
@@ -672,12 +672,12 @@ ipcMain.on('choose-certificate', (event, arg) => {
       'document.getElementById("custom-cert-path-text").classList.remove("hidden")',
     );
     mb.window.webContents.executeJavaScript(
-      'document.getElementById("custom-cert-path-text").innerText="' + filepath + '"',
+      `document.getElementById("custom-cert-path-text").innerText="${filepath}"`,
     );
   }
 });
 
-ipcMain.on('start-login', (event, arg) => {
+ipcMain.on('start-login', () => {
   startLogin();
 });
 
@@ -1002,19 +1002,22 @@ function sha256(buffer) {
   return nodeCrypto.createHash('sha256').update(buffer).digest();
 }
 
-async function saveUser(temp_access_token, url = store.host, custom_cert_path = undefined) {
+async function saveUser(accessToken, url = store.host, customCertPath = undefined) {
   try {
     const result = await GitLab.get(
       'user',
-      { access_token: temp_access_token, custom_cert_path: custom_cert_path },
+      {
+        accessToken,
+        customCertPath,
+      },
       url,
     );
     if (result && result.id && result.username) {
-      store.access_token = temp_access_token;
+      store.access_token = accessToken;
       store.user_id = result.id;
       store.username = result.username;
       store.host = url;
-      store.custom_cert_path = custom_cert_path;
+      store.custom_cert_path = customCertPath;
       getUsersProjects().then(async (projects) => {
         if (projects && projects.length > 0) {
           store['favorite-projects'] = projects;
