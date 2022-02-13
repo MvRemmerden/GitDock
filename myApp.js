@@ -662,7 +662,11 @@ ipcMain.on('change-show-dock-icon', (event, arg) => {
 });
 
 ipcMain.on('choose-certificate', () => {
+  mb.window.setAlwaysOnTop(true);
   const filepaths = dialog.showOpenDialogSync();
+  setTimeout(() => {
+    mb.window.setAlwaysOnTop(false);
+  }, 200);
   if (filepaths) {
     const filepath = filepaths[0].replace(/\\/g, '/'); // convert \ to / otherwise separators get lost on windows
     mb.window.webContents.executeJavaScript(
