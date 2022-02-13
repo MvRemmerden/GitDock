@@ -1009,7 +1009,9 @@ function sha256(buffer) {
 async function saveUser(accessToken, url = store.host, customCertPath = undefined) {
   try {
     /* eslint-disable-next-line object-curly-newline, max-len, prettier/prettier */
-    const options = customCertPath ? { access_token: accessToken, custom_cert_path: customCertPath } : { access_token: accessToken };
+    const options = customCertPath
+      ? { access_token: accessToken, custom_cert_path: customCertPath }
+      : { access_token: accessToken };
     const result = await GitLab.get('user', options, url);
     if (result && result.id && result.username) {
       store.access_token = accessToken;
