@@ -9,7 +9,7 @@ describe('Themes', function () {
     return await body.evaluate((button) => getComputedStyle(button).backgroundColor);
   };
 
-  describe('default theme', function () {
+  describe('default theme', () => {
     stopAppAfterEach();
 
     beforeEach(async function () {
@@ -23,11 +23,13 @@ describe('Themes', function () {
     });
   });
 
-  describe('dark theme', function () {
+  describe('dark theme', () => {
     stopAppAfterEach();
 
     beforeEach(async function () {
-      await newApp(this, { theme: 'dark' });
+      await newApp(this, {
+        theme: 'dark',
+      });
     });
 
     it('has the correct background color', async function () {
@@ -37,11 +39,13 @@ describe('Themes', function () {
     });
   });
 
-  describe('light theme', function () {
+  describe('light theme', () => {
     stopAppAfterEach();
 
     beforeEach(async function () {
-      await newApp(this, { theme: 'light' });
+      await newApp(this, {
+        theme: 'light',
+      });
     });
 
     it('has the correct background color', async function () {

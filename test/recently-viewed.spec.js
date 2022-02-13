@@ -19,21 +19,22 @@ describe('"Recently viewed" section', function () {
     },
   ];
 
-  const supportedBrowsersText = async (page) => {
-    return page.innerText('.supported-browsers');
-  };
+  const supportedBrowsersText = async (page) => page.innerText('.supported-browsers');
 
   const historyTexts = async (page) => {
     const elements = await page.locator('.history-entry');
     return elements.allInnerTexts();
   };
 
-  SUPPORTED_PLATFORMS.forEach(function ({ platform, emptyMessage }) {
-    describe(`${platform} platform`, function () {
+  SUPPORTED_PLATFORMS.forEach(({ platform, emptyMessage }) => {
+    describe(`${platform} platform`, () => {
       describe('without history', function () {
         stopAppAfterEach();
         this.beforeEach(async function () {
-          await newApp(this, { platform, loggedIn: true });
+          await newApp(this, {
+            platform,
+            loggedIn: true,
+          });
         });
 
         it('renders the correct message', async function () {
@@ -72,14 +73,17 @@ describe('"Recently viewed" section', function () {
     });
   });
 
-  describe('unsupported platform', function () {
+  describe('unsupported platform', () => {
     const platform = 'android';
     const emptyMessage = 'No browsers are supported on your operating system yet.';
 
     describe('without history', function () {
       stopAppAfterEach();
       this.beforeEach(async function () {
-        await newApp(this, { platform, loggedIn: true });
+        await newApp(this, {
+          platform,
+          loggedIn: true,
+        });
       });
 
       it('renders the correct message', async function () {
@@ -95,7 +99,10 @@ describe('"Recently viewed" section', function () {
           platform,
           loggedIn: true,
           browserHistory: [
-            { title: 'Test Issue #1', url: 'https://gitlab.com/user/project/-/issues/1' },
+            {
+              title: 'Test Issue #1',
+              url: 'https://gitlab.com/user/project/-/issues/1',
+            },
           ],
         });
       });

@@ -9,6 +9,7 @@
   "parserOptions": {
     "ecmaVersion": 13
   },
+  "ignorePatterns": ["test/"],
   "rules": {
     "prettier/prettier": "error",
     "object-curly-newline": [
@@ -24,7 +25,8 @@
           "minProperties": 3
         }
       }
-    ]
+    ],
+    "operator-linebreak": ["error", "after"]
   },
   "plugins": ["prettier"]
 }

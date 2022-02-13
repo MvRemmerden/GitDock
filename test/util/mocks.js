@@ -18,6 +18,7 @@ const mockRegistry = {
 // Below is the dependency replace logic
 
 const path = require('path');
+
 const nodeRequire = require.extensions['.js'];
 
 const PROJECT_ROOT = path.join(__dirname, '..', '..');

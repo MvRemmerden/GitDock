@@ -1,6 +1,6 @@
 const { globalShortcut, BrowserWindow, ipcMain, shell } = require('electron');
-const { store } = require('../../lib/store');
 const path = require('path');
+const { store } = require('../../lib/store');
 const BrowserHistory = require('../../lib/browser-history');
 const gitdock = require('../../lib/gitlab');
 
@@ -11,8 +11,8 @@ let cpWindow;
 async function getRecentlyVisited() {
   recentlyVisitedArray = [];
   await BrowserHistory.getAllHistory().then(async (history) => {
-    let item = Array.prototype.concat.apply([], history);
-    item.sort(function (a, b) {
+    const item = Array.prototype.concat.apply([], history);
+    item.sort((a, b) => {
       if (a.utc_time > b.utc_time) {
         return -1;
       }
@@ -21,16 +21,16 @@ async function getRecentlyVisited() {
       }
     });
     let i = 0;
-    for (let j = 0; j < item.length; j++) {
+    for (let j = 0; j < item.length; j += 1) {
       const { title } = item[j];
       let { url } = item[j];
       const isHostUrl = url.startsWith(`${store.host}/`);
-      const isIssuable =
-        url.includes('/-/issues/') ||
-        url.includes('/-/merge_requests/') ||
-        url.includes('/-/epics/');
+      const isIssuable = url.includes('/-/issues/');
+      url.includes('/-/merge_requests/') || url.includes('/-/epics/');
       const displayedTitle = (title || '').split(' · ')[0].split(' (')[0];
-      const wasNotProcessed = !recentlyVisitedArray.some((item) => item.title == displayedTitle);
+      const wasNotProcessed = !recentlyVisitedArray.some(
+        (arrayItem) => arrayItem.title === displayedTitle,
+      );
       const ignoredTitlePrefixes = [
         'Not Found ',
         'New Issue ',
@@ -51,23 +51,15 @@ async function getRecentlyVisited() {
         wasNotProcessed &&
         !ignoredTitlePrefixes.includes(titlePrefix)
       ) {
-        let nameWithNamespace = item[j].url.replace(store.host + '/', '').split('/-/')[0];
-        if (nameWithNamespace.split('/')[0] != 'groups') {
-          url =
-            store.host +
-            '/api/v4/projects/' +
-            nameWithNamespace.split('/')[0] +
-            '%2F' +
-            nameWithNamespace.split('/')[1] +
-            '?access_token=' +
-            store.access_token;
+        const nameWithNamespace = item[j].url.replace(`${store.host}/`, '').split('/-/')[0];
+        if (nameWithNamespace.split('/')[0] !== 'groups') {
+          url = store.host;
+          `/api/v4/projects/${nameWithNamespace.split('/')[0]}%2F${
+            nameWithNamespace.split('/')[1]
+          }?access_token=${store.access_token}`;
         } else {
-          url =
-            store.host +
-            '/api/v4/groups/' +
-            nameWithNamespace.split('/')[0] +
-            '?access_token=' +
-            store.access_token;
+          url = `${store.host}/api/v4/groups/`;
+          `${nameWithNamespace.split('/')[0]}?access_token=${store.access_token}`;
         }
         await gitdock.fetchUrlInfo(item[j].url).then((result) => {
           item[j].type = result.type;
@@ -75,8 +67,8 @@ async function getRecentlyVisited() {
         item[j].title = item[j].title.split(' · ')[0];
         item[j].title = item[j].title.split(' (')[0];
         recentlyVisitedArray.push(item[j]);
-        i++;
-        if (i == 5) {
+        i += 1;
+        if (i === 5) {
           break;
         }
       }
@@ -123,7 +115,7 @@ module.exports = class CommandPalette {
 
   async open() {
     cpWindow.show();
-    //cpWindow.openDevTools();
+    // cpWindow.openDevTools();
   }
 
   newWindow(show = false) {

@@ -12,7 +12,9 @@ describe('Favorite projects', function () {
     visibility: 'public',
     name: 'GitDock ⚓️',
     title: 'GitDock ⚓️',
-    namespace: { name: 'Marcel van Remmerden' },
+    namespace: {
+      name: 'Marcel van Remmerden',
+    },
     parent_name: 'Marcel van Remmerden / GitDock ⚓️',
     parent_url: 'https://gitlab.com/mvanremmerden',
     name_with_namespace: 'Marcel van Remmerden / GitDock ⚓️',
@@ -39,7 +41,9 @@ describe('Favorite projects', function () {
   };
 
   beforeEach(async function () {
-    await newApp(this, { loggedIn: true });
+    await newApp(this, {
+      loggedIn: true,
+    });
   });
 
   stopAppAfterEach();
