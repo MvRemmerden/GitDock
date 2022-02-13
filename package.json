@@ -1,7 +1,7 @@
 {
   "name": "gitdock",
   "productName": "GitDock",
-  "version": "0.1.19",
+  "version": "0.1.20",
   "description": "A better way of managing all your work on GitLab.",
   "main": "myApp.js",
   "scripts": {
@@ -11,7 +11,9 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "prettier:check": "prettier --check .",
-    "prettier:fix": "prettier --write ."
+    "prettier:fix": "prettier --write .",
+    "lint:check": "eslint --ignore-path .prettierignore --format gitlab .",
+    "lint:fix": "eslint --ignore-path .prettierignore --fix ."
   },
   "repository": "https://github.com/mvremmerden/gitdock",
   "keywords": [
@@ -31,10 +33,16 @@
     "@electron-forge/maker-zip": "^6.0.0-beta.59",
     "@electron-forge/publisher-github": "^6.0.0-beta.59",
     "electron": "^16.0.4",
+    "eslint": "^8.9.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-formatter-gitlab": "^3.0.0",
+    "eslint-plugin-import": "^2.25.3",
+    "eslint-plugin-prettier": "^4.0.0",
     "mocha": "^9.1.2",
     "mocha-junit-reporter": "^2.0.2",
     "mocha-multi-reporters": "^1.5.1",
-    "prettier": "2.4.1"
+    "prettier": "^2.4.1"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.0",
@@ -44,7 +52,8 @@
     "node-browser-history": "^2.4.6",
     "node-fetch": "^2.6.1",
     "playwright": "^1.17.1",
-    "universal-analytics": "^0.4.23"
+    "universal-analytics": "^0.4.23",
+    "uuid": "^8.3.2"
   },
   "config": {
     "forge": {

@@ -63,6 +63,7 @@ install-dependencies-linux:
   only:
     - tags
     - merge_requests
+    - main
   tags:
     - linux
   image: node:latest
@@ -78,6 +79,7 @@ feature-tests:
   only:
     - tags
     - merge_requests
+    - main
   tags:
     - linux
   image: codingpaws/spectron-ci:latest
@@ -112,6 +114,7 @@ prettier:
   only:
     - tags
     - merge_requests
+    - main
   tags:
     - linux
   image: node:latest
@@ -123,6 +126,28 @@ prettier:
     policy: pull
   script:
     - npm run prettier:check
+
+eslint:
+  stage: test
+  only:
+    - tags
+    - merge_requests
+    - main
+  tags:
+    - linux
+  image: node:latest
+  needs: ['install-dependencies-linux']
+  cache:
+    key: $CI_COMMIT_REF_SLUG-linux
+    paths:
+      - node_modules/
+    policy: pull
+  script:
+    - npm run lint:check
+  allow_failure: true
+  artifacts:
+    reports:
+      codequality: gl-codequality.json
 
 build-windows:
   stage: build

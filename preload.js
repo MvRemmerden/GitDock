@@ -31,24 +31,25 @@ const api = {
   logout: () => ipcRenderer.send('logout'),
 };
 
+function deepFreeze(o) {
+  Object.freeze(o);
+
+  Object.getOwnPropertyNames(o).forEach((prop) => {
+    if (
+      Object.prototype.hasOwnProperty.call(o, prop) &&
+      o[prop] !== null &&
+      (typeof o[prop] === 'object' || typeof o[prop] === 'function') &&
+      !Object.isFrozen(o[prop])
+    ) {
+      deepFreeze(o[prop]);
+    }
+  });
+  return o;
+}
+
 if (process.contextIsolated) {
   contextBridge.exposeInMainWorld('electron', api);
 } else {
-  function deepFreeze(o) {
-    Object.freeze(o);
-
-    Object.getOwnPropertyNames(o).forEach((prop) => {
-      if (
-        o.hasOwnProperty(prop) &&
-        o[prop] !== null &&
-        (typeof o[prop] === 'object' || typeof o[prop] === 'function') &&
-        !Object.isFrozen(o[prop])
-      ) {
-        deepFreeze(o[prop]);
-      }
-    });
-    return o;
-  }
   deepFreeze(api);
   // @ts-expect-error https://github.com/electron-userland/spectron#node-integration
   window.electronRequire = require;
@@ -62,7 +63,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (element) element.innerText = text;
   };
 
-  for (const type of ['chrome', 'node', 'electron']) {
+  ['chrome', 'node', 'electron'].forEach((type) => {
     replaceText(`${type}-version`, process.versions[type]);
-  }
+  });
 });

@@ -6,7 +6,7 @@ const api = {
   hideCommandPalette: () => ipcRenderer.send('hide-command-palette'),
   getUsername: () => store.username,
   getFavorites: () => store['favorite-projects'],
-  getBookmarks: () => store['bookmarks'],
+  getBookmarks: () => store.bookmarks,
   getRecents: () => store['recently-visited'],
   getTheme: () => store.theme,
 };

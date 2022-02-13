@@ -1,7 +1,8 @@
+/* eslint-disable no-unused-vars */
 function goToDetail(page, object) {
-  let value = {
-    page: page,
-    object: object,
+  const value = {
+    page,
+    object,
   };
   document.getElementById('detail-view').style.left = 0;
   document.body.style.overflow = 'hidden';
@@ -14,10 +15,10 @@ function goBackToDetail() {
 }
 
 function goToSubDetail(page, project, all = false) {
-  let value = {
-    page: page,
-    project: project,
-    all: all,
+  const value = {
+    page,
+    project,
+    all,
   };
   document.getElementById('sub-detail-view').style.left = 0;
   window.electron.goToSubDetail(value);
@@ -36,27 +37,27 @@ function goToSettings() {
 }
 
 function switchIssues(value, type, text) {
-  let object = {
+  const object = {
     label: value,
-    type: type,
-    text: text,
+    type,
+    text,
   };
   window.electron.switchIssues(object);
 }
 
 function switchMRs(value, type, text) {
-  let object = {
+  const object = {
     label: value,
-    type: type,
-    text: text,
+    type,
+    text,
   };
   window.electron.switchMRs(object);
 }
 
 function switchPage(url, type) {
-  let value = {
-    url: url,
-    type: type,
+  const value = {
+    url,
+    type,
   };
   window.electron.switchPage(value);
 }
@@ -78,9 +79,9 @@ function addBookmark(value) {
 }
 
 function addProject(input, target) {
-  let value = {
-    input: input,
-    target: target,
+  const value = {
+    input,
+    target,
   };
   window.electron.addProject(value);
 }
@@ -137,9 +138,9 @@ function startLogin() {
   window.electron.startLogin();
 }
 
-function startManualLogin(access_token, host, custom_cert_path) {
+function startManualLogin(accessToken, host, custom_cert_path) {
   let value = {
-    access_token: access_token,
+    access_token: accessToken,
     host: host,
     custom_cert_path: custom_cert_path,
   };
