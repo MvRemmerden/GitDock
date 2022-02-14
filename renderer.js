@@ -134,6 +134,10 @@ function chooseCertificate() {
   window.electron.chooseCertificate();
 }
 
+function resetCertificate() {
+  window.electron.resetCertificate();
+}
+
 function startLogin() {
   window.electron.startLogin();
 }

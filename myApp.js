@@ -673,12 +673,30 @@ ipcMain.on('choose-certificate', () => {
       'document.getElementById("custom-cert-path-button").classList.add("hidden")',
     );
     mb.window.webContents.executeJavaScript(
+      `document.getElementById("custom-cert-path-text").innerText="${filepath}"`,
+    );
+    mb.window.webContents.executeJavaScript(
       'document.getElementById("custom-cert-path-text").classList.remove("hidden")',
     );
     mb.window.webContents.executeJavaScript(
-      `document.getElementById("custom-cert-path-text").innerText="${filepath}"`,
+      'document.getElementById("custom-cert-path-reset").classList.remove("hidden")',
     );
   }
+});
+
+ipcMain.on('reset-certificate', () => {
+  mb.window.webContents.executeJavaScript(
+    'document.getElementById("custom-cert-path-button").classList.remove("hidden")',
+  );
+  mb.window.webContents.executeJavaScript(
+    'document.getElementById("custom-cert-path-text").innerText=""',
+  );
+  mb.window.webContents.executeJavaScript(
+    'document.getElementById("custom-cert-path-text").classList.add("hidden")',
+  );
+  mb.window.webContents.executeJavaScript(
+    'document.getElementById("custom-cert-path-reset").classList.add("hidden")',
+  );
 });
 
 ipcMain.on('start-login', () => {
