@@ -9,7 +9,7 @@ const PRELOAD_PATH = path.join(__dirname, 'preload.js');
 let cpWindow;
 
 async function getRecentlyVisited() {
-  recentlyVisitedArray = [];
+  const recentlyVisitedArray = [];
   await BrowserHistory.getAllHistory().then(async (history) => {
     const item = Array.prototype.concat.apply([], history);
     item.sort((a, b) => {
@@ -19,14 +19,17 @@ async function getRecentlyVisited() {
       if (b.utc_time > a.utc_time) {
         return 1;
       }
+      return -1;
     });
     let i = 0;
     for (let j = 0; j < item.length; j += 1) {
       const { title } = item[j];
       let { url } = item[j];
       const isHostUrl = url.startsWith(`${store.host}/`);
-      const isIssuable = url.includes('/-/issues/');
-      url.includes('/-/merge_requests/') || url.includes('/-/epics/');
+      const isIssuable =
+        url.includes('/-/issues/') ||
+        url.includes('/-/merge_requests/') ||
+        url.includes('/-/epics/');
       const displayedTitle = (title || '').split(' · ')[0].split(' (')[0];
       const wasNotProcessed = !recentlyVisitedArray.some(
         (arrayItem) => arrayItem.title === displayedTitle,
@@ -53,19 +56,19 @@ async function getRecentlyVisited() {
       ) {
         const nameWithNamespace = item[j].url.replace(`${store.host}/`, '').split('/-/')[0];
         if (nameWithNamespace.split('/')[0] !== 'groups') {
-          url = store.host;
-          `/api/v4/projects/${nameWithNamespace.split('/')[0]}%2F${
+          url = `${store.host}/api/v4/projects/${nameWithNamespace.split('/')[0]}%2F${
             nameWithNamespace.split('/')[1]
           }?access_token=${store.access_token}`;
         } else {
-          url = `${store.host}/api/v4/groups/`;
-          `${nameWithNamespace.split('/')[0]}?access_token=${store.access_token}`;
+          url = `${store.host}/api/v4/groups/${nameWithNamespace.split('/')[0]}?access_token=${
+            store.access_token
+          }`;
         }
         await gitdock.fetchUrlInfo(item[j].url).then((result) => {
           item[j].type = result.type;
         });
-        item[j].title = item[j].title.split(' · ')[0];
-        item[j].title = item[j].title.split(' (')[0];
+        [item[j].title] = item[j].title.split(' · ');
+        [item[j].title] = item[j].title.split(' (');
         recentlyVisitedArray.push(item[j]);
         i += 1;
         if (i === 5) {
