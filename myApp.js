@@ -1090,15 +1090,15 @@ async function getUser() {
 
     const user = await GitLab.get('user');
     if (user && !user.error) {
-      let avatar_url;
+      let avatarUrl;
       if (user.avatar_url) {
-        avatar_url = new URL(user.avatar_url);
-        if (avatar_url.host !== 'secure.gravatar.com') {
-          avatar_url.href += '?width=64';
+        avatarUrl = new URL(user.avatar_url);
+        if (avatarUrl.host !== 'secure.gravatar.com') {
+          avatarUrl.href += '?width=64';
         }
       }
       const userString = `<a href="${user.web_url}" target="_blank"><img src="${
-        avatar_url.href
+        avatarUrl.href
       }" /><div class="user-information"><span class="user-name">${escapeHtml(
         user.name,
       )}</span><span class="username">@${escapeHtml(user.username)}</span></div></a>`;
@@ -1177,7 +1177,7 @@ async function getLastCommits(count = 20) {
         );
       });
       if (committedArray && committedArray.length > 0) {
-        currentCommit = committedArray[0];
+        [currentCommit] = committedArray;
         recentCommits = committedArray;
         getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1);
       } else {
@@ -1212,7 +1212,7 @@ async function getProjectCommits(project, count = 20) {
 
   if (commits && commits.length > 0) {
     recentProjectCommits = commits;
-    currentProjectCommit = commits[0];
+    [currentProjectCommit] = commits;
 
     const commit = await GitLab.get(`projects/${project.id}/repository/commits/${commits[0].id}`, {
       per_page: count,
@@ -1322,7 +1322,7 @@ function changeCommit(forward = true, commitArray, chosenCommit) {
   let index = commitArray.findIndex((commit) => commit.id === chosenCommit.id);
   if (forward) {
     if (index === commitArray.length - 1) {
-      nextCommit = commitArray[0];
+      [nextCommit] = commitArray;
       index = 1;
     } else {
       nextCommit = commitArray[index + 1];
@@ -1338,14 +1338,14 @@ function changeCommit(forward = true, commitArray, chosenCommit) {
   return nextCommit;
 }
 
-async function getCommitDetails(project_id, sha, index) {
+async function getCommitDetails(projectId, sha, index) {
   mb.window.webContents.executeJavaScript(
     'document.getElementById("commits-count").classList.remove("empty")',
   );
   mb.window.webContents.executeJavaScript(
     `document.getElementById("commits-count").innerHTML = "${index}/${recentCommits.length}"`,
   );
-  const project = await GitLab.get(`projects/${project_id}`);
+  const project = await GitLab.get(`projects/${projectId}`);
   const commit = await GitLab.get(`projects/${project.id}/repository/commits/${sha}`);
   mb.window.webContents.executeJavaScript(
     `document.getElementById("pipeline").innerHTML = "${escapeQuotes(
@@ -1354,7 +1354,7 @@ async function getCommitDetails(project_id, sha, index) {
   );
 }
 
-async function getProjectCommitDetails(project_id, sha, index) {
+async function getProjectCommitDetails(projectId, sha, index) {
   mb.window.webContents.executeJavaScript(
     'document.getElementById("project-commits-count").classList.remove("empty")',
   );
@@ -1362,7 +1362,7 @@ async function getProjectCommitDetails(project_id, sha, index) {
     `document.getElementById("project-commits-count").innerHTML = "${index}/${recentProjectCommits.length}"`,
   );
 
-  const commit = await GitLab.get(`projects/${project_id}/repository/commits/${sha}`);
+  const commit = await GitLab.get(`projects/${projectId}/repository/commits/${sha}`);
   mb.window.webContents.executeJavaScript(
     `document.getElementById("project-pipeline").innerHTML = "${escapeQuotes(
       displayCommit(commit, currentProject, 'author'),
@@ -1878,9 +1878,9 @@ function getBookmarks() {
   if (bookmarks && bookmarks.length > 0) {
     bookmarksString = '<ul class="list-container">';
     bookmarks.forEach((bookmark) => {
-      let namespace_link = '';
+      let namespaceLink = '';
       if (bookmark.parent_name && bookmark.parent_url) {
-        namespace_link = ` &middot; <a href="${bookmark.parent_url}" target="_blank">${escapeHtml(
+        namespaceLink = ` &middot; <a href="${bookmark.parent_url}" target="_blank">${escapeHtml(
           bookmark.parent_name,
         )}</a>`;
       }
@@ -1898,7 +1898,7 @@ function getBookmarks() {
         title,
       )}</a><span class="namespace-with-time">Added ${timeSince(
         bookmark.added,
-      )} ago${namespace_link}</span></div><div class="bookmark-delete-wrapper"><div class="bookmark-delete" onclick="deleteBookmark('${sha256hex(
+      )} ago${namespaceLink}</span></div><div class="bookmark-delete-wrapper"><div class="bookmark-delete" onclick="deleteBookmark('${sha256hex(
         bookmark.web_url,
       )}')">${removeIcon}</div></div></li>`;
     });
@@ -2161,21 +2161,22 @@ function addBookmark(link) {
 }
 
 function addProject(link, target) {
-  if (target === 'project-settings-link') {
-    target = '-settings-';
-  } else if (target === 'project-overview-link') {
-    target = '-overview-';
+  let newTarget = target;
+  if (newTarget === 'project-settings-link') {
+    newTarget = '-settings-';
+  } else if (newTarget === 'project-overview-link') {
+    newTarget = '-overview-';
   }
   const spinner =
     '<svg class="button-spinner" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14"><g fill="none" fill-rule="evenodd"><circle cx="7" cy="7" r="6" stroke="#c9d1d9" stroke-opacity=".4" stroke-width="2"/><path class="icon" fill-opacity=".4" fill-rule="nonzero" d="M7 0a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V0z"/></g></svg>';
   mb.window.webContents.executeJavaScript(
-    `document.getElementById("project${target}add-button").disabled = "disabled"`,
+    `document.getElementById("project${newTarget}add-button").disabled = "disabled"`,
   );
   mb.window.webContents.executeJavaScript(
-    `document.getElementById("project${target}link").disabled = "disabled"`,
+    `document.getElementById("project${newTarget}link").disabled = "disabled"`,
   );
   mb.window.webContents.executeJavaScript(
-    `document.getElementById("project${target}add-button").innerHTML = "${escapeQuotes(
+    `document.getElementById("project${newTarget}add-button").innerHTML = "${escapeQuotes(
       spinner,
     )} Add"`,
   );
@@ -2206,29 +2207,29 @@ function addProject(link, target) {
                 forks_count: project.forks_count,
               });
               store['favorite-projects'] = projects;
-              if (target === '-settings-') {
+              if (newTarget === '-settings-') {
                 openSettingsPage();
               }
               displayUsersProjects(projects);
             })
             .catch(() => {
-              displayAddError('project', target);
+              displayAddError('project', newTarget);
             });
         } else {
           const projects = store['favorite-projects'] || [];
           projects.push(project);
           store['favorite-projects'] = projects;
-          if (target === '-settings-') {
+          if (newTarget === '-settings-') {
             openSettingsPage();
           }
           displayUsersProjects(projects);
         }
       })
       .catch(() => {
-        displayAddError('project', target);
+        displayAddError('project', newTarget);
       });
   } else {
-    displayAddError('project', target);
+    displayAddError('project', newTarget);
   }
 }
 
