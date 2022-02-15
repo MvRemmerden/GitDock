@@ -662,41 +662,17 @@ ipcMain.on('change-show-dock-icon', (event, arg) => {
 });
 
 ipcMain.on('choose-certificate', () => {
-  mb.window.setAlwaysOnTop(true);
-  const filepaths = dialog.showOpenDialogSync();
-  setTimeout(() => {
-    mb.window.setAlwaysOnTop(false);
-  }, 200);
-  if (filepaths) {
-    const filepath = filepaths[0].replace(/\\/g, '/'); // convert \ to / otherwise separators get lost on windows
-    mb.window.webContents.executeJavaScript(
-      'document.getElementById("custom-cert-path-button").classList.add("hidden")',
-    );
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("custom-cert-path-text").innerText="${filepath}"`,
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.getElementById("custom-cert-path-text").classList.remove("hidden")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.getElementById("custom-cert-path-reset").classList.remove("hidden")',
-    );
-  }
+  chooseCertificate();
 });
 
 ipcMain.on('reset-certificate', () => {
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("custom-cert-path-button").classList.remove("hidden")',
-  );
   mb.window.webContents.executeJavaScript(
     'document.getElementById("custom-cert-path-text").innerText=""',
   );
   mb.window.webContents.executeJavaScript(
     'document.getElementById("custom-cert-path-text").classList.add("hidden")',
   );
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("custom-cert-path-reset").classList.add("hidden")',
-  );
+  chooseCertificate();
 });
 
 ipcMain.on('start-login', () => {
@@ -769,7 +745,7 @@ if (store.access_token && store.user_id && store.username) {
   });
 } else {
   mb.on('after-create-window', () => {
-    // mb.window.webContents.openDevTools()
+    mb.window.webContents.openDevTools();
     mb.window.loadURL(`file://${__dirname}/login.html`).then(() => {
       changeTheme(store.theme, false);
       mb.showWindow();
@@ -835,6 +811,29 @@ function setupCommandPalette() {
   commandPalette.register({
     shortcut: store.shortcuts,
   });
+}
+
+function chooseCertificate() {
+  mb.window.setAlwaysOnTop(true);
+  const filepaths = dialog.showOpenDialogSync();
+  setTimeout(() => {
+    mb.window.setAlwaysOnTop(false);
+  }, 200);
+  if (filepaths) {
+    const filepath = filepaths[0].replace(/\\/g, '/'); // convert \ to / otherwise separators get lost on windows
+    mb.window.webContents.executeJavaScript(
+      'document.getElementById("custom-cert-path-button").classList.add("hidden")',
+    );
+    mb.window.webContents.executeJavaScript(
+      `document.getElementById("custom-cert-path-text").innerText="${filepath}"`,
+    );
+    mb.window.webContents.executeJavaScript(
+      'document.getElementById("custom-cert-path-text").classList.remove("hidden")',
+    );
+    mb.window.webContents.executeJavaScript(
+      'document.getElementById("custom-cert-path-reset").classList.remove("hidden")',
+    );
+  }
 }
 
 function openSettingsPage() {
