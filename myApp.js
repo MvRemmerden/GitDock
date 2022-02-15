@@ -869,12 +869,12 @@ function openSettingsPage() {
     let favoriteProjects =
       '<div class="headline"><span class="name">Favorite projects</span></div><div id="favorite-projects"><ul class="list-container">';
     if (projects && projects.length > 0) {
-      for (const project of projects) {
+      projects.forEach((project) => {
         favoriteProjects += `<li>${projectIcon}<div class="name-with-namespace"><span>${escapeHtml(
           project.name,
         )}</span><span class="namespace">${escapeHtml(project.namespace.name)}</span></div>`;
         favoriteProjects += `<div class="bookmark-delete-wrapper"><div class="bookmark-delete" onclick="deleteProject(${project.id})">${removeIcon}</div></div></li>`;
-      }
+      });
     }
     favoriteProjects += `<li id="add-project-dialog" class="more-link"><a onclick="startProjectDialog()">Add another project ${chevronRightIcon}</a></li></ul></div>`;
     let preferences =
@@ -913,9 +913,9 @@ function openSettingsPage() {
     } onclick="changeAnalytics(true)"><label for="analytics-yes">Yes, collect anonymous data.</label></div><div><input type="radio" id="analytics-no" name="analytics" value="no"${
       !store.analytics ? ' checked' : ''
     } onclick="changeAnalytics(false)"><label for="analytics-no">No, do not collect any data.</label></div></form>`;
-    const logout =
+    const signout =
       '<div class="headline"><span class="name">User</span></div><div id="user-administration"><button id="logout-button" onclick="logout()">Log out</button></div>';
-    settingsString = theme + favoriteProjects + preferences + shortcut + analyticsString + logout;
+    settingsString = theme + favoriteProjects + preferences + shortcut + analyticsString + signout;
   } else {
     settingsString = theme;
   }
@@ -1030,9 +1030,7 @@ function sha256(buffer) {
 async function saveUser(accessToken, url = store.host, customCertPath = undefined) {
   try {
     /* eslint-disable-next-line object-curly-newline, max-len, prettier/prettier */
-    const options = customCertPath
-      ? { access_token: accessToken, custom_cert_path: customCertPath }
-      : { access_token: accessToken };
+    const options = customCertPath ? { access_token: accessToken, custom_cert_path: customCertPath } : { access_token: accessToken };
     const result = await GitLab.get('user', options, url);
     if (result && result.id && result.username) {
       store.access_token = accessToken;
@@ -1056,8 +1054,8 @@ async function saveUser(accessToken, url = store.host, customCertPath = undefine
             getRecentlyVisited();
             getLastCommits();
             getRecentComments();
-            mb.window.webContents.setWindowOpenHandler(({ url }) => {
-              shell.openExternal(url);
+            mb.window.webContents.setWindowOpenHandler((external) => {
+              shell.openExternal(external);
               return {
                 action: 'deny',
               };
@@ -1070,8 +1068,8 @@ async function saveUser(accessToken, url = store.host, customCertPath = undefine
             getRecentlyVisited();
             getLastCommits();
             getRecentComments();
-            mb.window.webContents.setWindowOpenHandler(({ url }) => {
-              shell.openExternal(url);
+            mb.window.webContents.setWindowOpenHandler((external) => {
+              shell.openExternal(external);
               return {
                 action: 'deny',
               };
