@@ -1030,7 +1030,9 @@ function sha256(buffer) {
 async function saveUser(accessToken, url = store.host, customCertPath = undefined) {
   try {
     /* eslint-disable-next-line object-curly-newline, max-len, prettier/prettier */
-    const options = customCertPath ? { access_token: accessToken, custom_cert_path: customCertPath } : { access_token: accessToken };
+    const options = customCertPath
+      ? { access_token: accessToken, custom_cert_path: customCertPath }
+      : { access_token: accessToken };
     const result = await GitLab.get('user', options, url);
     if (result && result.id && result.username) {
       store.access_token = accessToken;
@@ -1166,14 +1168,13 @@ async function getLastCommits(count = 20) {
     if (commits && commits.length > 0) {
       lastEventId = commits[0].id;
       getLastPipelines(commits);
-      const committedArray = commits.filter((commit) => {
-        return (
+      const committedArray = commits.filter(
+        (commit) =>
           commit.action_name === 'pushed to' ||
           (commit.action_name === 'pushed new' &&
             commit.push_data.commit_to &&
-            commit.push_data.commit_count > 0)
-        );
-      });
+            commit.push_data.commit_count > 0),
+      );
       if (committedArray && committedArray.length > 0) {
         [currentCommit] = committedArray;
         recentCommits = committedArray;
@@ -1242,7 +1243,7 @@ async function getProjectCommits(project, count = 20) {
 async function getLastPipelines(commits) {
   const projectArray = [];
   if (commits && commits.length > 0) {
-    for (const commit of commits) {
+    commits.forEach(async (commit) => {
       if (!projectArray.includes(commit.project_id)) {
         projectArray.push(commit.project_id);
         const pipelines = await GitLab.get(`projects/${commit.project_id}/pipelines`, {
@@ -1253,38 +1254,39 @@ async function getLastPipelines(commits) {
         });
         if (pipelines && pipelines.length > 0) {
           mb.tray.setImage(`${__dirname}/assets/runningTemplate.png`);
-          for (const pipeline of pipelines) {
+          pipelines.forEach(async (pipeline) => {
+            const commitPipeline = pipeline;
             if (
               runningPipelineSubscriptions.findIndex(
                 (subscriptionPipeline) => subscriptionPipeline.id === pipeline.id,
               ) === -1
             ) {
-              const commit = await GitLab.get(
+              const pipelineCommit = await GitLab.get(
                 `projects/${pipeline.project_id}/repository/commits/${pipeline.sha}`,
               );
-              pipeline.commit_title = commit.title;
-              runningPipelineSubscriptions.push(pipeline);
+              commitPipeline.commit_title = pipelineCommit.title;
+              runningPipelineSubscriptions.push(commitPipeline);
               const runningNotification = new Notification({
                 title: 'Pipeline running',
-                subtitle: GitLab.fetchUrlInfo(pipeline.web_url).namespaceWithProject,
-                body: pipeline.commit_title,
+                subtitle: GitLab.fetchUrlInfo(commitPipeline.web_url).namespaceWithProject,
+                body: commitPipeline.commit_title,
               });
               runningNotification.on('click', () => {
-                shell.openExternal(pipeline.web_url);
+                shell.openExternal(commitPipeline.web_url);
               });
               runningNotification.show();
             }
-          }
+          });
           subscribeToRunningPipeline();
         }
       }
-    }
+    });
   }
 }
 
 async function subscribeToRunningPipeline() {
   const interval = setInterval(async () => {
-    for (const runningPipeline of runningPipelineSubscriptions) {
+    runningPipelineSubscriptions.forEach(async (runningPipeline) => {
       const pipeline = await GitLab.get(
         `projects/${runningPipeline.project_id}/pipelines/${runningPipeline.id}`,
       );
@@ -1311,7 +1313,7 @@ async function subscribeToRunningPipeline() {
           mb.tray.setImage(`${__dirname}/assets/gitlabTemplate.png`);
         }
       }
-    }
+    });
   }, 10000);
 }
 
@@ -1561,7 +1563,7 @@ function searchRecentlyVisited(searchterm) {
     item.title.toLowerCase().includes(searchterm),
   );
   foundString = '<ul class="list-container">';
-  for (const item of foundArray) {
+  foundArray.forEach((item) => {
     const nameWithNamespace = item.url.replace(`${store.host}/`, '').split('/-/')[0];
     if (nameWithNamespace.split('/')[0] !== 'groups') {
       url = `${store.host}/api/v4/projects/${nameWithNamespace.split('/')[0]}%2F${
@@ -1580,7 +1582,7 @@ function searchRecentlyVisited(searchterm) {
     )} ago &middot; <a href="${item.url.split('/-/')[0]}" target="_blank">${escapeHtml(
       item.title.split('·')[2].trim(),
     )}</a></span></div></li>`;
-  }
+  });
   foundString += '</ul>';
   mb.window.webContents.executeJavaScript(
     `document.getElementById("detail-content").innerHTML = "${escapeQuotes(foundString)}"`,
@@ -1618,7 +1620,7 @@ function displayUsersProjects() {
     favoriteProjectsString +=
       '<ul class="list-container clickable" data-testid="favorite-projects">';
     const chevron = chevronLgRightIcon;
-    for (const projectObject of projects) {
+    projects.forEach((projectObject) => {
       const projectString = "'Project'";
       const jsonProjectObject = JSON.parse(JSON.stringify(projectObject));
       jsonProjectObject.name_with_namespace = projectObject.name_with_namespace;
@@ -1631,7 +1633,7 @@ function displayUsersProjects() {
       )}</span><span class="namespace">${escapeHtml(
         projectObject.namespace.name,
       )}</span></div><div class="chevron-right-wrapper">${chevron}</div></li>`;
-    }
+    });
     favoriteProjectsString += '</ul>';
   } else {
     const projectLink = "'project-overview-link'";
@@ -1694,12 +1696,12 @@ function getMoreRecentComments(
       return result.json();
     })
     .then(async (comments) => {
-      for (const comment of comments) {
+      comments.forEach(async (comment) => {
         const path = GitLab.commentToNoteableUrl(comment);
         const collabject = await GitLab.get(path);
 
         recentCommentsString += renderCollabject(comment, collabject);
-      }
+      });
       recentCommentsString += `</ul>${displayPagination(keysetLinks, type)}`;
       mb.window.webContents.executeJavaScript(
         `document.getElementById("detail-content").innerHTML = "${escapeQuotes(
@@ -1710,29 +1712,30 @@ function getMoreRecentComments(
 }
 
 function renderCollabject(comment, collabject) {
-  if (collabject.message && collabject.message === '404 Not found') {
-    console.log('deleted', collabject.id);
+  const collabObject = collabject;
+  if (collabObject.message && collabObject.message === '404 Not found') {
+    console.log('deleted', collabObject.id);
   } else if (comment.note.noteable_type === 'DesignManagement::Design') {
-    collabject.web_url += `/designs/${comment.target_title}`;
-    return `<li class="comment"><a href="${collabject.web_url}#note_${
+    collabObject.web_url += `/designs/${comment.target_title}`;
+    return `<li class="comment"><a href="${collabObject.web_url}#note_${
       comment.note.id
     }" target="_blank">${escapeHtml(
       comment.note.body,
     )}</a><span class="namespace-with-time">${timeSince(
       new Date(comment.created_at),
-    )} ago &middot; <a href="${collabject.web_url.split('#note')[0]}" target="_blank">${escapeHtml(
-      comment.target_title,
-    )}</a></span></div></li>`;
+    )} ago &middot; <a href="${
+      collabObject.web_url.split('#note')[0]
+    }" target="_blank">${escapeHtml(comment.target_title)}</a></span></div></li>`;
   } else {
-    return `<li class="comment"><a href="${collabject.web_url}#note_${
+    return `<li class="comment"><a href="${collabObject.web_url}#note_${
       comment.note.id
     }" target="_blank">${escapeHtml(
       comment.note.body,
     )}</a><span class="namespace-with-time">${timeSince(
       new Date(comment.created_at),
-    )} ago &middot; <a href="${collabject.web_url.split('#note')[0]}" target="_blank">${escapeHtml(
-      comment.target_title,
-    )}</a></span></div></li>`;
+    )} ago &middot; <a href="${
+      collabObject.web_url.split('#note')[0]
+    }" target="_blank">${escapeHtml(comment.target_title)}</a></span></div></li>`;
   }
 }
 
@@ -1751,7 +1754,7 @@ function getIssues(
     .then((issues) => {
       if (issues && issues.length > 0) {
         issuesString += '<ul class="list-container">';
-        for (const issue of issues) {
+        issues.forEach((issue) => {
           let timestamp;
           if (activeIssuesSortOption === 'updated_at') {
             timestamp = `Updated ${timeSince(new Date(issue.updated_at))} ago`;
@@ -1774,7 +1777,7 @@ function getIssues(
           }" target="_blank">${escapeHtml(
             issue.references.full.split('#')[0],
           )}</a></span></div></li>`;
-        }
+        });
         issuesString += `</ul>${displayPagination(keysetLinks, type)}`;
       } else {
         const illustration = todosAllDoneIllustration;
@@ -1801,7 +1804,7 @@ function getMRs(
     .then((mrs) => {
       if (mrs && mrs.length > 0) {
         mrsString = '<ul class="list-container">';
-        for (const mr of mrs) {
+        mrs.forEach((mr) => {
           let timestamp;
           if (activeMRsSortOption === 'updated_at') {
             timestamp = `Updated ${timeSince(new Date(mr.updated_at))} ago`;
@@ -1814,7 +1817,7 @@ function getMRs(
           )}</a><span class="namespace-with-time">${timestamp} &middot; <a href="${
             mr.web_url.split('/-/')[0]
           }" target="_blank">${escapeHtml(mr.references.full.split('!')[0])}</a></span></div></li>`;
-        }
+        });
         mrsString += `</ul>${displayPagination(keysetLinks, type)}`;
       } else {
         const illustration = todosAllDoneIllustration;
@@ -1840,25 +1843,26 @@ function getTodos(
     .then((todos) => {
       if (todos && todos.length > 0) {
         todosString = '<ul class="list-container">';
-        for (const todo of todos) {
+        todos.forEach((todo) => {
+          const item = todo;
           todosString += '<li class="history-entry">';
           let location = '';
-          if (todo.project) {
-            location = todo.project.name_with_namespace;
-          } else if (todo.group) {
-            location = todo.group.name;
+          if (item.project) {
+            location = item.project.name_with_namespace;
+          } else if (item.group) {
+            location = item.group.name;
           }
-          if (todo.target_type === 'DesignManagement::Design') {
-            todo.target.title = todo.body;
+          if (item.target_type === 'DesignManagement::Design') {
+            item.target.title = item.body;
           }
-          todosString += `<a href="${todo.target_url}" target="_blank">${escapeHtml(
-            todo.target.title,
+          todosString += `<a href="${item.target_url}" target="_blank">${escapeHtml(
+            item.target.title,
           )}</a><span class="namespace-with-time">Updated ${timeSince(
-            new Date(todo.updated_at),
-          )} ago &middot; <a href="${todo.target_url.split('/-/')[0]}" target="_blank">${escapeHtml(
+            new Date(item.updated_at),
+          )} ago &middot; <a href="${item.target_url.split('/-/')[0]}" target="_blank">${escapeHtml(
             location,
           )}</a></span></div></li>`;
-        }
+        });
         todosString += `</ul>${displayPagination(keysetLinks, type)}`;
       } else {
         const illustration = todosAllDoneIllustration;
@@ -1996,14 +2000,14 @@ async function getProjectIssues(project) {
   });
   if (issues.length > 0) {
     projectIssuesString = '<ul class="list-container">';
-    for (const issue of issues) {
+    issues.forEach((issue) => {
       projectIssuesString += '<li class="history-entry">';
       projectIssuesString += `<a href="${issue.web_url}" target="_blank">${escapeHtml(
         issue.title,
       )}</a><span class="namespace-with-time">Created ${timeSince(
         new Date(issue.created_at),
       )} ago &middot; ${escapeHtml(issue.author.name)}</span></div></li>`;
-    }
+    });
     projectIssuesString += `<li class="more-link"><a onclick="goToSubDetail(${issuesString}, ${projectString})">View more ${chevronRightIcon}</a></li>`;
     projectIssuesString += '</ul>';
   } else {
@@ -2034,14 +2038,14 @@ async function getProjectMRs(project) {
 
   if (mrs.length > 0) {
     projectMRsString += '<ul class="list-container">';
-    for (const mr of mrs) {
+    mrs.forEach((mr) => {
       projectMRsString += '<li class="history-entry">';
       projectMRsString += `<a href="${mr.web_url}" target="_blank">${escapeHtml(
         mr.title,
       )}</a><span class="namespace-with-time">Created ${timeSince(
         new Date(mr.created_at),
       )} ago &middot; ${escapeHtml(mr.author.name)}</span></div></li>`;
-    }
+    });
     projectMRsString += `<li class="more-link"><a onclick="goToSubDetail(${mrsString}, ${projectString})">View more ${chevronRightIcon}</a></li>`;
     projectMRsString += '</ul>';
   } else {
@@ -2180,8 +2184,8 @@ function addProject(link, target) {
   );
   if (GitLab.urlHasValidHost(link)) {
     GitLab.parseUrl(link)
-      .then((project) => {
-        if (project.type && project.type !== 'projects') {
+      .then((object) => {
+        if (object.type && object.type !== 'projects') {
           const projectWithNamespace = encodeURIComponent(link.split(`${store.host}/`)[1]);
           GitLab.get(`projects/${projectWithNamespace}`)
             .then((project) => {
@@ -2215,7 +2219,7 @@ function addProject(link, target) {
             });
         } else {
           const projects = store['favorite-projects'] || [];
-          projects.push(project);
+          projects.push(object);
           store['favorite-projects'] = projects;
           if (newTarget === '-settings-') {
             openSettingsPage();
