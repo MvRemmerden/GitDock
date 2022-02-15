@@ -745,7 +745,7 @@ if (store.access_token && store.user_id && store.username) {
   });
 } else {
   mb.on('after-create-window', () => {
-    mb.window.webContents.openDevTools();
+    // mb.window.webContents.openDevTools();
     mb.window.loadURL(`file://${__dirname}/login.html`).then(() => {
       changeTheme(store.theme, false);
       mb.showWindow();
