@@ -130,14 +130,23 @@ function changeShowDockIcon(value) {
   window.electron.changeShowDockIcon(value);
 }
 
+function chooseCertificate() {
+  window.electron.chooseCertificate();
+}
+
+function resetCertificate() {
+  window.electron.resetCertificate();
+}
+
 function startLogin() {
   window.electron.startLogin();
 }
 
-function startManualLogin(accessToken, host) {
+function startManualLogin(accessToken, host, customCertPath) {
   const value = {
     access_token: accessToken,
     host,
+    custom_cert_path: customCertPath,
   };
   window.electron.startManualLogin(value);
 }
