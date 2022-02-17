@@ -1,3 +1,4 @@
+/* eslint no-undef: 0 */
 const $search = document.querySelector('input');
 const $results = document.querySelector('#results');
 let html = [];
@@ -80,6 +81,7 @@ function matcher({ title }) {
 
   let matchCount = 1;
 
+  /* eslint-disable no-restricted-syntax */
   for (const term of terms) {
     matchCount += lowerCaseTitle.split(' ').filter((x) => x.includes(term)).length;
     const newTitle = lowerCaseTitle.replace(term, '');
@@ -88,6 +90,7 @@ function matcher({ title }) {
     }
     lowerCaseTitle = newTitle;
   }
+  /* eslint-enable */
 
   return matchCount;
 }
@@ -181,6 +184,7 @@ function search() {
   if (availableOverviews.length > 0) {
     html.push('<h5>Overview</h5>');
 
+    /* eslint-disable no-restricted-syntax */
     for (const [key, action] of availableOverviews) {
       const icon = action.icon ? `${action.icon}` : '';
       html.push(
@@ -197,6 +201,7 @@ function search() {
   if (availableFavorites.length > 0) {
     html.push('<h5>Favorite projects</h5>');
 
+    /* eslint-disable no-restricted-syntax */
     for (const [key, action] of availableFavorites) {
       const avatar = action.avatar_url ? `<img src="${action.avatar_url}" />` : projectIcon;
       html.push(
@@ -208,11 +213,13 @@ function search() {
       );
       i += 1;
     }
+    /* eslint-enable */
   }
 
   if (availableBookmarks.length > 0) {
     html.push('<h5>Bookmarks</h5>');
 
+    /* eslint-disable no-restricted-syntax */
     for (const [key, action] of availableBookmarks) {
       let icon;
       if (action.type === 'issues') {
@@ -232,11 +239,13 @@ function search() {
       );
       i += 1;
     }
+    /* eslint-enable */
   }
 
   if (availableRecents.length > 0) {
     html.push('<h5>Recently viewed</h5>');
 
+    /* eslint-disable no-restricted-syntax */
     for (const [key, action] of availableRecents) {
       let icon;
       if (action.type === 'issues') {
@@ -256,11 +265,13 @@ function search() {
       );
       i += 1;
     }
+    /* eslint-enable */
   }
 
   if (availableActions.length > 0) {
     html.push('<h5>Actions</h5>');
 
+    /* eslint-disable no-restricted-syntax */
     for (const [key, action] of availableActions) {
       const icon = action.icon ? `${action.icon}` : '';
       html.push(
@@ -272,6 +283,7 @@ function search() {
       );
       i += 1;
     }
+    /* eslint-enable */
   }
 
   $results.innerHTML = html.join('\n');

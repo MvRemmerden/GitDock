@@ -144,7 +144,6 @@ eslint:
     policy: pull
   script:
     - npm run lint:check
-  allow_failure: true
   artifacts:
     reports:
       codequality: gl-codequality.json
