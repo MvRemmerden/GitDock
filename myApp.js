@@ -566,8 +566,8 @@ function getBookmarks() {
 async function getRecentlyVisited() {
   if (lastRecentlyVisitedExecutionFinished && lastRecentlyVisitedExecution + delay < Date.now()) {
     lastRecentlyVisitedExecutionFinished = false;
-    recentlyVisitedArray = [];
-    let recentlyVisitedString = '';
+    const recentlyVisitedArray = [];
+    recentlyVisitedString = '';
     let firstItem = true;
     await BrowserHistory.getAllHistory().then(async (history) => {
       const item = Array.prototype.concat.apply([], history);
@@ -578,6 +578,7 @@ async function getRecentlyVisited() {
         if (b.utc_time > a.utc_time) {
           return 1;
         }
+        return -1;
       });
       let i = 0;
       for (let j = 0; j < item.length; j += 1) {
@@ -603,13 +604,13 @@ async function getRecentlyVisited() {
           }
           const nameWithNamespace = item[j].url.replace(`${store.host}/`, '').split('/-/')[0];
           if (nameWithNamespace.split('/')[0] !== 'groups') {
-            url = `${store.host}/api/v4/projects/${nameWithNamespace.split('/')[0]}%2F${
+            item.url = `${store.host}/api/v4/projects/${nameWithNamespace.split('/')[0]}%2F${
               nameWithNamespace.split('/')[1]
             }?access_token=${store.access_token}`;
           } else {
-            url = `${store.host}/api/v4/groups/${nameWithNamespace.split('/')[0]}?access_token=${
-              store.access_token
-            }`;
+            item.url = `${store.host}/api/v4/groups/${
+              nameWithNamespace.split('/')[0]
+            }?access_token=${store.access_token}`;
           }
           recentlyVisitedArray.push(item[j].title);
           if (item[j].title !== 'Checking your Browser - GitLab') {
@@ -652,6 +653,7 @@ async function subscribeToRunningPipeline() {
       const pipeline = await GitLab.get(
         `projects/${runningPipeline.project_id}/pipelines/${runningPipeline.id}`,
       );
+      let pipelineStatus;
       if (pipeline.status !== 'running') {
         if (pipeline.status === 'success') {
           pipelineStatus = 'succeeded';
@@ -780,8 +782,9 @@ function displayPagination(keysetLinks, type) {
 function renderCollabject(comment, collabject) {
   const collabObject = collabject;
   if (collabObject.message && collabObject.message === '404 Not found') {
-    console.log('deleted', collabObject.id);
-  } else if (comment.note.noteable_type === 'DesignManagement::Design') {
+    return 0;
+  }
+  if (comment.note.noteable_type === 'DesignManagement::Design') {
     collabObject.web_url += `/designs/${comment.target_title}`;
     return `<li class="comment"><a href="${collabObject.web_url}#note_${
       comment.note.id
@@ -792,17 +795,16 @@ function renderCollabject(comment, collabject) {
     )} ago &middot; <a href="${
       collabObject.web_url.split('#note')[0]
     }" target="_blank">${escapeHtml(comment.target_title)}</a></span></div></li>`;
-  } else {
-    return `<li class="comment"><a href="${collabObject.web_url}#note_${
-      comment.note.id
-    }" target="_blank">${escapeHtml(
-      comment.note.body,
-    )}</a><span class="namespace-with-time">${timeSince(
-      new Date(comment.created_at),
-    )} ago &middot; <a href="${
-      collabObject.web_url.split('#note')[0]
-    }" target="_blank">${escapeHtml(comment.target_title)}</a></span></div></li>`;
   }
+  return `<li class="comment"><a href="${collabObject.web_url}#note_${
+    comment.note.id
+  }" target="_blank">${escapeHtml(
+    comment.note.body,
+  )}</a><span class="namespace-with-time">${timeSince(
+    new Date(comment.created_at),
+  )} ago &middot; <a href="${collabObject.web_url.split('#note')[0]}" target="_blank">${escapeHtml(
+    comment.target_title,
+  )}</a></span></div></li>`;
 }
 
 function displayCommit(commit, project, focus = 'project') {
@@ -888,11 +890,13 @@ async function getLastCommits(count = 20) {
       lastEventId = commits[0].id;
       getLastPipelines(commits);
       const committedArray = commits.filter(
+        /* eslint-disable implicit-arrow-linebreak */
         (commit) =>
           commit.action_name === 'pushed to' ||
           (commit.action_name === 'pushed new' &&
             commit.push_data.commit_to &&
             commit.push_data.commit_count > 0),
+        /* eslint-enable */
       );
       if (committedArray && committedArray.length > 0) {
         [currentCommit] = committedArray;
@@ -935,6 +939,7 @@ async function getRecentComments() {
 
     if (comments && comments.length > 0) {
       recentCommentsString += '<ul class="list-container">';
+      /* eslint-disable no-restricted-syntax, no-continue, no-await-in-loop */
       for (const comment of comments) {
         const path = GitLab.commentToNoteableUrl(comment);
 
@@ -946,6 +951,7 @@ async function getRecentComments() {
 
         recentCommentsString += renderCollabject(comment, collabject);
       }
+      // eslint-disable no-restricted-syntax */
       const moreString = "'Comments'";
       recentCommentsString += `<li class="more-link"><a onclick="goToDetail(${moreString})">View more ${chevronRightIcon}</a></li></ul>`;
       mb.window.webContents.executeJavaScript(
@@ -982,6 +988,7 @@ function handleLogin() {
     })
       .then((result) => result.json())
       .then((result) => {
+        // eslint-disable-next-line no-use-before-define
         saveUser(result.access_token);
       });
   }
@@ -989,10 +996,11 @@ function handleLogin() {
 
 async function saveUser(accessToken, url = store.host, customCertPath = undefined) {
   try {
-    /* eslint-disable-next-line object-curly-newline, max-len, prettier/prettier */
+    /* eslint-disable operator-linebreak, object-curly-newline */
     const options = customCertPath
       ? { access_token: accessToken, custom_cert_path: customCertPath }
       : { access_token: accessToken };
+    /* eslint-enable */
     const result = await GitLab.get('user', options, url);
     if (result && result.id && result.username) {
       store.access_token = accessToken;
@@ -1040,7 +1048,7 @@ async function saveUser(accessToken, url = store.host, customCertPath = undefine
       });
     }
   } catch (e) {
-    console.log(e);
+    throw new Error(e);
   }
 }
 
@@ -1134,7 +1142,7 @@ async function getProjectCommits(project, count = 20) {
   }
 }
 
-function changeCommit(forward = true, commitArray, chosenCommit) {
+function changeCommit(forward, commitArray, chosenCommit) {
   let nextCommit;
   let index = commitArray.findIndex((commit) => commit.id === chosenCommit.id);
   if (forward) {
@@ -1183,6 +1191,7 @@ async function getMoreRecentlyVisited() {
       if (b.utc_time > a.utc_time) {
         return 1;
       }
+      return -1;
     });
     mb.window.webContents.executeJavaScript(
       `document.getElementById("detail-headline").innerHTML = "${escapeQuotes(
@@ -1198,7 +1207,7 @@ async function getMoreRecentlyVisited() {
         url.includes('/-/issues/') ||
         url.includes('/-/merge_requests/') ||
         url.includes('/-/epics/');
-      const wasNotProcessed = !moreRecentlyVisitedArray.some((item) => item.title === title);
+      const wasNotProcessed = !moreRecentlyVisitedArray.some((object) => object.title === title);
       const ignoredTitlePrefixes = [
         'Not Found ',
         'New Issue ',
@@ -1277,28 +1286,31 @@ async function getMoreRecentlyVisited() {
 }
 
 function searchRecentlyVisited(searchterm) {
+  /* eslint-disable implicit-arrow-linebreak, function-paren-newline */
   const foundArray = moreRecentlyVisitedArray.filter((item) =>
     item.title.toLowerCase().includes(searchterm),
   );
-  foundString = '<ul class="list-container">';
+  /* eslint-enable */
+  let foundString = '<ul class="list-container">';
   foundArray.forEach((item) => {
-    const nameWithNamespace = item.url.replace(`${store.host}/`, '').split('/-/')[0];
+    const object = item;
+    const nameWithNamespace = object.url.replace(`${store.host}/`, '').split('/-/')[0];
     if (nameWithNamespace.split('/')[0] !== 'groups') {
-      url = `${store.host}/api/v4/projects/${nameWithNamespace.split('/')[0]}%2F${
+      object.url = `${store.host}/api/v4/projects/${nameWithNamespace.split('/')[0]}%2F${
         nameWithNamespace.split('/')[1]
       }?access_token=${store.access_token}`;
     } else {
-      url = `${store.host}/api/v4/groups/${nameWithNamespace.split('/')[0]}?access_token=${
+      object.url = `${store.host}/api/v4/groups/${nameWithNamespace.split('/')[0]}?access_token=${
         store.access_token
       }`;
     }
     foundString += '<li class="history-entry">';
-    foundString += `<a href="${item.url}" target="_blank">${escapeHtml(
-      item.title.split('·')[0],
+    foundString += `<a href="${object.url}" target="_blank">${escapeHtml(
+      object.title.split('·')[0],
     )}</a><span class="namespace-with-time">${timeSince(
-      new Date(`${item.utc_time} UTC`),
-    )} ago &middot; <a href="${item.url.split('/-/')[0]}" target="_blank">${escapeHtml(
-      item.title.split('·')[2].trim(),
+      new Date(`${object.utc_time} UTC`),
+    )} ago &middot; <a href="${object.url.split('/-/')[0]}" target="_blank">${escapeHtml(
+      object.title.split('·')[2].trim(),
     )}</a></span></div></li>`;
   });
   foundString += '</ul>';
@@ -1319,12 +1331,14 @@ function getMoreRecentComments(
       return result.json();
     })
     .then(async (comments) => {
-      comments.forEach(async (comment) => {
+      /* eslint-disable no-restricted-syntax, no-await-in-loop */
+      for (const comment of comments) {
         const path = GitLab.commentToNoteableUrl(comment);
         const collabject = await GitLab.get(path);
 
         recentCommentsString += renderCollabject(comment, collabject);
-      });
+      }
+      /* eslint-enable */
       recentCommentsString += `</ul>${displayPagination(keysetLinks, type)}`;
       mb.window.webContents.executeJavaScript(
         `document.getElementById("detail-content").innerHTML = "${escapeQuotes(
@@ -1581,7 +1595,7 @@ async function getProjectMRs(project) {
 
 function addBookmark(link) {
   if (store && store.bookmarks && store.bookmarks.length > 0) {
-    sameBookmarks = store.bookmarks.filter((item) => item.web_url === link);
+    const sameBookmarks = store.bookmarks.filter((item) => item.web_url === link);
     if (sameBookmarks.length > 0) {
       displayAddError('bookmark', '-', 'This bookmark has already been added.');
       return;

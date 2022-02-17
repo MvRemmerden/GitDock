@@ -64,6 +64,7 @@ async function getRecentlyVisited() {
             store.access_token
           }`;
         }
+        // eslint-disable-next-line no-await-in-loop
         await gitdock.fetchUrlInfo(item[j].url).then((result) => {
           item[j].type = result.type;
         });
@@ -109,6 +110,7 @@ module.exports = class CommandPalette {
     });
   }
 
+  // eslint-disable-next-line class-methods-use-this
   async unregister() {
     globalShortcut.unregisterAll();
 
@@ -116,6 +118,7 @@ module.exports = class CommandPalette {
     ipcMain.removeAllListeners('hide-command-palette');
   }
 
+  // eslint-disable-next-line class-methods-use-this
   async open() {
     cpWindow.show();
     // cpWindow.openDevTools();
