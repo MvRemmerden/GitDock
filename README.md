@@ -106,6 +106,21 @@ Whenever a new To-Do gets created for you, the system notification will show you
 
 ![To-Do notification](/docs/img/todo-notification.png)
 
+#### Configure notifications
+
+Notifications can be configured and turned off through the notification
+settings in your operating system.
+
+- Windows: [Microsoft: Change notification settings in Windows][windows-notifications]
+- macOS: [Use notifications on your Mac][mac-notifications]
+- Linux (GNOME): [Notifications and the notification list][gnome-notifications]  
+  Other desktop environments might have a similar menu in their
+  settings. Check out the documentation of your’s for details.
+
+[windows-notifications]: https://support.microsoft.com/en-us/windows/change-notification-settings-in-windows-8942c744-6198-fe56-4639-34320cf9444e
+[mac-notifications]: https://support.apple.com/en-us/HT204079
+[gnome-notifications]: https://help.gnome.org/users/gnome-help/stable/shell-notifications.html.en
+
 ### My Issues, MRs & To-Do list
 
 At the top of the app, you will see the typical sections of issues, MRs and the To-Do list.
