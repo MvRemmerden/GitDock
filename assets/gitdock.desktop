@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=GitDock
+Comment=A better way of managing all your work on GitLab.
+GenericName=GitDock
+Exec=gitdock %U
+Icon=gitdock
+Type=Application
+StartupNotify=true
+Categories=GNOME;GTK;Utility;
+X-GNOME-UsesNotifications=true

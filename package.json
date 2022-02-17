@@ -85,7 +85,8 @@
             "options": {
               "bin": "GitDock",
               "maintainer": "Marcel van Remmerden",
-              "name": "GitDock"
+              "name": "GitDock",
+              "desktopTemplate": "./assets/gitdock.desktop"
             }
           }
         },
