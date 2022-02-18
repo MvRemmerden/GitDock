@@ -969,31 +969,6 @@ async function getRecentComments() {
   }
 }
 
-function handleLogin() {
-  if (mb.window.webContents.getURL().indexOf('?code=') !== '-1') {
-    const code = mb.window.webContents.getURL().split('?code=')[1].replace('&state=test', '');
-    fetch('https://gitlab.com/oauth/token', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: '2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee',
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: 'https://gitdock.org/login-screen/',
-        code_verifier: verifier,
-      }),
-    })
-      .then((result) => result.json())
-      .then((result) => {
-        // eslint-disable-next-line no-use-before-define
-        saveUser(result.access_token);
-      });
-  }
-}
-
 async function saveUser(accessToken, url = store.host, customCertPath = undefined) {
   try {
     /* eslint-disable operator-linebreak, object-curly-newline */
@@ -1014,6 +989,7 @@ async function saveUser(accessToken, url = store.host, customCertPath = undefine
         if (projects && projects.length > 0) {
           store['favorite-projects'] = projects;
         }
+        // eslint-disable-next-line no-use-before-define
         mb.window.removeListener('page-title-updated', handleLogin);
         await mb.window
           .loadURL(`file://${__dirname}/index.html`)
@@ -1049,6 +1025,30 @@ async function saveUser(accessToken, url = store.host, customCertPath = undefine
     }
   } catch (e) {
     throw new Error(e);
+  }
+}
+
+function handleLogin() {
+  if (mb.window.webContents.getURL().indexOf('?code=') !== -1) {
+    const code = mb.window.webContents.getURL().split('?code=')[1].replace('&state=test', '');
+    fetch('https://gitlab.com/oauth/token', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        client_id: '2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee',
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: 'https://gitdock.org/login-screen/',
+        code_verifier: verifier,
+      }),
+    })
+      .then((result) => result.json())
+      .then((result) => {
+        saveUser(result.access_token);
+      });
   }
 }
 
