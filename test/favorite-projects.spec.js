@@ -97,12 +97,22 @@ describe('Favorite projects', function () {
     assert.equal((await listFavoriteProjects(this.window)).length, 0);
   });
 
-  // Skipped due to https://gitlab.com/mvanremmerden/gitdock/-/issues/110
-  it.skip('prevents adding a project twice', async function () {
+  it('prevents adding a project twice', async function () {
+    await newApp(this, {
+      loggedIn: true,
+      favoriteProjects: [EXAMPLE_PROJECT],
+    });
+
     await openSettings(this.window);
 
-    await addProject(this.window, EXAMPLE_PROJECT.web_url);
-    await addProject(this.window, EXAMPLE_PROJECT.web_url);
+    await this.window.click('#add-project-dialog a');
+    await this.window.fill('#project-settings-link', EXAMPLE_PROJECT.web_url);
+    await this.window.click('#project-settings-add-button');
+    await this.window.waitForSelector('#add-project-settings-error');
+
+    const error = this.window.locator('#add-project-settings-error');
+
+    assert.equal(await error.innerText(), 'The same project was already added.');
 
     await this.window.click('#detail-header');
     await this.window.waitForTimeout(100);
