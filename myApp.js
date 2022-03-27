@@ -124,6 +124,18 @@ const mb = menubar({
   },
 });
 
+const executeUnsafeJavaScript = (js) => mb.window.webContents.executeJavaScript(js);
+
+const setElementHtml = (selector, html) =>
+  // This is caused by a Pretter/eslint mismatch
+  // eslint-disable-next-line implicit-arrow-linebreak
+  executeUnsafeJavaScript(
+    `document.querySelector("${escapeQuotes(selector)}").innerHTML = "${escapeQuotes(html).replace(
+      /\n/g,
+      '\\n',
+    )}"`,
+  );
+
 function openSettingsPage() {
   // eslint-disable-next-line no-underscore-dangle
   if (!mb._isVisible) {
@@ -132,24 +144,16 @@ function openSettingsPage() {
   if (store.analytics) {
     visitor.pageview('/settings').send();
   }
-  mb.window.webContents.executeJavaScript(
+  executeUnsafeJavaScript(
     'document.getElementById("detail-header-content").classList.remove("empty")',
   );
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("detail-header-content").innerHTML = "Settings"',
-  );
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("detail-content").innerHTML = ""',
-  );
-  mb.window.webContents.executeJavaScript('document.getElementById("detail-view").style.left = 0');
-  mb.window.webContents.executeJavaScript('document.body.style.overflow = "hidden"');
+  setElementHtml('#detail-header-content', 'Settings');
+  setElementHtml('#detail-content', '');
+  executeUnsafeJavaScript('document.getElementById("detail-view").style.left = 0');
+  executeUnsafeJavaScript('document.body.style.overflow = "hidden"');
   const lightString = "'light'";
   const darkString = "'dark'";
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("detail-headline").innerHTML = "${escapeQuotes(
-      '<span class="name">Theme</span>',
-    )}"`,
-  );
+  setElementHtml('#detail-headline', '<span class="name">Theme</span>');
   let settingsString = '';
   const theme = `<div id="theme-selection"><div id="light-mode" class="theme-option" onclick="changeTheme(${lightString})"><div class="indicator"></div>Light</div><div id="dark-mode" class="theme-option" onclick="changeTheme(${darkString})"><div class="indicator"></div>Dark</div></div>`;
   if (store.user_id && store.username) {
@@ -207,19 +211,10 @@ function openSettingsPage() {
   } else {
     settingsString = theme;
   }
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("detail-content").innerHTML = "${escapeQuotes(settingsString)}</div>` +
-      '"',
-  );
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("light-mode").classList.remove("active")',
-  );
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("dark-mode").classList.remove("active")',
-  );
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("${store.theme}-mode").classList.add("active")`,
-  );
+  setElementHtml('#detail-content', `${settingsString}</div>`);
+  executeUnsafeJavaScript('document.getElementById("light-mode").classList.remove("active")');
+  executeUnsafeJavaScript('document.getElementById("dark-mode").classList.remove("active")');
+  executeUnsafeJavaScript(`document.getElementById("${store.theme}-mode").classList.add("active")`);
 }
 
 function openAboutPage() {
@@ -230,20 +225,14 @@ function openAboutPage() {
   if (store.analytics) {
     visitor.pageview('/about').send();
   }
-  mb.window.webContents.executeJavaScript(
+  executeUnsafeJavaScript(
     'document.getElementById("detail-header-content").classList.remove("empty")',
   );
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("detail-header-content").innerHTML = "About GitDock ⚓️"',
-  );
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("detail-content").innerHTML = ""',
-  );
-  mb.window.webContents.executeJavaScript('document.getElementById("detail-view").style.left = 0');
-  mb.window.webContents.executeJavaScript('document.body.style.overflow = "hidden"');
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("detail-headline").innerHTML = "<span class=\\"name\\">About GitDock ⚓️</span>"',
-  );
+  setElementHtml('#detail-header-content', 'About GitDock ⚓️');
+  setElementHtml('#detail-content', '');
+  executeUnsafeJavaScript('document.getElementById("detail-view").style.left = 0');
+  executeUnsafeJavaScript('document.body.style.overflow = "hidden"');
+  setElementHtml('#detail-headline', '<span class="name">About GitDock ⚓️</span>');
   let aboutString =
     '<p>GitDock is a MacOS/Windows/Linux app that displays all your GitLab activities in one place. Instead of the GitLab typical project- or group-centric approach, it collects all your information from a user-centric perspective.</p>';
   aboutString +=
@@ -253,9 +242,7 @@ function openAboutPage() {
   aboutString +=
     '<p>If you are thinking about contributing directly, check out our <a href=\\"https://gitlab.com/mvanremmerden/gitdock/-/blob/main/CONTRIBUTING.md\\" target=\\"_blank\\">contribution guidelines</a>.</p>';
   aboutString += `<p class=\\"version-number\\">Version ${version}</p>`;
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("detail-content").innerHTML = "${aboutString}</div>"`,
-  );
+  setElementHtml('#detail-content', `${aboutString}</div>`);
 }
 
 function setupLinuxContextMenu(baseMenuItems) {
@@ -326,16 +313,16 @@ function chooseCertificate() {
   }, 200);
   if (filepaths) {
     const filepath = filepaths[0].replace(/\\/g, '/'); // convert \ to / otherwise separators get lost on windows
-    mb.window.webContents.executeJavaScript(
+    executeUnsafeJavaScript(
       'document.getElementById("custom-cert-path-button").classList.add("hidden")',
     );
-    mb.window.webContents.executeJavaScript(
+    executeUnsafeJavaScript(
       `document.getElementById("custom-cert-path-text").innerText="${filepath}"`,
     );
-    mb.window.webContents.executeJavaScript(
+    executeUnsafeJavaScript(
       'document.getElementById("custom-cert-path-text").classList.remove("hidden")',
     );
-    mb.window.webContents.executeJavaScript(
+    executeUnsafeJavaScript(
       'document.getElementById("custom-cert-path-reset").classList.remove("hidden")',
     );
   }
@@ -351,9 +338,7 @@ function repaintShortcuts() {
     shortcut += `<li id="add-shortcut-dialog" class="more-link"><a onclick="startShortcutDialog()">Add another shortcut ${chevronRightIcon}</a></li></ul>`;
   }
   shortcut += '</div>';
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("shortcut").innerHTML = "${escapeQuotes(shortcut)}"`,
-  );
+  setElementHtml('#shortcut', shortcut);
 }
 
 function base64URLEncode(str) {
@@ -449,14 +434,12 @@ async function getUser() {
           avatarUrl.href += '?width=64';
         }
       }
-      const userString = `<a href="${user.web_url}" target="_blank"><img src="${
+      const userHtml = `<a href="${user.web_url}" target="_blank"><img src="${
         avatarUrl.href
       }" /><div class="user-information"><span class="user-name">${escapeHtml(
         user.name,
       )}</span><span class="username">@${escapeHtml(user.username)}</span></div></a>`;
-      mb.window.webContents.executeJavaScript(
-        `document.getElementById("user").innerHTML = "${escapeQuotes(userString)}"`,
-      );
+      setElementHtml('#user', userHtml);
       lastUserExecution = Date.now();
       lastUserExecutionFinished = true;
     } else {
@@ -466,11 +449,10 @@ async function getUser() {
 }
 
 function displayUsersProjects() {
-  let favoriteProjectsString = '';
+  let favoriteProjectsHtml = '';
   const projects = store['favorite-projects'];
   if (projects && projects.length > 0) {
-    favoriteProjectsString +=
-      '<ul class="list-container clickable" data-testid="favorite-projects">';
+    favoriteProjectsHtml += '<ul class="list-container clickable" data-testid="favorite-projects">';
     const chevron = chevronLgRightIcon;
     projects.forEach((projectObject) => {
       const projectString = "'Project'";
@@ -479,21 +461,19 @@ function displayUsersProjects() {
       jsonProjectObject.namespace.name = projectObject.namespace.name;
       jsonProjectObject.name = projectObject.name;
       const projectJson = `'${escapeHtml(JSON.stringify(jsonProjectObject))}'`;
-      favoriteProjectsString += `<li onclick="goToDetail(${projectString}, ${projectJson})">${projectIcon}`;
-      favoriteProjectsString += `<div class="name-with-namespace"><span>${escapeHtml(
+      favoriteProjectsHtml += `<li onclick="goToDetail(${projectString}, ${projectJson})">${projectIcon}`;
+      favoriteProjectsHtml += `<div class="name-with-namespace"><span>${escapeHtml(
         projectObject.name,
       )}</span><span class="namespace">${escapeHtml(
         projectObject.namespace.name,
       )}</span></div><div class="chevron-right-wrapper">${chevron}</div></li>`;
     });
-    favoriteProjectsString += '</ul>';
+    favoriteProjectsHtml += '</ul>';
   } else {
     const projectLink = "'project-overview-link'";
-    favoriteProjectsString = `<div class="new-project"><div><span class="cta">Track projects you care about</span> 🌟</div><div class="cta-description">Add any project you want a directly accessible shortcut for.</div><form class="project-input" action="#" onsubmit="addProject(document.getElementById(${projectLink}).value, ${projectLink});return false;"><input class="project-link" id="project-overview-link" placeholder="Enter the project link here..." /><button class="add-button" id="project-overview-add-button" type="submit">Add</button></form><div class="add-project-error" id="add-project-overview-error"></div></div>`;
+    favoriteProjectsHtml = `<div class="new-project"><div><span class="cta">Track projects you care about</span> 🌟</div><div class="cta-description">Add any project you want a directly accessible shortcut for.</div><form class="project-input" action="#" onsubmit="addProject(document.getElementById(${projectLink}).value, ${projectLink});return false;"><input class="project-link" id="project-overview-link" placeholder="Enter the project link here..." /><button class="add-button" id="project-overview-add-button" type="submit">Add</button></form><div class="add-project-error" id="add-project-overview-error"></div></div>`;
   }
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("projects").innerHTML = "${escapeQuotes(favoriteProjectsString)}"`,
-  );
+  setElementHtml('#projects', favoriteProjectsHtml);
 }
 
 async function getUsersProjects() {
@@ -551,16 +531,11 @@ function getBookmarks() {
       )}')">${removeIcon}</div></div></li>`;
     });
     bookmarksString += `<li id="add-bookmark-dialog" class="more-link"><a onclick="startBookmarkDialog()">Add another bookmark ${chevronRightIcon}</a></li></ul>`;
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("bookmarks").innerHTML = "${escapeQuotes(bookmarksString)}"`,
-    );
   } else {
     const bookmarkLink = "'bookmark-link'";
     bookmarksString = `<div id="new-bookmark"><div><span class="cta">Add a new GitLab bookmark</span> 🔖</div><div class="cta-description">Bookmarks are helpful when you have an issue/merge request you will have to come back to repeatedly.</div><form id="bookmark-input" action="#" onsubmit="addBookmark(document.getElementById(${bookmarkLink}).value);return false;"><input id="bookmark-link" placeholder="Enter the link here..." /><button class="add-button" id="bookmark-add-button" type="submit">Add</button></form><div id="add-bookmark-error"></div></div>`;
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("bookmarks").innerHTML = "${escapeQuotes(bookmarksString)}"`,
-    );
   }
+  setElementHtml('#bookmarks', bookmarksString);
 }
 
 async function getRecentlyVisited() {
@@ -638,9 +613,7 @@ async function getRecentlyVisited() {
         recentlyVisitedString =
           '<p class="no-results"><span class="supported-browsers">No browsers are supported on your operating system yet.</span></p>';
       }
-      mb.window.webContents.executeJavaScript(
-        `document.getElementById("history").innerHTML = "${escapeQuotes(recentlyVisitedString)}"`,
-      );
+      setElementHtml('#history', recentlyVisitedString);
       lastRecentlyVisitedExecution = Date.now();
       lastRecentlyVisitedExecutionFinished = true;
     });
@@ -726,27 +699,17 @@ async function getLastPipelines(commits) {
 }
 
 function displayAddError(type, target, customMessage) {
-  mb.window.webContents.executeJavaScript(
+  executeUnsafeJavaScript(
     `document.getElementById("add-${type}${target}error").style.display = "block"`,
   );
   if (customMessage) {
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("add-${type}${target}error").innerHTML = "${customMessage}"`,
-    );
+    setElementHtml(`#add-${type}${target}error`, customMessage);
   } else {
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("add-${type}${target}error").innerHTML = "This is not a valid GitLab ${type} URL."`,
-    );
+    setElementHtml(`#add-${type}${target}error`, `This is not a valid GitLab ${type} URL.`);
   }
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("${type}${target}add-button").disabled = false`,
-  );
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("${type}${target}link").disabled = false`,
-  );
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("${type}${target}add-button").innerHTML = "Add"`,
-  );
+  executeUnsafeJavaScript(`document.getElementById("${type}${target}add-button").disabled = false`);
+  executeUnsafeJavaScript(`document.getElementById("${type}${target}link").disabled = false`);
+  setElementHtml(`#${type}${target}add-button`, 'Add');
 }
 
 function displayPagination(keysetLinks, type) {
@@ -862,20 +825,17 @@ function displayCommit(commit, project, focus = 'project') {
   )} ago &middot; ${subline}</span></div>${logo}</div>`;
 }
 
+function renderNoCommitsPushedYetMessage() {
+  setElementHtml('#commits-pagination', '');
+  setElementHtml('#pipeline', '<p class="no-results">You haven&#039;t pushed any commits yet.</p>');
+}
+
 async function getCommitDetails(projectId, sha, index) {
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("commits-count").classList.remove("empty")',
-  );
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("commits-count").innerHTML = "${index}/${recentCommits.length}"`,
-  );
+  executeUnsafeJavaScript('document.getElementById("commits-count").classList.remove("empty")');
+  setElementHtml('#commits-count', `${index}/${recentCommits.length}`);
   const project = await GitLab.get(`projects/${projectId}`);
   const commit = await GitLab.get(`projects/${project.id}/repository/commits/${sha}`);
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("pipeline").innerHTML = "${escapeQuotes(
-      displayCommit(commit, project),
-    )}"`,
-  );
+  setElementHtml('#pipeline', displayCommit(commit, project));
 }
 
 async function getLastCommits(count = 20) {
@@ -903,24 +863,10 @@ async function getLastCommits(count = 20) {
         recentCommits = committedArray;
         getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1);
       } else {
-        mb.window.webContents.executeJavaScript(
-          'document.getElementById("commits-pagination").innerHTML = ""',
-        );
-        mb.window.webContents.executeJavaScript(
-          `document.getElementById("pipeline").innerHTML = "${escapeQuotes(
-            '<p class="no-results">You haven&#039;t pushed any commits yet.</p>',
-          )}"`,
-        );
+        renderNoCommitsPushedYetMessage();
       }
     } else {
-      mb.window.webContents.executeJavaScript(
-        'document.getElementById("commits-pagination").innerHTML = ""',
-      );
-      mb.window.webContents.executeJavaScript(
-        `document.getElementById("pipeline").innerHTML = "${escapeQuotes(
-          '<p class="no-results">You haven&#039;t pushed any commits yet.</p>',
-        )}"`,
-      );
+      renderNoCommitsPushedYetMessage();
     }
     lastLastCommitsExecution = Date.now();
     lastLastCommitsExecutionFinished = true;
@@ -954,14 +900,11 @@ async function getRecentComments() {
       // eslint-disable no-restricted-syntax */
       const moreString = "'Comments'";
       recentCommentsString += `<li class="more-link"><a onclick="goToDetail(${moreString})">View more ${chevronRightIcon}</a></li></ul>`;
-      mb.window.webContents.executeJavaScript(
-        `document.getElementById("comments").innerHTML = "${escapeQuotes(recentCommentsString)}"`,
-      );
+      setElementHtml('#comments', recentCommentsString);
     } else {
-      mb.window.webContents.executeJavaScript(
-        `document.getElementById("comments").innerHTML = "${escapeQuotes(
-          '<p class="no-results">You haven&#039;t written any comments yet.</p>',
-        )}"`,
+      setElementHtml(
+        '#comments',
+        '<p class="no-results">You haven&#039;t written any comments yet.</p>',
       );
     }
     lastRecentCommentsExecution = Date.now();
@@ -1120,25 +1063,11 @@ async function getProjectCommits(project, count = 20) {
     });
 
     const pagination = `<div id="project-commits-pagination"><span class="name">Commits</span><div id="commits-pagination"><span id="project-commits-count">1/${recentProjectCommits.length}</span><button onclick="changeProjectCommit(false)">${chevronLgLeftIconWithViewboxHack}</button><button onclick="changeProjectCommit(true)">${chevronLgRightIconWithViewboxHack}</button></div></div>`;
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("detail-headline").innerHTML = "${escapeQuotes(pagination)}"`,
-    );
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("project-pipeline").innerHTML = "${escapeQuotes(
-        displayCommit(commit, project, 'author'),
-      )}"`,
-    );
+    setElementHtml('#detail-headline', pagination);
+    setElementHtml('#project-pipeline', displayCommit(commit, project, 'author'));
   } else {
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("project-commits-pagination").innerHTML = "${escapeQuotes(
-        '<span class="name">Commits</span>',
-      )}"`,
-    );
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("project-pipeline").innerHTML = "${escapeQuotes(
-        '<p class="no-results">No commits pushed yet.</p>',
-      )}"`,
-    );
+    setElementHtml('#project-commits-pagination', '<span class="name">Commits</span>');
+    setElementHtml('#project-pipeline', '<p class="no-results">No commits pushed yet.</p>');
   }
 }
 
@@ -1164,19 +1093,14 @@ function changeCommit(forward, commitArray, chosenCommit) {
 }
 
 async function getProjectCommitDetails(projectId, sha, index) {
-  mb.window.webContents.executeJavaScript(
+  executeUnsafeJavaScript(
     'document.getElementById("project-commits-count").classList.remove("empty")',
   );
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("project-commits-count").innerHTML = "${index}/${recentProjectCommits.length}"`,
-  );
+  setElementHtml('#project-commits-count', `${index}/${recentProjectCommits.length}`);
 
   const commit = await GitLab.get(`projects/${projectId}/repository/commits/${sha}`);
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("project-pipeline").innerHTML = "${escapeQuotes(
-      displayCommit(commit, currentProject, 'author'),
-    )}"`,
-  );
+
+  setElementHtml('#project-pipeline', displayCommit(commit, currentProject, 'author'));
 }
 
 async function getMoreRecentlyVisited() {
@@ -1193,11 +1117,11 @@ async function getMoreRecentlyVisited() {
       }
       return -1;
     });
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("detail-headline").innerHTML = "${escapeQuotes(
-        '<input id="recentSearch" type="text" onkeyup="searchRecent(this)" placeholder="Search..." />',
-      )}"`,
+    setElementHtml(
+      '#detail-headline',
+      '<input id="recentSearch" type="text" onkeyup="searchRecent(this)" placeholder="Search..." />',
     );
+
     let previousDate = 0;
     for (let j = 0; j < item.length; j += 1) {
       const { title } = item[j];
@@ -1209,18 +1133,19 @@ async function getMoreRecentlyVisited() {
         url.includes('/-/epics/');
       const wasNotProcessed = !moreRecentlyVisitedArray.some((object) => object.title === title);
       const ignoredTitlePrefixes = [
-        'Not Found ',
-        'New Issue ',
-        'New Merge Request ',
-        'New merge request ',
-        'New Epic ',
-        'Edit ',
-        'Merge requests ',
-        'Issues ',
+        'Not Found',
+        'New Issue',
+        'New Merge Request',
+        'New merge request',
+        'New Epic',
+        'Edit',
+        'Merge Conflicts',
+        'Merge requests',
+        'Issues',
         '500 Error - GitLab',
         'Checking your Browser - GitLab',
       ];
-      const titlePrefix = (title || '').split('·')[0];
+      const titlePrefix = (title || '').split('·')[0].trim();
       if (
         title &&
         isHostUrl &&
@@ -1277,11 +1202,7 @@ async function getMoreRecentlyVisited() {
       }
     }
     recentlyVisitedString += '</ul>';
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("detail-content").innerHTML = "${escapeQuotes(
-        recentlyVisitedString,
-      )}"`,
-    );
+    setElementHtml('#detail-content', recentlyVisitedString);
   });
 }
 
@@ -1314,9 +1235,7 @@ function searchRecentlyVisited(searchterm) {
     )}</a></span></div></li>`;
   });
   foundString += '</ul>';
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("detail-content").innerHTML = "${escapeQuotes(foundString)}"`,
-  );
+  setElementHtml('#detail-content', foundString);
 }
 
 function getMoreRecentComments(
@@ -1340,11 +1259,7 @@ function getMoreRecentComments(
       }
       /* eslint-enable */
       recentCommentsString += `</ul>${displayPagination(keysetLinks, type)}`;
-      mb.window.webContents.executeJavaScript(
-        `document.getElementById("detail-content").innerHTML = "${escapeQuotes(
-          recentCommentsString,
-        )}"`,
-      );
+      setElementHtml('#detail-content', recentCommentsString);
     });
 }
 
@@ -1392,9 +1307,7 @@ function getIssues(
         const illustration = todosAllDoneIllustration;
         issuesString = `<div class="zero">${illustration}<p>No issues with the specified criteria.</p></div>`;
       }
-      mb.window.webContents.executeJavaScript(
-        `document.getElementById("${id}").innerHTML = "${escapeQuotes(issuesString)}"`,
-      );
+      setElementHtml(`#${id}`, issuesString);
     });
 }
 
@@ -1432,9 +1345,7 @@ function getMRs(
         const illustration = todosAllDoneIllustration;
         mrsString = `<div class="zero">${illustration}<p>No merge requests with the specified criteria.</p></div>`;
       }
-      mb.window.webContents.executeJavaScript(
-        `document.getElementById("${id}").innerHTML = "${escapeQuotes(mrsString)}"`,
-      );
+      setElementHtml(`#${id}`, mrsString);
     });
 }
 
@@ -1477,9 +1388,7 @@ function getTodos(
         const illustration = todosAllDoneIllustration;
         todosString = `<div class="zero">${illustration}<p>Take the day off, you have no To-Dos!</p></div>`;
       }
-      mb.window.webContents.executeJavaScript(
-        `document.getElementById("detail-content").innerHTML = "${escapeQuotes(todosString)}"`,
-      );
+      setElementHtml('#detail-content', todosString);
     });
 }
 
@@ -1492,9 +1401,7 @@ function setupEmptyProjectPage() {
   emptyPage += '<div class="headline"><span class="name">Merge requests</span></div>';
   emptyPage +=
     '<div id="project-recent-mrs"><div id="history"><ul class="list-container empty"><li class="history-entry empty"><div class="history-link skeleton"></div><div class="history-details skeleton"></div></li><li class="history-entry empty"><div class="history-link skeleton"></div><div class="history-details skeleton"></div></li><li class="history-entry empty"><div class="history-link skeleton"></div><div class="history-details skeleton"></div></li><li class="more-link empty"><div class="more-link-button skeleton"></div></li></ul></div></div>';
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("detail-content").innerHTML = "${escapeQuotes(emptyPage)}"`,
-  );
+  setElementHtml('#detail-content', emptyPage);
 }
 
 function displayProjectPage(project) {
@@ -1504,19 +1411,21 @@ function displayProjectPage(project) {
   } else {
     logo = `<div id="project-detail-name-avatar">${project.name.charAt(0).toUpperCase()}</div>`;
   }
-  mb.window.webContents.executeJavaScript(
+  executeUnsafeJavaScript(
     'document.getElementById("detail-header-content").classList.remove("empty")',
   );
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("detail-header-content").innerHTML = "${escapeQuotes(
-      '<div id="project-detail-information">',
-    )}${escapeQuotes(logo)}${escapeQuotes('<span class="project-name">')}${escapeHtml(
-      project.name,
-    )}${escapeQuotes('</span><span class="project-namespace">')}${escapeHtml(
-      project.namespace.name,
-    )}${escapeQuotes('</span></div><div class="detail-external-link"><a href="')}${
-      project.web_url
-    }${escapeQuotes(`" target="_blank">${externalLinkIcon}</a></div>`)}"`,
+  setElementHtml(
+    '#detail-header-content',
+    `<div id="project-detail-information">
+        ${logo}
+        <span class="project-name">${escapeHtml(project.name)}</span>
+        <span class="project-namespace">
+          ${escapeHtml(project.namespace.name)}
+        </span>
+      </div>
+      <div class="detail-external-link">
+        <a href="${escapeHtml(project.web_url)}" target="_blank">${externalLinkIcon}</a>
+      </div>`,
   );
 }
 
@@ -1550,11 +1459,7 @@ async function getProjectIssues(project) {
     projectIssuesString = '<p class="no-results with-all-link">No open issues.</p>';
     projectIssuesString += `<div class="all-link"><a onclick="goToSubDetail(${issuesString}, ${projectString}, true)">View all ${chevronRightIcon}</a></div>`;
   }
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("project-recent-issues").innerHTML = "${escapeQuotes(
-      projectIssuesString,
-    )}"`,
-  );
+  setElementHtml('#project-recent-issues', projectIssuesString);
 }
 
 async function getProjectMRs(project) {
@@ -1588,9 +1493,7 @@ async function getProjectMRs(project) {
     projectMRsString = '<p class="no-results with-all-link">No open merge requests.</p>';
     projectMRsString += `<div class="all-link"><a onclick="goToSubDetail(${mrsString}, ${projectString}, true)">View all ${chevronRightIcon}</a></div>`;
   }
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("project-recent-mrs").innerHTML = "${escapeQuotes(projectMRsString)}"`,
-  );
+  setElementHtml('#project-recent-mrs', projectMRsString);
 }
 
 function addBookmark(link) {
@@ -1603,15 +1506,9 @@ function addBookmark(link) {
   }
   const spinner =
     '<svg class="button-spinner" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14"><g fill="none" fill-rule="evenodd"><circle cx="7" cy="7" r="6" stroke="#c9d1d9" stroke-opacity=".4" stroke-width="2"/><path class="icon" fill-opacity=".4" fill-rule="nonzero" d="M7 0a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V0z"/></g></svg>';
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("bookmark-add-button").disabled = "disabled"',
-  );
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("bookmark-link").disabled = "disabled"',
-  );
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("bookmark-add-button").innerHTML = "${escapeQuotes(spinner)} Add"`,
-  );
+  executeUnsafeJavaScript('document.getElementById("bookmark-add-button").disabled = "disabled"');
+  executeUnsafeJavaScript('document.getElementById("bookmark-link").disabled = "disabled"');
+  setElementHtml('#bookmark-add-button', `${spinner} Add`);
   if (GitLab.urlHasValidHost(link)) {
     GitLab.parseUrl(link)
       .then((bookmark) => {
@@ -1652,17 +1549,13 @@ function addProject(link, target) {
   }
   const spinner =
     '<svg class="button-spinner" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14"><g fill="none" fill-rule="evenodd"><circle cx="7" cy="7" r="6" stroke="#c9d1d9" stroke-opacity=".4" stroke-width="2"/><path class="icon" fill-opacity=".4" fill-rule="nonzero" d="M7 0a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V0z"/></g></svg>';
-  mb.window.webContents.executeJavaScript(
+  executeUnsafeJavaScript(
     `document.getElementById("project${newTarget}add-button").disabled = "disabled"`,
   );
-  mb.window.webContents.executeJavaScript(
+  executeUnsafeJavaScript(
     `document.getElementById("project${newTarget}link").disabled = "disabled"`,
   );
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("project${newTarget}add-button").innerHTML = "${escapeQuotes(
-      spinner,
-    )} Add"`,
-  );
+  setElementHtml(`#project${newTarget}add-button`, `${spinner} Add`);
   if (GitLab.urlHasValidHost(link)) {
     GitLab.parseUrl(link)
       .then((object) => {
@@ -1721,15 +1614,9 @@ function addShortcut(link) {
   store.shortcuts = store.shortcuts.concat(tempArray);
   const spinner =
     '<svg class="button-spinner" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14"><g fill="none" fill-rule="evenodd"><circle cx="7" cy="7" r="6" stroke="#c9d1d9" stroke-opacity=".4" stroke-width="2"/><path class="icon" fill-opacity=".4" fill-rule="nonzero" d="M7 0a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V0z"/></g></svg>';
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("shortcut-add-button").disabled = "disabled"',
-  );
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("shortcut-link").disabled = "disabled"',
-  );
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("shortcut-add-button").innerHTML = "${escapeQuotes(spinner)} Add"`,
-  );
+  executeUnsafeJavaScript('document.getElementById("shortcut-add-button").disabled = "disabled"');
+  executeUnsafeJavaScript('document.getElementById("shortcut-link").disabled = "disabled"');
+  setElementHtml('#shortcut-add-button', `${spinner} Add`);
   setupCommandPalette();
   repaintShortcuts();
 }
@@ -1737,42 +1624,28 @@ function addShortcut(link) {
 function startBookmarkDialog() {
   const bookmarkLink = "'bookmark-link'";
   const bookmarkInput = `<form action="#" id="bookmark-input" onsubmit="addBookmark(document.getElementById(${bookmarkLink}).value);return false;"><input id="bookmark-link" placeholder="Enter your link here..." /><button class="add-button" id="bookmark-add-button" type="submit">Add</button></form><div id="add-bookmark-error"></div>`;
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("add-bookmark-dialog").classList.add("opened")',
-  );
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("add-bookmark-dialog").innerHTML = "${escapeQuotes(bookmarkInput)}"`,
-  );
-  mb.window.webContents.executeJavaScript('window.scrollBy(0, 14)');
-  mb.window.webContents.executeJavaScript('document.getElementById("bookmark-link").focus()');
+  executeUnsafeJavaScript('document.getElementById("add-bookmark-dialog").classList.add("opened")');
+  setElementHtml('#add-bookmark-dialog', bookmarkInput);
+  executeUnsafeJavaScript('window.scrollBy(0, 14)');
+  executeUnsafeJavaScript('document.getElementById("bookmark-link").focus()');
 }
 
 function startProjectDialog() {
   const projectLink = "'project-settings-link'";
   const projectInput = `<form action="#" class="project-input" onsubmit="addProject(document.getElementById(${projectLink}).value, ${projectLink});return false;"><input class="project-link" id="project-settings-link" placeholder="Enter the link to the project here..." /><button class="add-button" id="project-settings-add-button" type="submit">Add</button></form><div class="add-project-error" id="add-project-settings-error"></div>`;
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("add-project-dialog").classList.add("opened")',
-  );
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("add-project-dialog").innerHTML = "${escapeQuotes(projectInput)}"`,
-  );
-  mb.window.webContents.executeJavaScript('window.scrollBy(0, 14)');
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("project-settings-link").focus()',
-  );
+  executeUnsafeJavaScript('document.getElementById("add-project-dialog").classList.add("opened")');
+  setElementHtml('#add-project-dialog', projectInput);
+  executeUnsafeJavaScript('window.scrollBy(0, 14)');
+  executeUnsafeJavaScript('document.getElementById("project-settings-link").focus()');
 }
 
 function startShortcutDialog() {
   const shortcutLink = "'shortcut-link'";
   const shortcutInput = `<form action="#" class="shortcut-input" onsubmit="addShortcut(document.getElementById(${shortcutLink}).value);return false;"><input class="shortcut-link" id="shortcut-link" placeholder="Enter the keyboard shortcut here..." /><button class="add-button" id="shortcut-add-button" type="submit">Add</button></form><div class="add-shortcut-error" id="add-shortcut-error"></div>`;
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("add-shortcut-dialog").classList.add("opened")',
-  );
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("add-shortcut-dialog").innerHTML = "${escapeQuotes(shortcutInput)}"`,
-  );
-  mb.window.webContents.executeJavaScript('window.scrollBy(0, 14)');
-  mb.window.webContents.executeJavaScript('document.getElementById("shortcut-link").focus()');
+  executeUnsafeJavaScript('document.getElementById("add-shortcut-dialog").classList.add("opened")');
+  setElementHtml('#add-shortcut-dialog', shortcutInput);
+  executeUnsafeJavaScript('window.scrollBy(0, 14)');
+  executeUnsafeJavaScript('document.getElementById("shortcut-link").focus()');
 }
 
 function displaySkeleton(count, pagination = false, id = 'detail-content') {
@@ -1787,32 +1660,20 @@ function displaySkeleton(count, pagination = false, id = 'detail-content') {
       '<li class="history-entry empty"><div class="history-link skeleton"></div><div class="history-details skeleton"></div></li>';
   }
   skeletonString += '</ul>';
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("${id}").innerHTML = "${escapeQuotes(skeletonString)}"`,
-  );
+  setElementHtml(`#${id}`, skeletonString);
 }
 
 function changeTheme(option = 'light', manual = false) {
   store.theme = option;
   if (option === 'light') {
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.setAttribute("data-theme", "light");',
-    );
+    executeUnsafeJavaScript('document.documentElement.setAttribute("data-theme", "light");');
   } else if (option === 'dark') {
-    mb.window.webContents.executeJavaScript(
-      'document.documentElement.setAttribute("data-theme", "dark");',
-    );
+    executeUnsafeJavaScript('document.documentElement.setAttribute("data-theme", "dark");');
   }
   if (manual) {
-    mb.window.webContents.executeJavaScript(
-      'document.getElementById("light-mode").classList.remove("active")',
-    );
-    mb.window.webContents.executeJavaScript(
-      'document.getElementById("dark-mode").classList.remove("active")',
-    );
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("${option}-mode").classList.add("active")`,
-    );
+    executeUnsafeJavaScript('document.getElementById("light-mode").classList.remove("active")');
+    executeUnsafeJavaScript('document.getElementById("dark-mode").classList.remove("active")');
+    executeUnsafeJavaScript(`document.getElementById("${option}-mode").classList.add("active")`);
   }
 }
 
@@ -1876,20 +1737,15 @@ if (store.access_token && store.user_id && store.username) {
 }
 
 ipcMain.on('detail-page', (event, arg) => {
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("detail-headline").innerHTML = ""',
-  );
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("detail-content").innerHTML = ""',
-  );
+  setElementHtml('#detail-headline', '');
+  setElementHtml('#detail-content', '');
   if (arg.page === 'Project') {
     if (store.analytics) {
       visitor.pageview('/project').send();
     }
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("detail-headline").innerHTML = "${escapeQuotes(
-        `<div id="project-commits-pagination"><span class="name">Commits</span><div id="commits-pagination"><span id="commits-count" class="empty"></span><button onclick="changeCommit(false)">${chevronLgLeftIconWithViewboxHack}</button><button onclick="changeCommit(true)">${chevronLgRightIconWithViewboxHack}</button></div></div>`,
-      )}"`,
+    setElementHtml(
+      '#detail-headline',
+      `<div id="project-commits-pagination"><span class="name">Commits</span><div id="commits-pagination"><span id="commits-count" class="empty"></span><button onclick="changeCommit(false)">${chevronLgLeftIconWithViewboxHack}</button><button onclick="changeCommit(true)">${chevronLgRightIconWithViewboxHack}</button></div></div>`,
     );
     setupEmptyProjectPage();
     const project = JSON.parse(arg.object);
@@ -1899,12 +1755,10 @@ ipcMain.on('detail-page', (event, arg) => {
     getProjectIssues(project);
     getProjectMRs(project);
   } else {
-    mb.window.webContents.executeJavaScript(
+    executeUnsafeJavaScript(
       'document.getElementById("detail-header-content").classList.remove("empty")',
     );
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("detail-header-content").innerHTML = "${arg.page}"`,
-    );
+    setElementHtml('#detail-header-content', arg.page);
     if (arg.page === 'Issues') {
       if (store.analytics) {
         visitor.pageview('/my-issues').send();
@@ -1912,14 +1766,16 @@ ipcMain.on('detail-page', (event, arg) => {
       const issuesQuerySelect = `<div class="custom-select" tabindex="1"><div class="custom-select-active" id="issues-query-active">Assigned</div><div class="custom-options-wrapper"><input class="custom-option" name="issues-query-select" type="radio" id="${assignedLabel}" onchange="switchIssues(${assignedLabel}, ${query}, ${assignedText})" checked><label for="${assignedLabel}" class="custom-option-label">Assigned</label><input class="custom-option" name="issues-query-select" type="radio" id="${createdLabel}" onchange="switchIssues(${createdLabel}, ${query}, ${createdText})"><label for="${createdLabel}" class="custom-option-label">Created</label></div></div>`;
       const issuesStateSelect = `<div class="custom-select" tabindex="1"><div class="custom-select-active" id="issues-state-active">Open</div><div class="custom-options-wrapper"><input class="custom-option" name="issues-state-select" type="radio" id="${allLabel}" onchange="switchIssues(${allLabel}, ${state}, ${allText})"><label for="${allLabel}" class="custom-option-label">All</label><input class="custom-option" name="issues-state-select" type="radio" id="${openedLabel}" onchange="switchIssues(${openedLabel}, ${state}, ${openedText})" checked><label for="${openedLabel}" class="custom-option-label">Open</label><input class="custom-option" name="issues-state-select" type="radio" id="${closedLabel}" onchange="switchIssues(${closedLabel}, ${state}, ${closedText})"><label for="${closedLabel}" class="custom-option-label">Closed</label></div></div>`;
       const issuesSortSelect = `<div class="custom-select" tabindex="1"><div class="custom-select-active" id="issues-sort-active">Sort by recently created</div><div class="custom-options-wrapper"><input class="custom-option" name="issues-sort-select" type="radio" id="${recentlyCreatedLabel}" onchange="switchIssues(${recentlyCreatedLabel}, ${sort}, ${recentlyCreatedText})" checked><label for="${recentlyCreatedLabel}" class="custom-option-label">Sort by recently created</label><input class="custom-option" name="issues-sort-select" type="radio" id="${recentlyUpdatedLabel}" onchange="switchIssues(${recentlyUpdatedLabel}, ${sort}, ${recentlyUpdatedText})"><label for="${recentlyUpdatedLabel}" class="custom-option-label">Sort by recently updated</label><input class="custom-option" name="issues-sort-select" type="radio" id="${dueDateLabel}" onchange="switchIssues(${dueDateLabel}, ${sort}, ${dueDateText})"><label for="${dueDateLabel}" class="custom-option-label">Sort by due date</label></div></div>`;
-      mb.window.webContents.executeJavaScript(
-        `document.getElementById("detail-headline").innerHTML = "${escapeQuotes(
-          '<span class="name">',
-        )}${arg.page}${escapeQuotes('</span><div class="filter-sort">')}${escapeQuotes(
-          issuesQuerySelect,
-        )}${escapeQuotes(issuesStateSelect)}${escapeQuotes(issuesSortSelect)}</div>"`,
+      setElementHtml(
+        '#detail-headline',
+        `<span class="name">${arg.page}</span>
+          <div class="filter-sort">
+            ${issuesQuerySelect}
+            ${issuesStateSelect}
+            ${issuesSortSelect}
+          </div>`,
       );
-      mb.window.webContents.executeJavaScript(
+      executeUnsafeJavaScript(
         'document.getElementById("detail-headline").classList.add("with-overflow")',
       );
       displaySkeleton(numberOfIssues);
@@ -1935,14 +1791,16 @@ ipcMain.on('detail-page', (event, arg) => {
       mrsQuerySelect += `<input class="custom-option" name="mrs-query-select" type="radio" id="${approvalLabel}" onchange="switchMRs(${approvalLabel}, ${query}, ${approvalText})"><label for="${approvalLabel}" class="custom-option-label">Approval rule</label></div></div>`;
       const mrsStateSelect = `<div class="custom-select" tabindex="1"><div class="custom-select-active" id="mrs-state-active">Open</div><div class="custom-options-wrapper"><input class="custom-option" name="mrs-state-select" type="radio" id="${allLabel}" onchange="switchMRs(${allLabel}, ${state}, ${allText})"><label for="${allLabel}" class="custom-option-label">All</label><input class="custom-option" name="mrs-state-select" type="radio" id="${openedLabel}" onchange="switchMRs(${openedLabel}, ${state}, ${openedText})" checked><label for="${openedLabel}" class="custom-option-label">Open</label><input class="custom-option" name="mrs-state-select" type="radio" id="${mergedLabel}" onchange="switchMRs(${mergedLabel}, ${state}, ${mergedText})"><label for="${mergedLabel}" class="custom-option-label">Merged</label><input class="custom-option" name="mrs-state-select" type="radio" id="${closedLabel}" onchange="switchMRs(${closedLabel}, ${state}, ${closedText})"><label for="${closedLabel}" class="custom-option-label">Closed</label></div></div>`;
       const mrsSortSelect = `<div class="custom-select" tabindex="1"><div class="custom-select-active" id="mrs-sort-active">Sort by recently created</div><div class="custom-options-wrapper"><input class="custom-option" name="mrs-sort-select" type="radio" id="${recentlyCreatedLabel}" onchange="switchMRs(${recentlyCreatedLabel}, ${sort}, ${recentlyCreatedText})" checked><label for="${recentlyCreatedLabel}" class="custom-option-label">Sort by recently created</label><input class="custom-option" name="mrs-sort-select" type="radio" id="${recentlyUpdatedLabel}" onchange="switchMRs(${recentlyUpdatedLabel}, ${sort}, ${recentlyUpdatedText})"><label for="${recentlyUpdatedLabel}" class="custom-option-label">Sort by recently updated</label></div></div>`;
-      mb.window.webContents.executeJavaScript(
-        `document.getElementById("detail-headline").innerHTML = "${escapeQuotes(
-          '<span class="name">',
-        )}${arg.page}${escapeQuotes('</span><div class="filter-sort">')}${escapeQuotes(
-          mrsQuerySelect,
-        )}${escapeQuotes(mrsStateSelect)}${escapeQuotes(mrsSortSelect)}</div>"`,
+      setElementHtml(
+        '#detail-headline',
+        `<span class="name">${arg.page}</span>
+        <div class="filter-sort">
+          ${mrsQuerySelect}
+          ${mrsStateSelect}
+          ${mrsSortSelect}
+        </div>`,
       );
-      mb.window.webContents.executeJavaScript(
+      executeUnsafeJavaScript(
         'document.getElementById("detail-headline").classList.add("with-overflow")',
       );
       displaySkeleton(numberOfMRs);
@@ -1951,17 +1809,14 @@ ipcMain.on('detail-page', (event, arg) => {
       if (store.analytics) {
         visitor.pageview('/my-to-do-list').send();
       }
-      mb.window.webContents.executeJavaScript(
-        `document.getElementById("detail-headline").innerHTML = "${escapeQuotes(
-          '<span class="name">',
-        )}${arg.page}</span>"`,
-      );
-      mb.window.webContents.executeJavaScript(
-        `document.getElementById("detail-header-content").innerHTML = "${arg.page}${escapeQuotes(
-          '<div class="detail-external-link"><a href="',
-        )}${store.host}${escapeQuotes(
-          `/dashboard/todos" target="_blank">${externalLinkIcon}</a></div>`,
-        )}"`,
+      setElementHtml('#detail-headline', `<span class="name">${arg.page}</span>`);
+      setElementHtml(
+        '#detail-header-content',
+        `${arg.page}<div class="detail-external-link">
+        <a href="${escapeHtml(store.host)}/dashboard/todos" target="_blank">
+          ${externalLinkIcon}
+        </a>
+        </div>`,
       );
       displaySkeleton(numberOfTodos);
       getTodos();
@@ -1975,11 +1830,7 @@ ipcMain.on('detail-page', (event, arg) => {
       if (store.analytics) {
         visitor.pageview('/my-comments').send();
       }
-      mb.window.webContents.executeJavaScript(
-        `document.getElementById("detail-headline").innerHTML = "${escapeQuotes(
-          '<span class="name">',
-        )}${arg.page}</span>"`,
-      );
+      setElementHtml('#detail-headline', `<span class="name">${arg.page}</span>`);
       displaySkeleton(numberOfComments);
       getMoreRecentComments();
     }
@@ -1995,18 +1846,12 @@ ipcMain.on('sub-detail-page', (event, arg) => {
   let openChecked = ' checked';
   let allChanged = '';
   const project = JSON.parse(arg.project);
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("sub-detail-headline").innerHTML = ""',
-  );
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("sub-detail-content").innerHTML = ""',
-  );
-  mb.window.webContents.executeJavaScript(
+  setElementHtml('#sub-detail-headline', '');
+  setElementHtml('#sub-detail-content', '');
+  executeUnsafeJavaScript(
     'document.getElementById("sub-detail-header-content").classList.remove("empty")',
   );
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("sub-detail-header-content").innerHTML = "${arg.page}"`,
-  );
+  setElementHtml('#sub-detail-header-content', arg.page);
   if (arg.page === 'Issues') {
     if (store.analytics) {
       visitor.pageview('/project/issues').send();
@@ -2021,14 +1866,16 @@ ipcMain.on('sub-detail-page', (event, arg) => {
     const issuesQuerySelect = `<div class="custom-select" tabindex="1"><div class="custom-select-active" id="issues-query-active">All</div><div class="custom-options-wrapper"><input class="custom-option" name="issues-query-select" type="radio" id="${allLabel}" onchange="switchIssues(${allLabel}, ${query}, ${allText})" checked><label for="${allLabel}" class="custom-option-label">All</label><input class="custom-option" name="issues-query-select" type="radio" id="${assignedLabel}" onchange="switchIssues(${assignedLabel}, ${query}, ${assignedText})"><label for="${assignedLabel}" class="custom-option-label">Assigned</label><input class="custom-option" name="issues-query-select" type="radio" id="${createdLabel}" onchange="switchIssues(${createdLabel}, ${query}, ${createdText})"><label for="${createdLabel}" class="custom-option-label">Created</label></div></div>`;
     const issuesStateSelect = `<div class="custom-select" tabindex="1"><div class="custom-select-active${allChanged}" id="issues-state-active">${activeState}</div><div class="custom-options-wrapper"><input class="custom-option" name="issues-state-select" type="radio" id="${allLabel}-issues" onchange="switchIssues(${allLabel}, ${state}, ${allText})"${allChecked}><label for="${allLabel}-issues" class="custom-option-label">All</label><input class="custom-option" name="issues-state-select" type="radio" id="${openedLabel}" onchange="switchIssues(${openedLabel}, ${state}, ${openedText})"${openChecked}><label for="${openedLabel}" class="custom-option-label">Open</label><input class="custom-option" name="issues-state-select" type="radio" id="${closedLabel}" onchange="switchIssues(${closedLabel}, ${state}, ${closedText})"><label for="${closedLabel}" class="custom-option-label">Closed</label></div></div>`;
     const issuesSortSelect = `<div class="custom-select" tabindex="1"><div class="custom-select-active" id="issues-sort-active">Sort by recently created</div><div class="custom-options-wrapper"><input class="custom-option" name="issues-sort-select" type="radio" id="${recentlyCreatedLabel}" onchange="switchIssues(${recentlyCreatedLabel}, ${sort}, ${recentlyCreatedText})" checked><label for="${recentlyCreatedLabel}" class="custom-option-label">Sort by recently created</label><input class="custom-option" name="issues-sort-select" type="radio" id="${recentlyUpdatedLabel}" onchange="switchIssues(${recentlyUpdatedLabel}, ${sort}, ${recentlyUpdatedText})"><label for="${recentlyUpdatedLabel}" class="custom-option-label">Sort by recently updated</label><input class="custom-option" name="issues-sort-select" type="radio" id="${dueDateLabel}" onchange="switchIssues(${dueDateLabel}, ${sort}, ${dueDateText})"><label for="${dueDateLabel}" class="custom-option-label">Sort by due date</label></div></div>`;
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("sub-detail-headline").innerHTML = "${escapeQuotes(
-        '<span class="name">',
-      )}${arg.page}${escapeQuotes('</span><div class="filter-sort">')}${escapeQuotes(
-        issuesQuerySelect,
-      )}${escapeQuotes(issuesStateSelect)}${escapeQuotes(issuesSortSelect)}</div>"`,
+    setElementHtml(
+      '#sub-detail-headline',
+      `<span class="name">${arg.page}</span>
+        <div class="filter-sort">
+          ${issuesQuerySelect}
+          ${issuesStateSelect}
+          ${issuesSortSelect}
+        </div>`,
     );
-    mb.window.webContents.executeJavaScript(
+    executeUnsafeJavaScript(
       'document.getElementById("sub-detail-headline").classList.add("with-overflow")',
     );
     displaySkeleton(numberOfIssues, undefined, 'sub-detail-content');
@@ -2050,14 +1897,16 @@ ipcMain.on('sub-detail-page', (event, arg) => {
     const mrsQuerySelect = `<div class="custom-select" tabindex="1"><div class="custom-select-active" id="mrs-query-active">All</div><div class="custom-options-wrapper"><input class="custom-option" name="mrs-query-select" type="radio" id="${allLabel}" onchange="switchMRs(${allLabel}, ${query}, ${allText})" checked><label for="${allLabel}" class="custom-option-label">All</label><input class="custom-option" name="mrs-query-select" type="radio" id="${assignedLabel}" onchange="switchMRs(${assignedLabel}, ${query}, ${assignedText})"><label for="${assignedLabel}" class="custom-option-label">Assigned</label><input class="custom-option" name="mrs-query-select" type="radio" id="${createdLabel}" onchange="switchMRs(${createdLabel}, ${query}, ${createdText})"><label for="${createdLabel}" class="custom-option-label">Created</label><input class="custom-option" name="mrs-query-select" type="radio" id="${reviewedLabel}" onchange="switchMRs(${reviewedLabel}, ${query}, ${reviewedText})"><label for="${reviewedLabel}" class="custom-option-label">Review requests</label><input class="custom-option" name="mrs-query-select" type="radio" id="${approvedLabel}" onchange="switchMRs(${approvedLabel}, ${query}, ${approvedText})"><label for="${approvedLabel}" class="custom-option-label">Approved</label><input class="custom-option" name="mrs-query-select" type="radio" id="${approvalLabel}" onchange="switchMRs(${approvalLabel}, ${query}, ${approvalText})"><label for="${approvalLabel}" class="custom-option-label">Approval rule</label></div></div>`;
     const mrsStateSelect = `<div class="custom-select" tabindex="1"><div class="custom-select-active${allChanged}" id="mrs-state-active">${activeState}</div><div class="custom-options-wrapper"><input class="custom-option" name="mrs-state-select" type="radio" id="${allLabel}-state" onchange="switchMRs(${allLabel}, ${state}, ${allText})"${allChecked}><label for="${allLabel}-state" class="custom-option-label">All</label><input class="custom-option" name="mrs-state-select" type="radio" id="${openedLabel}" onchange="switchMRs(${openedLabel}, ${state}, ${openedText})"${openChecked}><label for="${openedLabel}" class="custom-option-label">Open</label><input class="custom-option" name="mrs-state-select" type="radio" id="${mergedLabel}" onchange="switchMRs(${mergedLabel}, ${state}, ${mergedText})"><label for="${mergedLabel}" class="custom-option-label">Merged</label><input class="custom-option" name="mrs-state-select" type="radio" id="${closedLabel}" onchange="switchMRs(${closedLabel}, ${state}, ${closedText})"><label for="${closedLabel}" class="custom-option-label">Closed</label></div></div>`;
     const mrsSortSelect = `<div class="custom-select" tabindex="1"><div class="custom-select-active" id="mrs-sort-active">Sort by recently created</div><div class="custom-options-wrapper"><input class="custom-option" name="mrs-sort-select" type="radio" id="${recentlyCreatedLabel}" onchange="switchMRs(${recentlyCreatedLabel}, ${sort}, ${recentlyCreatedText})"><label for="${recentlyCreatedLabel}" class="custom-option-label">Sort by recently created</label><input class="custom-option" name="mrs-sort-select" type="radio" id="${recentlyUpdatedLabel}" onchange="switchMRs(${recentlyUpdatedLabel}, ${sort}, ${recentlyUpdatedText})" checked><label for="${recentlyUpdatedLabel}" class="custom-option-label">Sort by recently updated</label></div></div>`;
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("sub-detail-headline").innerHTML = "${escapeQuotes(
-        '<span class="name">',
-      )}${arg.page}${escapeQuotes('</span><div class="filter-sort">')}${escapeQuotes(
-        mrsQuerySelect,
-      )}${escapeQuotes(mrsStateSelect)}${escapeQuotes(mrsSortSelect)}</div>"`,
+    setElementHtml(
+      '#sub-detail-headline',
+      `<span class="name">${arg.page}</span>
+        <div class="filter-sort">
+          ${mrsQuerySelect}
+          ${mrsStateSelect}
+          ${mrsSortSelect}
+        </div>`,
     );
-    mb.window.webContents.executeJavaScript(
+    executeUnsafeJavaScript(
       'document.getElementById("sub-detail-headline").classList.add("with-overflow")',
     );
     displaySkeleton(numberOfMRs, undefined, 'sub-detail-content');
@@ -2082,15 +1931,13 @@ ipcMain.on('go-to-overview', () => {
   getRecentComments();
   displayUsersProjects();
   getBookmarks();
-  mb.window.webContents.executeJavaScript(
+  executeUnsafeJavaScript(
     'document.getElementById("detail-headline").classList.remove("with-overflow")',
   );
-  mb.window.webContents.executeJavaScript(
+  executeUnsafeJavaScript(
     'document.getElementById("detail-header-content").classList.add("empty")',
   );
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("detail-header-content").innerHTML = ""',
-  );
+  setElementHtml('#detail-header-content', '');
   activeIssuesQueryOption = 'assigned_to_me';
   activeIssuesStateOption = 'opened';
   activeIssuesSortOption = 'created_at';
@@ -2120,48 +1967,42 @@ ipcMain.on('switch-issues', (event, arg) => {
   if (arg.type === 'query' && arg.label !== activeIssuesQueryOption) {
     activeIssuesQueryOption = arg.label;
     displaySkeleton(numberOfIssues, undefined, id);
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("issues-query-active").innerHTML = "${arg.text}"`,
-    );
+    setElementHtml('#issues-query-active', arg.text);
     if (
       (isOnSubPage === false && arg.label !== 'assigned_to_me') ||
       (isOnSubPage === true && arg.label !== 'all')
     ) {
-      mb.window.webContents.executeJavaScript(
+      executeUnsafeJavaScript(
         'document.getElementById("issues-query-active").classList.add("changed")',
       );
     } else {
-      mb.window.webContents.executeJavaScript(
+      executeUnsafeJavaScript(
         'document.getElementById("issues-query-active").classList.remove("changed")',
       );
     }
   } else if (arg.type === 'state' && arg.label !== activeIssuesStateOption) {
     activeIssuesStateOption = arg.label;
     displaySkeleton(numberOfIssues, undefined, id);
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("issues-state-active").innerHTML = "${arg.text}"`,
-    );
+    setElementHtml('#issues-state-active', arg.text);
     if (arg.label !== 'opened') {
-      mb.window.webContents.executeJavaScript(
+      executeUnsafeJavaScript(
         'document.getElementById("issues-state-active").classList.add("changed")',
       );
     } else {
-      mb.window.webContents.executeJavaScript(
+      executeUnsafeJavaScript(
         'document.getElementById("issues-state-active").classList.remove("changed")',
       );
     }
   } else if (arg.type === 'sort' && arg.label !== activeIssuesSortOption) {
     activeIssuesSortOption = arg.label;
     displaySkeleton(numberOfIssues, undefined, id);
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("issues-sort-active").innerHTML = "${arg.text}"`,
-    );
+    setElementHtml('#issues-sort-active', arg.text);
     if (arg.label !== 'created_at') {
-      mb.window.webContents.executeJavaScript(
+      executeUnsafeJavaScript(
         'document.getElementById("issues-sort-active").classList.add("changed")',
       );
     } else {
-      mb.window.webContents.executeJavaScript(
+      executeUnsafeJavaScript(
         'document.getElementById("issues-sort-active").classList.remove("changed")',
       );
     }
@@ -2183,15 +2024,13 @@ ipcMain.on('switch-mrs', (event, arg) => {
   if (arg.type === 'query' && arg.label !== activeMRsQueryOption) {
     activeMRsQueryOption = arg.label;
     displaySkeleton(numberOfMRs, undefined, id);
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("mrs-query-active").innerHTML = "${arg.text}"`,
-    );
+    setElementHtml('#mrs-query-active', arg.text);
     if (arg.label !== 'all') {
-      mb.window.webContents.executeJavaScript(
+      executeUnsafeJavaScript(
         'document.getElementById("mrs-query-active").classList.add("changed")',
       );
     } else {
-      mb.window.webContents.executeJavaScript(
+      executeUnsafeJavaScript(
         'document.getElementById("mrs-query-active").classList.remove("changed")',
       );
     }
@@ -2199,30 +2038,26 @@ ipcMain.on('switch-mrs', (event, arg) => {
   if (arg.type === 'state' && arg.label !== activeMRsStateOption) {
     activeMRsStateOption = arg.label;
     displaySkeleton(numberOfMRs, undefined, id);
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("mrs-state-active").innerHTML = "${arg.text}"`,
-    );
+    setElementHtml('#mrs-state-active', arg.text);
     if (arg.label !== 'opened') {
-      mb.window.webContents.executeJavaScript(
+      executeUnsafeJavaScript(
         'document.getElementById("mrs-state-active").classList.add("changed")',
       );
     } else {
-      mb.window.webContents.executeJavaScript(
+      executeUnsafeJavaScript(
         'document.getElementById("mrs-state-active").classList.remove("changed")',
       );
     }
   } else if (arg.type === 'sort' && arg.label !== activeMRsSortOption) {
     activeMRsSortOption = arg.label;
     displaySkeleton(numberOfMRs, undefined, id);
-    mb.window.webContents.executeJavaScript(
-      `document.getElementById("mrs-sort-active").innerHTML = "${arg.text}"`,
-    );
+    setElementHtml('#mrs-sort-active', arg.text);
     if (arg.label !== 'created_at') {
-      mb.window.webContents.executeJavaScript(
+      executeUnsafeJavaScript(
         'document.getElementById("mrs-sort-active").classList.add("changed")',
       );
     } else {
-      mb.window.webContents.executeJavaScript(
+      executeUnsafeJavaScript(
         'document.getElementById("mrs-sort-active").classList.remove("changed")',
       );
     }
@@ -2264,9 +2099,7 @@ ipcMain.on('switch-page', (event, arg) => {
 });
 
 ipcMain.on('search-recent', (event, arg) => {
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("detail-content").innerHTML = ""',
-  );
+  setElementHtml('#detail-content', '');
   searchRecentlyVisited(arg);
 });
 
@@ -2278,10 +2111,9 @@ ipcMain.on('change-commit', (event, arg) => {
       visitor.event('Navigate my commits', 'previous').send();
     }
   }
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("pipeline").innerHTML = "${escapeQuotes(
-      '<div class="commit empty"><div class="commit-information"><div class="commit-name skeleton"></div><div class="commit-details skeleton"></div></div><div id="project-name"></div></div>',
-    )}"`,
+  setElementHtml(
+    '#pipeline',
+    '<div class="commit empty"><div class="commit-information"><div class="commit-name skeleton"></div><div class="commit-details skeleton"></div></div><div id="project-name"></div></div>',
   );
   const nextCommit = changeCommit(arg, recentCommits, currentCommit);
   currentCommit = nextCommit;
@@ -2296,10 +2128,9 @@ ipcMain.on('change-project-commit', (event, arg) => {
       visitor.event('Navigate project commits', 'previous').send();
     }
   }
-  mb.window.webContents.executeJavaScript(
-    `document.getElementById("project-pipeline").innerHTML = "${escapeQuotes(
-      '<div class="commit empty"><div class="commit-information"><div class="commit-name skeleton"></div><div class="commit-details skeleton"></div></div><div id="project-name"></div></div>',
-    )}"`,
+  setElementHtml(
+    '#project-pipeline',
+    '<div class="commit empty"><div class="commit-information"><div class="commit-name skeleton"></div><div class="commit-details skeleton"></div></div><div id="project-name"></div></div>',
   );
   const nextCommit = changeCommit(arg, recentProjectCommits, currentProjectCommit);
   currentProjectCommit = nextCommit;
@@ -2417,10 +2248,8 @@ ipcMain.on('choose-certificate', () => {
 });
 
 ipcMain.on('reset-certificate', () => {
-  mb.window.webContents.executeJavaScript(
-    'document.getElementById("custom-cert-path-text").innerText=""',
-  );
-  mb.window.webContents.executeJavaScript(
+  executeUnsafeJavaScript('document.getElementById("custom-cert-path-text").innerText=""');
+  executeUnsafeJavaScript(
     'document.getElementById("custom-cert-path-text").classList.add("hidden")',
   );
   chooseCertificate();
