@@ -74,6 +74,23 @@ const ALL_OVERVIEWS = {
   },
 };
 
+const ALL_FEEDBACKS = {
+  feedbackNew: {
+    title: 'Report a bug or suggest improvements',
+    icon: '<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M3 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3.25a.75.75 0 0 0 0-1.5H3a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 .5.5v5.25a.75.75 0 0 0 1.5 0V4.364l2.19 1.14a.25.25 0 0 1 .107.338l-1.072 2.062a.75.75 0 0 0 1.33.692l1.073-2.062a1.75 1.75 0 0 0-.745-2.36l-2.912-1.516A2 2 0 0 0 9 1H3Zm6 12a.75.75 0 0 1 .75-.75h1.5v-1.5a.75.75 0 0 1 1.5 0v1.5h1.5a.75.75 0 0 1 0 1.5h-1.5v1.5a.75.75 0 0 1-1.5 0v-1.5h-1.5A.75.75 0 0 1 9 13Z"/></svg>',
+    execute() {
+      gitdock.openGitLab('/mvanremmerden/gitdock/-/issues/new');
+    },
+  },
+  feedbackIssues: {
+    title: 'Open issues for GitDock',
+    icon: '<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M3 2.5h6a.5.5 0 0 1 .5.5v10a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5ZM1 3a2 2 0 0 1 2-2h6a2 2 0 0 1 1.97 1.658l2.913 1.516a1.75 1.75 0 0 1 .744 2.36l-3.878 7.45a.753.753 0 0 1-.098.145c-.36.526-.965.871-1.651.871H3a2 2 0 0 1-2-2V3Zm10 7.254 2.297-4.413a.25.25 0 0 0-.106-.337L11 4.364v5.89Z"/></svg>',
+    execute() {
+      gitdock.openGitLab('/mvanremmerden/gitdock/-/issues');
+    },
+  },
+};
+
 function matcher({ title }) {
   let lowerCaseTitle = title.toLowerCase();
   const searchTerm = $search.value;
@@ -109,6 +126,14 @@ function loadOverviews() {
   return [...overviews]
     .filter(([, overview]) => matcher(overview))
     .sort(([, overviewA], [, overviewB]) => matcher(overviewB) - matcher(overviewA));
+}
+
+function loadFeedbacks() {
+  const feedbacks = Object.entries(ALL_FEEDBACKS);
+
+  return [...feedbacks]
+    .filter(([, feedback]) => matcher(feedback))
+    .sort(([, feedbackA], [, feedbackB]) => matcher(feedbackB) - matcher(feedbackA));
 }
 
 function loadFavorites() {
@@ -177,6 +202,7 @@ function search() {
 
   const availableActions = loadActions();
   const availableOverviews = loadOverviews();
+  const availableFeedbacks = loadFeedbacks();
   const availableFavorites = loadFavorites();
   const availableBookmarks = loadBookmarks();
   const availableRecents = loadRecents();
@@ -286,6 +312,23 @@ function search() {
     /* eslint-enable */
   }
 
+  if (availableFeedbacks.length > 0) {
+    html.push('<h5>GitDock</h5>');
+
+    /* eslint-disable no-restricted-syntax */
+    for (const [key, action] of availableFeedbacks) {
+      const icon = action.icon ? `${action.icon}` : '';
+      html.push(
+        `<li id="item-${i}" class="${
+          i === $selected ? 'selected' : ''
+        }" data-action="${key}" onclick="handleClick(this)" onmouseover="changeHighlight(${i})" tabindex="0">${icon}
+          <div class="action-title">${action.title}</div>
+        </li>`,
+      );
+      i += 1;
+    }
+  }
+
   $results.innerHTML = html.join('\n');
   changeHighlight(0);
   changeTheme();
@@ -330,6 +373,8 @@ function handleClick(target) {
     ALL_ACTIONS[key].execute();
   } else if (key.startsWith('overview')) {
     ALL_OVERVIEWS[key].execute();
+  } else if (key.startsWith('feedback')) {
+    ALL_FEEDBACKS[key].execute();
   }
 
   setTimeout(() => {
