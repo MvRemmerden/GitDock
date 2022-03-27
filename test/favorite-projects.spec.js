@@ -110,6 +110,8 @@ describe('Favorite projects', function () {
     await this.window.click('#project-settings-add-button');
     await this.window.waitForSelector('#add-project-settings-error');
 
+    assert.equal(await this.window.locator('#add-project-settings-error').innerText(), 'The same project was already added.');
+
     await this.window.click('#detail-header');
     await this.window.waitForTimeout(100);
 
