@@ -52,7 +52,7 @@
     "node-browser-history": "^2.4.6",
     "node-fetch": "^2.6.1",
     "playwright": "^1.17.1",
-    "universal-analytics": "^0.4.23",
+    "universal-analytics": "^0.5.3",
     "uuid": "^8.3.2"
   },
   "config": {
