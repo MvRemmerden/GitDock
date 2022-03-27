@@ -1559,46 +1559,52 @@ function addProject(link, target) {
   if (GitLab.urlHasValidHost(link)) {
     GitLab.parseUrl(link)
       .then((object) => {
-        if (object.type && object.type !== 'projects') {
-          const projectWithNamespace = encodeURIComponent(link.split(`${store.host}/`)[1]);
-          GitLab.get(`projects/${projectWithNamespace}`)
-            .then((project) => {
-              const projects = store['favorite-projects'] || [];
-              projects.push({
-                id: project.id,
-                visibility: project.visibility,
-                web_url: project.web_url,
-                name: project.name,
-                title: project.name,
-                namespace: {
-                  name: project.namespace.name,
-                },
-                parent_name: project.name_with_namespace,
-                parent_url: project.namespace.web_url,
-                name_with_namespace: project.name_with_namespace,
-                open_issues_count: project.open_issues_count,
-                last_activity_at: project.last_activity_at,
-                avatar_url: project.avatar_url,
-                star_count: project.star_count,
-                forks_count: project.forks_count,
+        if (
+          !store['favorite-projects'].filter((project) => project.web_url === object.web_url).length
+        ) {
+          if (object.type && object.type !== 'projects') {
+            const projectWithNamespace = encodeURIComponent(link.split(`${store.host}/`)[1]);
+            GitLab.get(`projects/${projectWithNamespace}`)
+              .then((project) => {
+                const projects = store['favorite-projects'] || [];
+                projects.push({
+                  id: project.id,
+                  visibility: project.visibility,
+                  web_url: project.web_url,
+                  name: project.name,
+                  title: project.name,
+                  namespace: {
+                    name: project.namespace.name,
+                  },
+                  parent_name: project.name_with_namespace,
+                  parent_url: project.namespace.web_url,
+                  name_with_namespace: project.name_with_namespace,
+                  open_issues_count: project.open_issues_count,
+                  last_activity_at: project.last_activity_at,
+                  avatar_url: project.avatar_url,
+                  star_count: project.star_count,
+                  forks_count: project.forks_count,
+                });
+                store['favorite-projects'] = projects;
+                if (newTarget === '-settings-') {
+                  openSettingsPage();
+                }
+                displayUsersProjects(projects);
+              })
+              .catch(() => {
+                displayAddError('project', newTarget);
               });
-              store['favorite-projects'] = projects;
-              if (newTarget === '-settings-') {
-                openSettingsPage();
-              }
-              displayUsersProjects(projects);
-            })
-            .catch(() => {
-              displayAddError('project', newTarget);
-            });
-        } else {
-          const projects = store['favorite-projects'] || [];
-          projects.push(object);
-          store['favorite-projects'] = projects;
-          if (newTarget === '-settings-') {
-            openSettingsPage();
+          } else {
+            const projects = store['favorite-projects'] || [];
+            projects.push(object);
+            store['favorite-projects'] = projects;
+            if (newTarget === '-settings-') {
+              openSettingsPage();
+            }
+            displayUsersProjects(projects);
           }
-          displayUsersProjects(projects);
+        } else {
+          displayAddError('project', newTarget, 'The same project was already added.');
         }
       })
       .catch(() => {
