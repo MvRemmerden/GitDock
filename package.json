@@ -46,7 +46,7 @@
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.0",
-    "electron-store": "^8.0.0",
+    "electron-store": "^8.0.1",
     "jsdom": "^17.0.0",
     "menubar": "^9.1.1",
     "node-browser-history": "^2.4.6",
