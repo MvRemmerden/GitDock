@@ -406,15 +406,8 @@ function logout() {
   deleteFromStore('username');
   deleteFromStore('access_token');
   deleteFromStore('custom_cert_path');
-  deleteFromStore('favorite-projects');
-  deleteFromStore('bookmarks');
   deleteFromStore('host');
   deleteFromStore('plan');
-  deleteFromStore('keep_visible');
-  deleteFromStore('show_dock_icon');
-  deleteFromStore('analytics');
-  deleteFromStore('analytics_id');
-  deleteFromStore('shortcuts');
   mb.window.webContents.session.clearCache();
   mb.window.webContents.session.clearStorageData();
   app.quit();
@@ -929,7 +922,12 @@ async function saveUser(accessToken, url = store.host, customCertPath = undefine
         store.custom_cert_path = customCertPath;
       }
       getUsersProjects().then(async (projects) => {
-        if (projects && projects.length > 0) {
+        if (
+          store['favorite-projects'] &&
+          store['favorite-projects'].length === 0 &&
+          projects &&
+          projects.length > 0
+        ) {
           store['favorite-projects'] = projects;
         }
         // eslint-disable-next-line no-use-before-define
