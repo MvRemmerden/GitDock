@@ -192,7 +192,7 @@ build-mac:
     policy: pull
   script:
     - brew update
-    - brew install dpkg && brew install rpm && brew install fakeroot
+    - brew install dpkg && brew install rpm
     - npm run make -- --platform=darwin
   artifacts:
     paths:

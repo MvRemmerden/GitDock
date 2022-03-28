@@ -22,7 +22,7 @@ jobs:
       run: npm install
     - name: Setup extra environment
       if: startsWith(matrix.os, 'self')
-      run: brew install fakeroot && brew install dpkg
+      run: brew install dpkg
     - name: Publish release for Windows
       if: startsWith(matrix.os, 'windows')
       env:

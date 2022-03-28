@@ -1,7 +1,6 @@
 /* eslint-env es2021 */
 const { menubar } = require('menubar');
 const { Menu, Notification, shell, ipcMain, dialog, app } = require('electron');
-const fetch = require('node-fetch');
 const { URL } = require('url');
 const ua = require('universal-analytics');
 const jsdom = require('jsdom');
@@ -54,6 +53,8 @@ const processInfo = require('./lib/process-info');
 const { version } = require('./package.json').version;
 const CommandPalette = require('./src/command-palette');
 
+// eslint-disable-next-line no-shadow
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const { JSDOM } = jsdom;
 let commandPalette;
 global.DOMParser = new JSDOM().window.DOMParser;
