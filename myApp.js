@@ -1032,7 +1032,7 @@ async function getLastTodo() {
   const [todo] = await GitLab.get('todos', {
     per_page: 1,
   });
-  if (lastTodoId !== todo.id) {
+  if (todo && lastTodoId !== todo.id) {
     if (lastTodoId !== -1 && Date.parse(todo.created_at) > Date.now() - 20000) {
       const todoNotification = new Notification({
         title: todo.body,
@@ -1562,7 +1562,9 @@ function addProject(link, target) {
           !store['favorite-projects'].filter((project) => project.web_url === object.web_url).length
         ) {
           if (object.type && object.type !== 'projects') {
-            const projectWithNamespace = encodeURIComponent(link.split(`${store.host}/`)[1]);
+            const projectWithNamespace = encodeURIComponent(
+              link.split(`${store.host}/`)[1],
+            ).replace(/%2F$/, '');
             GitLab.get(`projects/${projectWithNamespace}`)
               .then((project) => {
                 const projects = store['favorite-projects'] || [];
