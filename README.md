@@ -1,7 +1,7 @@
 # GitDock ⚓️
 
 GitDock is a MacOS/Windows/Linux app that displays all your GitLab activities in one place. Instead of the GitLab typical project- or group-centric approach, it collects all your information from a user-centric perspective.
-
+First test
 You can either have a look at this walkthrough video I recorded, or just try it out yourself by downloading it from the [releases](https://gitlab.com/mvanremmerden/gitdock/-/releases).
 
 [![YouTube Video](/docs/img/youtube.png)](https://www.youtube.com/watch?v=WkVS38wo4_w 'GitDock ⚓️')
@@ -9,7 +9,7 @@ You can either have a look at this walkthrough video I recorded, or just try it 
 ## Installation
 
 As GitDock hasn't been digitally signed and verified (yet), the installation requires a few more steps than usual.
-
+Second test
 <details><summary>MacOS</summary>
 
 ### Installation options
@@ -19,14 +19,16 @@ Currently GitDock can be installed in 2 ways. Both currently require a workaroun
 #### Option 1: Homebrew
 
 1. `brew install gitdock`
-
+Third test
 #### Option 2: Manual
 
 1. Grab the dmg file from the newest release on the [Releases page](https://gitlab.com/mvanremmerden/gitdock/-/releases).
 1. Move the app to your Applications folder and open it. You will see a notification informing you that this app hasn't been vetted and download from the App Store. Click "Cancel" at this point.
 
 ### Installation warning workaround
-
+Fourth test
+Fifth test
+Sixth test
 ![Installation warning](/docs/img/installation-warning.png)
 
 1. Open "Settings -> Security & Privacy" in your MacOS System Preferences, and make sure you are on the "General" tab.
