@@ -237,7 +237,7 @@ upload:
     - tags
   script:
     - |
-      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/GitDock-${VERSION}.dmg ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock-${VERSION}.dmg
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/GitDock-${VERSION}-x64.dmg ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock-${VERSION}.dmg
     - |
       curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file out/make/squirrel.windows/x64/GitDock.exe ${PACKAGE_REGISTRY_URL}/${VERSION}/GitDock-${VERSION}.exe
     - |
