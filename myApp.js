@@ -1559,6 +1559,7 @@ function addProject(link, target) {
     GitLab.parseUrl(link)
       .then((object) => {
         if (
+          !store['favorite-projects'] ||
           !store['favorite-projects'].filter((project) => project.web_url === object.web_url).length
         ) {
           if (object.type && object.type !== 'projects') {
