@@ -51,7 +51,7 @@
     "menubar": "^9.1.1",
     "node-browser-history": "^2.4.6",
     "node-fetch": "^3.2.3",
-    "playwright": "^1.20.1",
+    "playwright": "^1.22.2",
     "universal-analytics": "^0.5.3",
     "uuid": "^8.3.2"
   },
