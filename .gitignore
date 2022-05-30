@@ -10,3 +10,4 @@ package-lock.json
 builds/
 junit.xml
 screenshot.png
+.tool-versions
