@@ -908,6 +908,10 @@ async function getRecentComments() {
 
 async function saveUser(accessToken, url = store.host, customCertPath = undefined) {
   try {
+    if (url.endsWith('/')) {
+      /* eslint-disable no-param-reassign */
+      url = url.substring(0, url.length - 1);
+    }
     /* eslint-disable operator-linebreak, object-curly-newline */
     const options = customCertPath
       ? { access_token: accessToken, custom_cert_path: customCertPath }
