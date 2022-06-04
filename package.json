@@ -1,7 +1,7 @@
 {
   "name": "gitdock",
   "productName": "GitDock",
-  "version": "0.1.25",
+  "version": "0.1.26",
   "description": "A better way of managing all your work on GitLab.",
   "main": "myApp.js",
   "scripts": {
@@ -32,26 +32,26 @@
     "@electron-forge/maker-squirrel": "^6.0.0-beta.63",
     "@electron-forge/maker-zip": "^6.0.0-beta.63",
     "@electron-forge/publisher-github": "^6.0.0-beta.63",
-    "electron": "^16.0.4",
-    "eslint": "^8.12.0",
+    "electron": "^17.4.7",
+    "eslint": "^8.17.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-formatter-gitlab": "^3.0.0",
-    "eslint-plugin-import": "^2.25.4",
+    "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-prettier": "^4.0.0",
-    "mocha": "^9.2.2",
+    "mocha": "^10.0.0",
     "mocha-junit-reporter": "^2.0.2",
     "mocha-multi-reporters": "^1.5.1",
-    "prettier": "^2.6.1"
+    "prettier": "^2.6.2"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.0",
     "electron-store": "^8.0.1",
     "jsdom": "^19.0.0",
-    "menubar": "^9.1.1",
+    "menubar": "^9.2.0",
     "node-browser-history": "^2.4.6",
-    "node-fetch": "^3.2.3",
-    "playwright": "^1.20.1",
+    "node-fetch": "^3.2.5",
+    "playwright": "^1.22.2",
     "universal-analytics": "^0.5.3",
     "uuid": "^8.3.2"
   },
