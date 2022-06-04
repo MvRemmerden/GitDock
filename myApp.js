@@ -946,12 +946,6 @@ async function saveUser(accessToken, url = store.host, customCertPath = undefine
             getRecentlyVisited();
             getLastCommits();
             getRecentComments();
-            mb.window.webContents.setWindowOpenHandler((external) => {
-              shell.openExternal(external);
-              return {
-                action: 'deny',
-              };
-            });
           })
           .catch(() => {
             getUser();
@@ -960,12 +954,6 @@ async function saveUser(accessToken, url = store.host, customCertPath = undefine
             getRecentlyVisited();
             getLastCommits();
             getRecentComments();
-            mb.window.webContents.setWindowOpenHandler((external) => {
-              shell.openExternal(external);
-              return {
-                action: 'deny',
-              };
-            });
           });
       });
     }
@@ -1692,6 +1680,16 @@ function changeTheme(option = 'light', manual = false) {
 mb.on('ready', () => {
   setupContextMenu();
   setupCommandPalette();
+
+  mb.window.webContents.setWindowOpenHandler(({ url }) => {
+    if (store.analytics) {
+      visitor.event('Visit external link', true).send();
+    }
+    shell.openExternal(url);
+    return {
+      action: 'deny',
+    };
+  });
 });
 
 if (store.access_token && store.user_id && store.username) {
@@ -1716,16 +1714,6 @@ if (store.access_token && store.user_id && store.username) {
       getLastEvent();
       getLastTodo();
     }, 10000);
-
-    mb.window.webContents.setWindowOpenHandler(({ url }) => {
-      if (store.analytics) {
-        visitor.event('Visit external link', true).send();
-      }
-      shell.openExternal(url);
-      return {
-        action: 'deny',
-      };
-    });
   });
 
   mb.on('show', () => {
