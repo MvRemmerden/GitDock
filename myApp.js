@@ -415,6 +415,30 @@ function logout() {
   app.relaunch();
 }
 
+async function tryRefresh() {
+  fetch('https://gitlab.com/oauth/token', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      client_id: '2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee',
+      refresh_token: store.refreshToken,
+      grant_type: 'refresh_token',
+      redirect_uri: 'https://gitdock.org/login-screen/',
+      code_verifier: verifier,
+    }),
+  })
+    .then((result) => result.json())
+    .then((result) => {
+      store.access_token = result.access_token;
+      store.refresh_token = result.refresh_token;
+      return true;
+    })
+    .catch(() => false);
+}
+
 async function getUser() {
   if (lastUserExecutionFinished && lastUserExecution + delay < Date.now()) {
     lastUserExecutionFinished = false;
@@ -437,7 +461,13 @@ async function getUser() {
       lastUserExecution = Date.now();
       lastUserExecutionFinished = true;
     } else {
-      logout();
+      tryRefresh().then((result) => {
+        if (result) {
+          this.getUser();
+        } else {
+          logout();
+        }
+      });
     }
   }
 }
@@ -906,7 +936,7 @@ async function getRecentComments() {
   }
 }
 
-async function saveUser(accessToken, url = store.host, customCertPath = undefined) {
+async function saveUser(accessToken, refreshToken, url = store.host, customCertPath = undefined) {
   try {
     if (url.endsWith('/')) {
       /* eslint-disable no-param-reassign */
@@ -919,6 +949,7 @@ async function saveUser(accessToken, url = store.host, customCertPath = undefine
     /* eslint-enable */
     const result = await GitLab.get('user', options, url);
     if (result && result.id && result.username) {
+      store.refresh_token = refreshToken;
       store.access_token = accessToken;
       store.user_id = result.id;
       store.username = result.username;
@@ -981,7 +1012,7 @@ function handleLogin() {
     })
       .then((result) => result.json())
       .then((result) => {
-        saveUser(result.access_token);
+        saveUser(result.access_token, result.refresh_token);
       });
   }
 }
