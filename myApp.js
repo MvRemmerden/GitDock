@@ -50,9 +50,8 @@ const {
 const { store, deleteFromStore } = require('./lib/store');
 const BrowserHistory = require('./lib/browser-history');
 const processInfo = require('./lib/process-info');
-const { version } = require('./package.json').version;
+const { version } = require('./package.json');
 const CommandPalette = require('./src/command-palette');
-
 // eslint-disable-next-line no-shadow
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const { JSDOM } = jsdom;
@@ -237,12 +236,12 @@ function openAboutPage() {
   let aboutString =
     '<p>GitDock is a MacOS/Windows/Linux app that displays all your GitLab activities in one place. Instead of the GitLab typical project- or group-centric approach, it collects all your information from a user-centric perspective.</p>';
   aboutString +=
-    '<p>If you want to learn more about why we built this app, you can have a look at our <a href=\\"https://about.gitlab.com/blog/2021/10/05/gitpod-desktop-app-personal-activities\\" target=\\"_blank\\">blog post</a>.</p>';
+    '<p>If you want to learn more about why we built this app, you can have a look at our <a href="https://about.gitlab.com/blog/2021/10/05/gitpod-desktop-app-personal-activities" target="_blank">blog post</a>.</p>';
   aboutString +=
-    '<p>We use issues to collect bugs, feature requests, and more. You can <a href=\\"https://gitlab.com/mvanremmerden/gitdock/-/issues\\" target=\\"_blank\\">browse through existing issues</a>. To report a bug, suggest an improvement, or propose a feature, please <a href=\\"https://gitlab.com/mvanremmerden/gitdock/-/issues/new\\">create a new issue</a> if there is not already an issue for it.</p>';
+    '<p>We use issues to collect bugs, feature requests, and more. You can <a href="https://gitlab.com/mvanremmerden/gitdock/-/issues" target="_blank">browse through existing issues</a>. To report a bug, suggest an improvement, or propose a feature, please <a href="https://gitlab.com/mvanremmerden/gitdock/-/issues/new">create a new issue</a> if there is not already an issue for it.</p>';
   aboutString +=
-    '<p>If you are thinking about contributing directly, check out our <a href=\\"https://gitlab.com/mvanremmerden/gitdock/-/blob/main/CONTRIBUTING.md\\" target=\\"_blank\\">contribution guidelines</a>.</p>';
-  aboutString += `<p class=\\"version-number\\">Version ${version}</p>`;
+    '<p>If you are thinking about contributing directly, check out our <a href="https://gitlab.com/mvanremmerden/gitdock/-/blob/main/CONTRIBUTING.md" target="_blank">contribution guidelines</a>.</p>';
+  aboutString += `<p class="version-number">Version ${version}</p>`;
   setElementHtml('#detail-content', `${aboutString}</div>`);
 }
 
