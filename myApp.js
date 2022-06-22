@@ -839,27 +839,29 @@ async function getLastCommits(count = 20) {
       action: 'pushed',
       per_page: count,
     });
-    if (commits && commits.length > 0) {
-      lastEventId = commits[0].id;
-      getLastPipelines(commits);
-      const committedArray = commits.filter(
-        /* eslint-disable implicit-arrow-linebreak */
-        (commit) =>
-          commit.action_name === 'pushed to' ||
-          (commit.action_name === 'pushed new' &&
-            commit.push_data.commit_to &&
-            commit.push_data.commit_count > 0),
-        /* eslint-enable */
-      );
-      if (committedArray && committedArray.length > 0) {
-        [currentCommit] = committedArray;
-        recentCommits = committedArray;
-        getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1);
+    if (!Array.isArray(commits) && !commits.error) {
+      if (commits && commits.length > 0) {
+        lastEventId = commits[0].id;
+        getLastPipelines(commits);
+        const committedArray = commits.filter(
+          /* eslint-disable implicit-arrow-linebreak */
+          (commit) =>
+            commit.action_name === 'pushed to' ||
+            (commit.action_name === 'pushed new' &&
+              commit.push_data.commit_to &&
+              commit.push_data.commit_count > 0),
+          /* eslint-enable */
+        );
+        if (committedArray && committedArray.length > 0) {
+          [currentCommit] = committedArray;
+          recentCommits = committedArray;
+          getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1);
+        } else {
+          renderNoCommitsPushedYetMessage();
+        }
       } else {
         renderNoCommitsPushedYetMessage();
       }
-    } else {
-      renderNoCommitsPushedYetMessage();
     }
     lastLastCommitsExecution = Date.now();
     lastLastCommitsExecutionFinished = true;
@@ -875,30 +877,31 @@ async function getRecentComments() {
       action: 'commented',
       per_page: numberOfRecentComments,
     });
+    if (!Array.isArray(comments) && !comments.error) {
+      if (comments && comments.length > 0) {
+        recentCommentsString += '<ul class="list-container">';
+        /* eslint-disable no-restricted-syntax, no-continue, no-await-in-loop */
+        for (const comment of comments) {
+          const path = GitLab.commentToNoteableUrl(comment);
 
-    if (comments && comments.length > 0) {
-      recentCommentsString += '<ul class="list-container">';
-      /* eslint-disable no-restricted-syntax, no-continue, no-await-in-loop */
-      for (const comment of comments) {
-        const path = GitLab.commentToNoteableUrl(comment);
+          if (!path) {
+            continue;
+          }
 
-        if (!path) {
-          continue;
+          const collabject = await GitLab.get(path);
+
+          recentCommentsString += renderCollabject(comment, collabject);
         }
-
-        const collabject = await GitLab.get(path);
-
-        recentCommentsString += renderCollabject(comment, collabject);
+        // eslint-disable no-restricted-syntax */
+        const moreString = "'Comments'";
+        recentCommentsString += `<li class="more-link"><a onclick="goToDetail(${moreString})">View more ${chevronRightIcon}</a></li></ul>`;
+        setElementHtml('#comments', recentCommentsString);
+      } else {
+        setElementHtml(
+          '#comments',
+          '<p class="no-results">You haven&#039;t written any comments yet.</p>',
+        );
       }
-      // eslint-disable no-restricted-syntax */
-      const moreString = "'Comments'";
-      recentCommentsString += `<li class="more-link"><a onclick="goToDetail(${moreString})">View more ${chevronRightIcon}</a></li></ul>`;
-      setElementHtml('#comments', recentCommentsString);
-    } else {
-      setElementHtml(
-        '#comments',
-        '<p class="no-results">You haven&#039;t written any comments yet.</p>',
-      );
     }
     lastRecentCommentsExecution = Date.now();
     lastRecentCommentsExecutionFinished = true;
@@ -974,12 +977,12 @@ async function getUser() {
           lastLastCommitsExecutionFinished = true;
           lastRecentCommentsExecutionFinished = true;
 
+          getUser();
           getLastTodo();
           getLastCommits();
           getRecentComments();
-          getUser().call(this);
         } else {
-          logout();
+          // logout();
         }
       });
     }
@@ -1080,7 +1083,7 @@ async function startLogin() {
 async function getUsersPlan() {
   const namespaces = await GitLab.get('namespaces');
   let userNamespace;
-  if (namespaces) {
+  if (namespaces && namespaces.length > 0) {
     userNamespace = namespaces.find((namespace) => namespace.kind === 'user');
   }
 
@@ -1741,7 +1744,7 @@ mb.on('ready', () => {
 
 if (store.access_token && store.user_id && store.username) {
   mb.on('after-create-window', () => {
-    mb.window.webContents.openDevTools();
+    // mb.window.webContents.openDevTools();
 
     mb.showWindow();
     changeTheme(store.theme, false);
