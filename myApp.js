@@ -839,7 +839,7 @@ async function getLastCommits(count = 20) {
       action: 'pushed',
       per_page: count,
     });
-    if (!Array.isArray(commits) && !commits.error) {
+    if (Array.isArray(commits) && !commits.error) {
       if (commits && commits.length > 0) {
         lastEventId = commits[0].id;
         getLastPipelines(commits);
@@ -877,7 +877,7 @@ async function getRecentComments() {
       action: 'commented',
       per_page: numberOfRecentComments,
     });
-    if (!Array.isArray(comments) && !comments.error) {
+    if (Array.isArray(comments) && !comments.error) {
       if (comments && comments.length > 0) {
         recentCommentsString += '<ul class="list-container">';
         /* eslint-disable no-restricted-syntax, no-continue, no-await-in-loop */
