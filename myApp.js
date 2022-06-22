@@ -982,7 +982,7 @@ async function getUser() {
           getLastCommits();
           getRecentComments();
         } else {
-          // logout();
+          logout();
         }
       });
     }
