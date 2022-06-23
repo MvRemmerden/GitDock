@@ -253,6 +253,9 @@ svg {
   display: flex;
   align-items: center;
 }
+.headline #commits-pagination.hidden {
+  display: none;
+}
 .headline #project-commits-pagination {
   display: flex;
   justify-content: space-between;

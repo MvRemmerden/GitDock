@@ -50,9 +50,8 @@ const {
 const { store, deleteFromStore } = require('./lib/store');
 const BrowserHistory = require('./lib/browser-history');
 const processInfo = require('./lib/process-info');
-const { version } = require('./package.json').version;
+const { version } = require('./package.json');
 const CommandPalette = require('./src/command-palette');
-
 // eslint-disable-next-line no-shadow
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const { JSDOM } = jsdom;
@@ -237,12 +236,12 @@ function openAboutPage() {
   let aboutString =
     '<p>GitDock is a MacOS/Windows/Linux app that displays all your GitLab activities in one place. Instead of the GitLab typical project- or group-centric approach, it collects all your information from a user-centric perspective.</p>';
   aboutString +=
-    '<p>If you want to learn more about why we built this app, you can have a look at our <a href=\\"https://about.gitlab.com/blog/2021/10/05/gitpod-desktop-app-personal-activities\\" target=\\"_blank\\">blog post</a>.</p>';
+    '<p>If you want to learn more about why we built this app, you can have a look at our <a href="https://about.gitlab.com/blog/2021/10/05/gitpod-desktop-app-personal-activities" target="_blank">blog post</a>.</p>';
   aboutString +=
-    '<p>We use issues to collect bugs, feature requests, and more. You can <a href=\\"https://gitlab.com/mvanremmerden/gitdock/-/issues\\" target=\\"_blank\\">browse through existing issues</a>. To report a bug, suggest an improvement, or propose a feature, please <a href=\\"https://gitlab.com/mvanremmerden/gitdock/-/issues/new\\">create a new issue</a> if there is not already an issue for it.</p>';
+    '<p>We use issues to collect bugs, feature requests, and more. You can <a href="https://gitlab.com/mvanremmerden/gitdock/-/issues" target="_blank">browse through existing issues</a>. To report a bug, suggest an improvement, or propose a feature, please <a href="https://gitlab.com/mvanremmerden/gitdock/-/issues/new">create a new issue</a> if there is not already an issue for it.</p>';
   aboutString +=
-    '<p>If you are thinking about contributing directly, check out our <a href=\\"https://gitlab.com/mvanremmerden/gitdock/-/blob/main/CONTRIBUTING.md\\" target=\\"_blank\\">contribution guidelines</a>.</p>';
-  aboutString += `<p class=\\"version-number\\">Version ${version}</p>`;
+    '<p>If you are thinking about contributing directly, check out our <a href="https://gitlab.com/mvanremmerden/gitdock/-/blob/main/CONTRIBUTING.md" target="_blank">contribution guidelines</a>.</p>';
+  aboutString += `<p class="version-number">Version ${version}</p>`;
   setElementHtml('#detail-content', `${aboutString}</div>`);
 }
 
@@ -415,31 +414,27 @@ function logout() {
   app.relaunch();
 }
 
-async function getUser() {
-  if (lastUserExecutionFinished && lastUserExecution + delay < Date.now()) {
-    lastUserExecutionFinished = false;
-
-    const user = await GitLab.get('user');
-    if (user && !user.error) {
-      let avatarUrl;
-      if (user.avatar_url) {
-        avatarUrl = new URL(user.avatar_url);
-        if (avatarUrl.host !== 'secure.gravatar.com') {
-          avatarUrl.href += '?width=64';
-        }
-      }
-      const userHtml = `<a href="${user.web_url}" target="_blank"><img src="${
-        avatarUrl.href
-      }" /><div class="user-information"><span class="user-name">${escapeHtml(
-        user.name,
-      )}</span><span class="username">@${escapeHtml(user.username)}</span></div></a>`;
-      setElementHtml('#user', userHtml);
-      lastUserExecution = Date.now();
-      lastUserExecutionFinished = true;
-    } else {
-      logout();
-    }
-  }
+function tryRefresh() {
+  return fetch('https://gitlab.com/oauth/token', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      client_id: '2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee',
+      refresh_token: store.refresh_token,
+      grant_type: 'refresh_token',
+      redirect_uri: 'https://gitdock.org/login-screen/',
+    }),
+  })
+    .then((result) => result.json())
+    .then((result) => {
+      store.access_token = result.access_token;
+      store.refresh_token = result.refresh_token;
+      return true;
+    })
+    .catch(() => false);
 }
 
 function displayUsersProjects() {
@@ -820,11 +815,14 @@ function displayCommit(commit, project, focus = 'project') {
 }
 
 function renderNoCommitsPushedYetMessage() {
-  setElementHtml('#commits-pagination', '');
+  executeUnsafeJavaScript('document.getElementById("commits-pagination").classList.add("hidden")');
   setElementHtml('#pipeline', '<p class="no-results">You haven&#039;t pushed any commits yet.</p>');
 }
 
 async function getCommitDetails(projectId, sha, index) {
+  executeUnsafeJavaScript(
+    'document.getElementById("commits-pagination").classList.remove("hidden")',
+  );
   executeUnsafeJavaScript('document.getElementById("commits-count").classList.remove("empty")');
   setElementHtml('#commits-count', `${index}/${recentCommits.length}`);
   const project = await GitLab.get(`projects/${projectId}`);
@@ -840,27 +838,29 @@ async function getLastCommits(count = 20) {
       action: 'pushed',
       per_page: count,
     });
-    if (commits && commits.length > 0) {
-      lastEventId = commits[0].id;
-      getLastPipelines(commits);
-      const committedArray = commits.filter(
-        /* eslint-disable implicit-arrow-linebreak */
-        (commit) =>
-          commit.action_name === 'pushed to' ||
-          (commit.action_name === 'pushed new' &&
-            commit.push_data.commit_to &&
-            commit.push_data.commit_count > 0),
-        /* eslint-enable */
-      );
-      if (committedArray && committedArray.length > 0) {
-        [currentCommit] = committedArray;
-        recentCommits = committedArray;
-        getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1);
+    if (Array.isArray(commits) && !commits.error) {
+      if (commits && commits.length > 0) {
+        lastEventId = commits[0].id;
+        getLastPipelines(commits);
+        const committedArray = commits.filter(
+          /* eslint-disable implicit-arrow-linebreak */
+          (commit) =>
+            commit.action_name === 'pushed to' ||
+            (commit.action_name === 'pushed new' &&
+              commit.push_data.commit_to &&
+              commit.push_data.commit_count > 0),
+          /* eslint-enable */
+        );
+        if (committedArray && committedArray.length > 0) {
+          [currentCommit] = committedArray;
+          recentCommits = committedArray;
+          getCommitDetails(committedArray[0].project_id, committedArray[0].push_data.commit_to, 1);
+        } else {
+          renderNoCommitsPushedYetMessage();
+        }
       } else {
         renderNoCommitsPushedYetMessage();
       }
-    } else {
-      renderNoCommitsPushedYetMessage();
     }
     lastLastCommitsExecution = Date.now();
     lastLastCommitsExecutionFinished = true;
@@ -876,37 +876,119 @@ async function getRecentComments() {
       action: 'commented',
       per_page: numberOfRecentComments,
     });
+    if (Array.isArray(comments) && !comments.error) {
+      if (comments && comments.length > 0) {
+        recentCommentsString += '<ul class="list-container">';
+        /* eslint-disable no-restricted-syntax, no-continue, no-await-in-loop */
+        for (const comment of comments) {
+          const path = GitLab.commentToNoteableUrl(comment);
 
-    if (comments && comments.length > 0) {
-      recentCommentsString += '<ul class="list-container">';
-      /* eslint-disable no-restricted-syntax, no-continue, no-await-in-loop */
-      for (const comment of comments) {
-        const path = GitLab.commentToNoteableUrl(comment);
+          if (!path) {
+            continue;
+          }
 
-        if (!path) {
-          continue;
+          const collabject = await GitLab.get(path);
+
+          recentCommentsString += renderCollabject(comment, collabject);
         }
-
-        const collabject = await GitLab.get(path);
-
-        recentCommentsString += renderCollabject(comment, collabject);
+        // eslint-disable no-restricted-syntax */
+        const moreString = "'Comments'";
+        recentCommentsString += `<li class="more-link"><a onclick="goToDetail(${moreString})">View more ${chevronRightIcon}</a></li></ul>`;
+        setElementHtml('#comments', recentCommentsString);
+      } else {
+        setElementHtml(
+          '#comments',
+          '<p class="no-results">You haven&#039;t written any comments yet.</p>',
+        );
       }
-      // eslint-disable no-restricted-syntax */
-      const moreString = "'Comments'";
-      recentCommentsString += `<li class="more-link"><a onclick="goToDetail(${moreString})">View more ${chevronRightIcon}</a></li></ul>`;
-      setElementHtml('#comments', recentCommentsString);
-    } else {
-      setElementHtml(
-        '#comments',
-        '<p class="no-results">You haven&#039;t written any comments yet.</p>',
-      );
     }
     lastRecentCommentsExecution = Date.now();
     lastRecentCommentsExecutionFinished = true;
   }
 }
 
-async function saveUser(accessToken, url = store.host, customCertPath = undefined) {
+async function getLastEvent() {
+  if (!recentCommits || recentCommits.length === 0) {
+    return;
+  }
+
+  const [lastEvent] = await GitLab.get('events', {
+    action: 'pushed',
+    per_page: 1,
+  });
+
+  if (lastEvent && lastEvent.id !== lastEventId) {
+    lastEventId = lastEvent.id;
+    getLastCommits();
+    getRecentComments();
+  }
+}
+
+async function getLastTodo() {
+  const todo = await GitLab.get('todos', {
+    per_page: 1,
+  });
+  if (todo && lastTodoId !== todo.id) {
+    if (lastTodoId !== -1 && Date.parse(todo.created_at) > Date.now() - 20000) {
+      const todoNotification = new Notification({
+        title: todo.body,
+        subtitle: todo.author.name,
+        body: todo.target.title,
+      });
+      todoNotification.on('click', () => {
+        shell.openExternal(todo.target_url);
+      });
+      todoNotification.show();
+    }
+    lastTodoId = todo.id;
+  }
+}
+
+async function getUser() {
+  if (lastUserExecutionFinished && lastUserExecution + delay < Date.now()) {
+    lastUserExecutionFinished = false;
+
+    const user = await GitLab.get('user');
+    if (user && !user.error) {
+      let avatarUrl;
+      if (user.avatar_url) {
+        avatarUrl = new URL(user.avatar_url);
+        if (avatarUrl.host !== 'secure.gravatar.com') {
+          avatarUrl.href += '?width=64';
+        }
+      }
+      const userHtml = `<a href="${user.web_url}" target="_blank"><img src="${
+        avatarUrl.href
+      }" /><div class="user-information"><span class="user-name">${escapeHtml(
+        user.name,
+      )}</span><span class="username">@${escapeHtml(user.username)}</span></div></a>`;
+      setElementHtml('#user', userHtml);
+      lastUserExecution = Date.now();
+      lastUserExecutionFinished = true;
+    } else {
+      tryRefresh().then((result) => {
+        if (result) {
+          lastUserExecution = 0;
+          lastLastCommitsExecution = 0;
+          lastRecentCommentsExecution = 0;
+
+          lastUserExecutionFinished = true;
+          lastLastCommitsExecutionFinished = true;
+          lastRecentCommentsExecutionFinished = true;
+
+          getUser();
+          getLastTodo();
+          getLastCommits();
+          getRecentComments();
+        } else {
+          logout();
+        }
+      });
+    }
+  }
+}
+
+async function saveUser(accessToken, refreshToken, url = store.host, customCertPath = undefined) {
   try {
     if (url.endsWith('/')) {
       /* eslint-disable no-param-reassign */
@@ -919,6 +1001,7 @@ async function saveUser(accessToken, url = store.host, customCertPath = undefine
     /* eslint-enable */
     const result = await GitLab.get('user', options, url);
     if (result && result.id && result.username) {
+      store.refresh_token = refreshToken;
       store.access_token = accessToken;
       store.user_id = result.id;
       store.username = result.username;
@@ -981,7 +1064,7 @@ function handleLogin() {
     })
       .then((result) => result.json())
       .then((result) => {
-        saveUser(result.access_token);
+        saveUser(result.access_token, result.refresh_token);
       });
   }
 }
@@ -998,46 +1081,12 @@ async function startLogin() {
 
 async function getUsersPlan() {
   const namespaces = await GitLab.get('namespaces');
-  const userNamespace = namespaces.find((namespace) => namespace.kind === 'user');
+  let userNamespace;
+  if (namespaces && namespaces.length > 0) {
+    userNamespace = namespaces.find((namespace) => namespace.kind === 'user');
+  }
 
   store.plan = userNamespace && userNamespace.plan ? userNamespace.plan : 'free';
-}
-
-async function getLastEvent() {
-  if (!recentCommits || recentCommits.length === 0) {
-    return;
-  }
-
-  const [lastEvent] = await GitLab.get('events', {
-    action: 'pushed',
-    per_page: 1,
-  });
-
-  if (lastEvent && lastEvent.id !== lastEventId) {
-    lastEventId = lastEvent.id;
-    getLastCommits();
-    getRecentComments();
-  }
-}
-
-async function getLastTodo() {
-  const [todo] = await GitLab.get('todos', {
-    per_page: 1,
-  });
-  if (todo && lastTodoId !== todo.id) {
-    if (lastTodoId !== -1 && Date.parse(todo.created_at) > Date.now() - 20000) {
-      const todoNotification = new Notification({
-        title: todo.body,
-        subtitle: todo.author.name,
-        body: todo.target.title,
-      });
-      todoNotification.on('click', () => {
-        shell.openExternal(todo.target_url);
-      });
-      todoNotification.show();
-    }
-    lastTodoId = todo.id;
-  }
 }
 
 async function getProjectCommits(project, count = 20) {
