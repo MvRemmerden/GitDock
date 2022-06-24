@@ -101,6 +101,8 @@ let lastRecentlyVisitedExecutionFinished = true;
 let lastLastCommitsExecutionFinished = true;
 let lastRecentCommentsExecutionFinished = true;
 
+let refreshInProgress = false;
+
 let verifier = '';
 let challenge = '';
 
@@ -135,6 +137,23 @@ const setElementHtml = (selector, html) =>
       '\\n',
     )}"`,
   );
+
+// eslint-disable-next-line object-curly-newline
+async function callApi(what, options = {}, host = store.host) {
+  return new Promise((resolve, reject) => {
+    GitLab.get(what, options, host)
+      .then((result) => {
+        if (result && result.error) {
+          // eslint-disable-next-line no-use-before-define
+          tryRefresh();
+        }
+        resolve(result);
+      })
+      .catch(() => {
+        reject();
+      });
+  });
+}
 
 function openSettingsPage() {
   // eslint-disable-next-line no-underscore-dangle
@@ -414,29 +433,6 @@ function logout() {
   app.relaunch();
 }
 
-function tryRefresh() {
-  return fetch('https://gitlab.com/oauth/token', {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      client_id: '2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee',
-      refresh_token: store.refresh_token,
-      grant_type: 'refresh_token',
-      redirect_uri: 'https://gitdock.org/login-screen/',
-    }),
-  })
-    .then((result) => result.json())
-    .then((result) => {
-      store.access_token = result.access_token;
-      store.refresh_token = result.refresh_token;
-      return true;
-    })
-    .catch(() => false);
-}
-
 function displayUsersProjects() {
   let favoriteProjectsHtml = '';
   const projects = store['favorite-projects'];
@@ -466,27 +462,30 @@ function displayUsersProjects() {
 }
 
 async function getUsersProjects() {
-  const projects = await GitLab.get(`users/${store.user_id}/starred_projects`, {
+  const projects = await callApi(`users/${store.user_id}/starred_projects`, {
     min_access_level: 30,
     per_page: numberOfFavoriteProjects,
     order_by: 'updated_at',
   });
-  return projects.map((project) => ({
-    id: project.id,
-    visibility: project.visibility,
-    web_url: project.web_url,
-    name: project.name,
-    namespace: {
-      name: project.namespace.name,
-    },
-    added: Date.now(),
-    name_with_namespace: project.name_with_namespace,
-    open_issues_count: project.open_issues_count,
-    last_activity_at: project.last_activity_at,
-    avatar_url: project.avatar_url,
-    star_count: project.star_count,
-    forks_count: project.forks_count,
-  }));
+  if (projects) {
+    return projects.map((project) => ({
+      id: project.id,
+      visibility: project.visibility,
+      web_url: project.web_url,
+      name: project.name,
+      namespace: {
+        name: project.namespace.name,
+      },
+      added: Date.now(),
+      name_with_namespace: project.name_with_namespace,
+      open_issues_count: project.open_issues_count,
+      last_activity_at: project.last_activity_at,
+      avatar_url: project.avatar_url,
+      star_count: project.star_count,
+      forks_count: project.forks_count,
+    }));
+  }
+  return false;
 }
 
 function getBookmarks() {
@@ -612,31 +611,33 @@ async function getRecentlyVisited() {
 async function subscribeToRunningPipeline() {
   const interval = setInterval(async () => {
     runningPipelineSubscriptions.forEach(async (runningPipeline) => {
-      const pipeline = await GitLab.get(
+      const pipeline = await callApi(
         `projects/${runningPipeline.project_id}/pipelines/${runningPipeline.id}`,
       );
-      let pipelineStatus;
-      if (pipeline.status !== 'running') {
-        if (pipeline.status === 'success') {
-          pipelineStatus = 'succeeded';
-        } else {
-          pipelineStatus = pipeline.status;
-        }
-        const updateNotification = new Notification({
-          title: `Pipeline ${pipelineStatus}`,
-          subtitle: GitLab.fetchUrlInfo(pipeline.web_url).namespaceWithProject,
-          body: runningPipeline.commit_title,
-        });
-        updateNotification.on('click', () => {
-          shell.openExternal(pipeline.web_url);
-        });
-        updateNotification.show();
-        runningPipelineSubscriptions = runningPipelineSubscriptions.filter(
-          (subscriptionPipeline) => subscriptionPipeline.id !== pipeline.id,
-        );
-        if (runningPipelineSubscriptions.length === 0) {
-          clearInterval(interval);
-          mb.tray.setImage(`${__dirname}/assets/gitlabTemplate.png`);
+      if (pipeline) {
+        let pipelineStatus;
+        if (pipeline.status !== 'running') {
+          if (pipeline.status === 'success') {
+            pipelineStatus = 'succeeded';
+          } else {
+            pipelineStatus = pipeline.status;
+          }
+          const updateNotification = new Notification({
+            title: `Pipeline ${pipelineStatus}`,
+            subtitle: GitLab.fetchUrlInfo(pipeline.web_url).namespaceWithProject,
+            body: runningPipeline.commit_title,
+          });
+          updateNotification.on('click', () => {
+            shell.openExternal(pipeline.web_url);
+          });
+          updateNotification.show();
+          runningPipelineSubscriptions = runningPipelineSubscriptions.filter(
+            (subscriptionPipeline) => subscriptionPipeline.id !== pipeline.id,
+          );
+          if (runningPipelineSubscriptions.length === 0) {
+            clearInterval(interval);
+            mb.tray.setImage(`${__dirname}/assets/gitlabTemplate.png`);
+          }
         }
       }
     });
@@ -649,7 +650,7 @@ async function getLastPipelines(commits) {
     commits.forEach(async (commit) => {
       if (!projectArray.includes(commit.project_id)) {
         projectArray.push(commit.project_id);
-        const pipelines = await GitLab.get(`projects/${commit.project_id}/pipelines`, {
+        const pipelines = await callApi(`projects/${commit.project_id}/pipelines`, {
           status: 'running',
           username: store.username,
           per_page: 1,
@@ -664,20 +665,22 @@ async function getLastPipelines(commits) {
                 (subscriptionPipeline) => subscriptionPipeline.id === pipeline.id,
               ) === -1
             ) {
-              const pipelineCommit = await GitLab.get(
+              const pipelineCommit = await callApi(
                 `projects/${pipeline.project_id}/repository/commits/${pipeline.sha}`,
               );
-              commitPipeline.commit_title = pipelineCommit.title;
-              runningPipelineSubscriptions.push(commitPipeline);
-              const runningNotification = new Notification({
-                title: 'Pipeline running',
-                subtitle: GitLab.fetchUrlInfo(commitPipeline.web_url).namespaceWithProject,
-                body: commitPipeline.commit_title,
-              });
-              runningNotification.on('click', () => {
-                shell.openExternal(commitPipeline.web_url);
-              });
-              runningNotification.show();
+              if (pipelineCommit) {
+                commitPipeline.commit_title = pipelineCommit.title;
+                runningPipelineSubscriptions.push(commitPipeline);
+                const runningNotification = new Notification({
+                  title: 'Pipeline running',
+                  subtitle: GitLab.fetchUrlInfo(commitPipeline.web_url).namespaceWithProject,
+                  body: commitPipeline.commit_title,
+                });
+                runningNotification.on('click', () => {
+                  shell.openExternal(commitPipeline.web_url);
+                });
+                runningNotification.show();
+              }
             }
           });
           subscribeToRunningPipeline();
@@ -825,20 +828,22 @@ async function getCommitDetails(projectId, sha, index) {
   );
   executeUnsafeJavaScript('document.getElementById("commits-count").classList.remove("empty")');
   setElementHtml('#commits-count', `${index}/${recentCommits.length}`);
-  const project = await GitLab.get(`projects/${projectId}`);
-  const commit = await GitLab.get(`projects/${project.id}/repository/commits/${sha}`);
-  setElementHtml('#pipeline', displayCommit(commit, project));
+  const project = await callApi(`projects/${projectId}`);
+  const commit = await callApi(`projects/${project.id}/repository/commits/${sha}`);
+  if (project && commit) {
+    setElementHtml('#pipeline', displayCommit(commit, project));
+  }
 }
 
 async function getLastCommits(count = 20) {
   if (lastLastCommitsExecutionFinished && lastLastCommitsExecution + delay < Date.now()) {
     lastLastCommitsExecutionFinished = false;
 
-    const commits = await GitLab.get('events', {
+    const commits = await callApi('events', {
       action: 'pushed',
       per_page: count,
     });
-    if (Array.isArray(commits) && !commits.error) {
+    if (commits && Array.isArray(commits) && !commits.error) {
       if (commits && commits.length > 0) {
         lastEventId = commits[0].id;
         getLastPipelines(commits);
@@ -872,11 +877,11 @@ async function getRecentComments() {
     lastRecentCommentsExecutionFinished = false;
     let recentCommentsString = '';
 
-    const comments = await GitLab.get('events', {
+    const comments = await callApi('events', {
       action: 'commented',
       per_page: numberOfRecentComments,
     });
-    if (Array.isArray(comments) && !comments.error) {
+    if (comments && Array.isArray(comments) && !comments.error) {
       if (comments && comments.length > 0) {
         recentCommentsString += '<ul class="list-container">';
         /* eslint-disable no-restricted-syntax, no-continue, no-await-in-loop */
@@ -887,9 +892,10 @@ async function getRecentComments() {
             continue;
           }
 
-          const collabject = await GitLab.get(path);
-
-          recentCommentsString += renderCollabject(comment, collabject);
+          const collabject = await callApi(path);
+          if (collabject) {
+            recentCommentsString += renderCollabject(comment, collabject);
+          }
         }
         // eslint-disable no-restricted-syntax */
         const moreString = "'Comments'";
@@ -911,12 +917,10 @@ async function getLastEvent() {
   if (!recentCommits || recentCommits.length === 0) {
     return;
   }
-
-  const [lastEvent] = await GitLab.get('events', {
+  const lastEvent = await callApi('events', {
     action: 'pushed',
     per_page: 1,
   });
-
   if (lastEvent && lastEvent.id !== lastEventId) {
     lastEventId = lastEvent.id;
     getLastCommits();
@@ -925,7 +929,7 @@ async function getLastEvent() {
 }
 
 async function getLastTodo() {
-  const todo = await GitLab.get('todos', {
+  const todo = await callApi('todos', {
     per_page: 1,
   });
   if (todo && lastTodoId !== todo.id) {
@@ -948,7 +952,7 @@ async function getUser() {
   if (lastUserExecutionFinished && lastUserExecution + delay < Date.now()) {
     lastUserExecutionFinished = false;
 
-    const user = await GitLab.get('user');
+    const user = await callApi('user');
     if (user && !user.error) {
       let avatarUrl;
       if (user.avatar_url) {
@@ -965,9 +969,31 @@ async function getUser() {
       setElementHtml('#user', userHtml);
       lastUserExecution = Date.now();
       lastUserExecutionFinished = true;
-    } else {
-      tryRefresh().then((result) => {
-        if (result) {
+    }
+  }
+}
+
+function tryRefresh() {
+  if (!refreshInProgress) {
+    refreshInProgress = true;
+    fetch('https://gitlab.com/oauth/token', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        client_id: '2ab9d5c2290a3efcacbd5fc99ef469b7767ef5656cfc09376944b03ef4a8acee',
+        refresh_token: store.refresh_token,
+        grant_type: 'refresh_token',
+        redirect_uri: 'https://gitdock.org/login-screen/',
+      }),
+    })
+      .then((result) => result.json())
+      .then((result) => {
+        if (result.access_token && result.refresh_token) {
+          store.access_token = result.access_token;
+          store.refresh_token = result.refresh_token;
           lastUserExecution = 0;
           lastLastCommitsExecution = 0;
           lastRecentCommentsExecution = 0;
@@ -983,8 +1009,12 @@ async function getUser() {
         } else {
           logout();
         }
+        refreshInProgress = false;
+      })
+      .catch(() => {
+        refreshInProgress = false;
+        logout();
       });
-    }
   }
 }
 
@@ -1004,7 +1034,7 @@ async function saveUser(
       ? { access_token: accessToken, custom_cert_path: customCertPath }
       : { access_token: accessToken };
     /* eslint-enable */
-    const result = await GitLab.get('user', options, url);
+    const result = await callApi('user', options, url);
     if (result && result.id && result.username) {
       store.access_token = accessToken;
       store.user_id = result.id;
@@ -1087,8 +1117,8 @@ async function startLogin() {
 }
 
 async function getUsersPlan() {
-  const namespaces = await GitLab.get('namespaces');
   let userNamespace;
+  const namespaces = await callApi('namespaces');
   if (namespaces && namespaces.length > 0) {
     userNamespace = namespaces.find((namespace) => namespace.kind === 'user');
   }
@@ -1097,21 +1127,21 @@ async function getUsersPlan() {
 }
 
 async function getProjectCommits(project, count = 20) {
-  const commits = await GitLab.get(`projects/${project.id}/repository/commits`, {
+  const commits = await callApi(`projects/${project.id}/repository/commits`, {
     per_page: count,
   });
-
   if (commits && commits.length > 0) {
     recentProjectCommits = commits;
     [currentProjectCommit] = commits;
 
-    const commit = await GitLab.get(`projects/${project.id}/repository/commits/${commits[0].id}`, {
+    const commit = await callApi(`projects/${project.id}/repository/commits/${commits[0].id}`, {
       per_page: count,
     });
-
-    const pagination = `<div id="project-commits-pagination"><span class="name">Commits</span><div id="commits-pagination"><span id="project-commits-count">1/${recentProjectCommits.length}</span><button onclick="changeProjectCommit(false)">${chevronLgLeftIconWithViewboxHack}</button><button onclick="changeProjectCommit(true)">${chevronLgRightIconWithViewboxHack}</button></div></div>`;
-    setElementHtml('#detail-headline', pagination);
-    setElementHtml('#project-pipeline', displayCommit(commit, project, 'author'));
+    if (commit) {
+      const pagination = `<div id="project-commits-pagination"><span class="name">Commits</span><div id="commits-pagination"><span id="project-commits-count">1/${recentProjectCommits.length}</span><button onclick="changeProjectCommit(false)">${chevronLgLeftIconWithViewboxHack}</button><button onclick="changeProjectCommit(true)">${chevronLgRightIconWithViewboxHack}</button></div></div>`;
+      setElementHtml('#detail-headline', pagination);
+      setElementHtml('#project-pipeline', displayCommit(commit, project, 'author'));
+    }
   } else {
     setElementHtml('#project-commits-pagination', '<span class="name">Commits</span>');
     setElementHtml('#project-pipeline', '<p class="no-results">No commits pushed yet.</p>');
@@ -1145,9 +1175,10 @@ async function getProjectCommitDetails(projectId, sha, index) {
   );
   setElementHtml('#project-commits-count', `${index}/${recentProjectCommits.length}`);
 
-  const commit = await GitLab.get(`projects/${projectId}/repository/commits/${sha}`);
-
-  setElementHtml('#project-pipeline', displayCommit(commit, currentProject, 'author'));
+  const commit = await callApi(`projects/${projectId}/repository/commits/${sha}`);
+  if (commit) {
+    setElementHtml('#project-pipeline', displayCommit(commit, currentProject, 'author'));
+  }
 }
 
 async function getMoreRecentlyVisited() {
@@ -1300,9 +1331,10 @@ function getMoreRecentComments(
       /* eslint-disable no-restricted-syntax, no-await-in-loop */
       for (const comment of comments) {
         const path = GitLab.commentToNoteableUrl(comment);
-        const collabject = await GitLab.get(path);
-
-        recentCommentsString += renderCollabject(comment, collabject);
+        const collabject = await callApi(path);
+        if (collabject) {
+          recentCommentsString += renderCollabject(comment, collabject);
+        }
       }
       /* eslint-enable */
       recentCommentsString += `</ul>${displayPagination(keysetLinks, type)}`;
@@ -1485,12 +1517,12 @@ async function getProjectIssues(project) {
   const projectString = `'${escapeHtml(JSON.stringify(jsonProjectObject))}'`;
   const issuesString = "'Issues'";
 
-  const issues = await GitLab.get(`projects/${project.id}/issues`, {
+  const issues = await callApi(`projects/${project.id}/issues`, {
     state: 'opened',
     order_by: 'created_at',
     per_page: 3,
   });
-  if (issues.length > 0) {
+  if (issues && issues.length > 0) {
     projectIssuesString = '<ul class="list-container">';
     issues.forEach((issue) => {
       projectIssuesString += '<li class="history-entry">';
@@ -1518,13 +1550,12 @@ async function getProjectMRs(project) {
   const projectString = `'${escapeHtml(JSON.stringify(jsonProjectObject))}'`;
   const mrsString = "'Merge Requests'";
 
-  const mrs = await GitLab.get(`projects/${project.id}/merge_requests`, {
+  const mrs = await callApi(`projects/${project.id}/merge_requests`, {
     state: 'opened',
     order_by: 'created_at',
     per_page: 3,
   });
-
-  if (mrs.length > 0) {
+  if (mrs && mrs.length > 0) {
     projectMRsString += '<ul class="list-container">';
     mrs.forEach((mr) => {
       projectMRsString += '<li class="history-entry">';
@@ -1605,7 +1636,7 @@ function addProject(link, target) {
   setElementHtml(`#project${newTarget}add-button`, `${spinner} Add`);
   if (GitLab.urlHasValidHost(link)) {
     GitLab.parseUrl(link)
-      .then((object) => {
+      .then(async (object) => {
         if (
           !store['favorite-projects'] ||
           !store['favorite-projects'].filter((project) => project.web_url === object.web_url).length
@@ -1614,36 +1645,31 @@ function addProject(link, target) {
             const projectWithNamespace = encodeURIComponent(
               link.split(`${store.host}/`)[1],
             ).replace(/%2F$/, '');
-            GitLab.get(`projects/${projectWithNamespace}`)
-              .then((project) => {
-                const projects = store['favorite-projects'] || [];
-                projects.push({
-                  id: project.id,
-                  visibility: project.visibility,
-                  web_url: project.web_url,
-                  name: project.name,
-                  title: project.name,
-                  namespace: {
-                    name: project.namespace.name,
-                  },
-                  parent_name: project.name_with_namespace,
-                  parent_url: project.namespace.web_url,
-                  name_with_namespace: project.name_with_namespace,
-                  open_issues_count: project.open_issues_count,
-                  last_activity_at: project.last_activity_at,
-                  avatar_url: project.avatar_url,
-                  star_count: project.star_count,
-                  forks_count: project.forks_count,
-                });
-                store['favorite-projects'] = projects;
-                if (newTarget === '-settings-') {
-                  openSettingsPage();
-                }
-                displayUsersProjects(projects);
-              })
-              .catch(() => {
-                displayAddError('project', newTarget);
-              });
+            const project = await callApi(`projects/${projectWithNamespace}`);
+            const projects = store['favorite-projects'] || [];
+            projects.push({
+              id: project.id,
+              visibility: project.visibility,
+              web_url: project.web_url,
+              name: project.name,
+              title: project.name,
+              namespace: {
+                name: project.namespace.name,
+              },
+              parent_name: project.name_with_namespace,
+              parent_url: project.namespace.web_url,
+              name_with_namespace: project.name_with_namespace,
+              open_issues_count: project.open_issues_count,
+              last_activity_at: project.last_activity_at,
+              avatar_url: project.avatar_url,
+              star_count: project.star_count,
+              forks_count: project.forks_count,
+            });
+            store['favorite-projects'] = projects;
+            if (newTarget === '-settings-') {
+              openSettingsPage();
+            }
+            displayUsersProjects(projects);
           } else {
             const projects = store['favorite-projects'] || [];
             projects.push(object);
