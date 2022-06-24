@@ -988,7 +988,12 @@ async function getUser() {
   }
 }
 
-async function saveUser(accessToken, refreshToken, url = store.host, customCertPath = undefined) {
+async function saveUser(
+  accessToken,
+  url = store.host,
+  customCertPath = undefined,
+  refreshToken = undefined,
+) {
   try {
     if (url.endsWith('/')) {
       /* eslint-disable no-param-reassign */
@@ -1001,11 +1006,13 @@ async function saveUser(accessToken, refreshToken, url = store.host, customCertP
     /* eslint-enable */
     const result = await GitLab.get('user', options, url);
     if (result && result.id && result.username) {
-      store.refresh_token = refreshToken;
       store.access_token = accessToken;
       store.user_id = result.id;
       store.username = result.username;
       store.host = url;
+      if (refreshToken) {
+        store.refresh_token = refreshToken;
+      }
       if (customCertPath) {
         store.custom_cert_path = customCertPath;
       }
@@ -1064,7 +1071,7 @@ function handleLogin() {
     })
       .then((result) => result.json())
       .then((result) => {
-        saveUser(result.access_token, result.refresh_token);
+        saveUser(result.access_token, 'https://gitlab.com', undefined, result.refresh_token);
       });
   }
 }
