@@ -917,8 +917,7 @@ async function getLastEvent() {
   if (!recentCommits || recentCommits.length === 0) {
     return;
   }
-
-  const [lastEvent] = await callApi('events', {
+  const lastEvent = await callApi('events', {
     action: 'pushed',
     per_page: 1,
   });
