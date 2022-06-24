@@ -467,22 +467,25 @@ async function getUsersProjects() {
     per_page: numberOfFavoriteProjects,
     order_by: 'updated_at',
   });
-  return projects.map((project) => ({
-    id: project.id,
-    visibility: project.visibility,
-    web_url: project.web_url,
-    name: project.name,
-    namespace: {
-      name: project.namespace.name,
-    },
-    added: Date.now(),
-    name_with_namespace: project.name_with_namespace,
-    open_issues_count: project.open_issues_count,
-    last_activity_at: project.last_activity_at,
-    avatar_url: project.avatar_url,
-    star_count: project.star_count,
-    forks_count: project.forks_count,
-  }));
+  if (projects) {
+    return projects.map((project) => ({
+      id: project.id,
+      visibility: project.visibility,
+      web_url: project.web_url,
+      name: project.name,
+      namespace: {
+        name: project.namespace.name,
+      },
+      added: Date.now(),
+      name_with_namespace: project.name_with_namespace,
+      open_issues_count: project.open_issues_count,
+      last_activity_at: project.last_activity_at,
+      avatar_url: project.avatar_url,
+      star_count: project.star_count,
+      forks_count: project.forks_count,
+    }));
+  }
+  return false;
 }
 
 function getBookmarks() {
@@ -611,28 +614,30 @@ async function subscribeToRunningPipeline() {
       const pipeline = await callApi(
         `projects/${runningPipeline.project_id}/pipelines/${runningPipeline.id}`,
       );
-      let pipelineStatus;
-      if (pipeline.status !== 'running') {
-        if (pipeline.status === 'success') {
-          pipelineStatus = 'succeeded';
-        } else {
-          pipelineStatus = pipeline.status;
-        }
-        const updateNotification = new Notification({
-          title: `Pipeline ${pipelineStatus}`,
-          subtitle: GitLab.fetchUrlInfo(pipeline.web_url).namespaceWithProject,
-          body: runningPipeline.commit_title,
-        });
-        updateNotification.on('click', () => {
-          shell.openExternal(pipeline.web_url);
-        });
-        updateNotification.show();
-        runningPipelineSubscriptions = runningPipelineSubscriptions.filter(
-          (subscriptionPipeline) => subscriptionPipeline.id !== pipeline.id,
-        );
-        if (runningPipelineSubscriptions.length === 0) {
-          clearInterval(interval);
-          mb.tray.setImage(`${__dirname}/assets/gitlabTemplate.png`);
+      if (pipeline) {
+        let pipelineStatus;
+        if (pipeline.status !== 'running') {
+          if (pipeline.status === 'success') {
+            pipelineStatus = 'succeeded';
+          } else {
+            pipelineStatus = pipeline.status;
+          }
+          const updateNotification = new Notification({
+            title: `Pipeline ${pipelineStatus}`,
+            subtitle: GitLab.fetchUrlInfo(pipeline.web_url).namespaceWithProject,
+            body: runningPipeline.commit_title,
+          });
+          updateNotification.on('click', () => {
+            shell.openExternal(pipeline.web_url);
+          });
+          updateNotification.show();
+          runningPipelineSubscriptions = runningPipelineSubscriptions.filter(
+            (subscriptionPipeline) => subscriptionPipeline.id !== pipeline.id,
+          );
+          if (runningPipelineSubscriptions.length === 0) {
+            clearInterval(interval);
+            mb.tray.setImage(`${__dirname}/assets/gitlabTemplate.png`);
+          }
         }
       }
     });
@@ -663,17 +668,19 @@ async function getLastPipelines(commits) {
               const pipelineCommit = await callApi(
                 `projects/${pipeline.project_id}/repository/commits/${pipeline.sha}`,
               );
-              commitPipeline.commit_title = pipelineCommit.title;
-              runningPipelineSubscriptions.push(commitPipeline);
-              const runningNotification = new Notification({
-                title: 'Pipeline running',
-                subtitle: GitLab.fetchUrlInfo(commitPipeline.web_url).namespaceWithProject,
-                body: commitPipeline.commit_title,
-              });
-              runningNotification.on('click', () => {
-                shell.openExternal(commitPipeline.web_url);
-              });
-              runningNotification.show();
+              if (pipelineCommit) {
+                commitPipeline.commit_title = pipelineCommit.title;
+                runningPipelineSubscriptions.push(commitPipeline);
+                const runningNotification = new Notification({
+                  title: 'Pipeline running',
+                  subtitle: GitLab.fetchUrlInfo(commitPipeline.web_url).namespaceWithProject,
+                  body: commitPipeline.commit_title,
+                });
+                runningNotification.on('click', () => {
+                  shell.openExternal(commitPipeline.web_url);
+                });
+                runningNotification.show();
+              }
             }
           });
           subscribeToRunningPipeline();
@@ -823,7 +830,9 @@ async function getCommitDetails(projectId, sha, index) {
   setElementHtml('#commits-count', `${index}/${recentCommits.length}`);
   const project = await callApi(`projects/${projectId}`);
   const commit = await callApi(`projects/${project.id}/repository/commits/${sha}`);
-  setElementHtml('#pipeline', displayCommit(commit, project));
+  if (project && commit) {
+    setElementHtml('#pipeline', displayCommit(commit, project));
+  }
 }
 
 async function getLastCommits(count = 20) {
@@ -834,7 +843,7 @@ async function getLastCommits(count = 20) {
       action: 'pushed',
       per_page: count,
     });
-    if (Array.isArray(commits) && !commits.error) {
+    if (commits && Array.isArray(commits) && !commits.error) {
       if (commits && commits.length > 0) {
         lastEventId = commits[0].id;
         getLastPipelines(commits);
@@ -872,7 +881,7 @@ async function getRecentComments() {
       action: 'commented',
       per_page: numberOfRecentComments,
     });
-    if (Array.isArray(comments) && !comments.error) {
+    if (comments && Array.isArray(comments) && !comments.error) {
       if (comments && comments.length > 0) {
         recentCommentsString += '<ul class="list-container">';
         /* eslint-disable no-restricted-syntax, no-continue, no-await-in-loop */
@@ -884,8 +893,9 @@ async function getRecentComments() {
           }
 
           const collabject = await callApi(path);
-
-          recentCommentsString += renderCollabject(comment, collabject);
+          if (collabject) {
+            recentCommentsString += renderCollabject(comment, collabject);
+          }
         }
         // eslint-disable no-restricted-syntax */
         const moreString = "'Comments'";
@@ -912,7 +922,6 @@ async function getLastEvent() {
     action: 'pushed',
     per_page: 1,
   });
-
   if (lastEvent && lastEvent.id !== lastEventId) {
     lastEventId = lastEvent.id;
     getLastCommits();
@@ -1109,8 +1118,8 @@ async function startLogin() {
 }
 
 async function getUsersPlan() {
-  const namespaces = await callApi('namespaces');
   let userNamespace;
+  const namespaces = await callApi('namespaces');
   if (namespaces && namespaces.length > 0) {
     userNamespace = namespaces.find((namespace) => namespace.kind === 'user');
   }
@@ -1122,7 +1131,6 @@ async function getProjectCommits(project, count = 20) {
   const commits = await callApi(`projects/${project.id}/repository/commits`, {
     per_page: count,
   });
-
   if (commits && commits.length > 0) {
     recentProjectCommits = commits;
     [currentProjectCommit] = commits;
@@ -1130,10 +1138,11 @@ async function getProjectCommits(project, count = 20) {
     const commit = await callApi(`projects/${project.id}/repository/commits/${commits[0].id}`, {
       per_page: count,
     });
-
-    const pagination = `<div id="project-commits-pagination"><span class="name">Commits</span><div id="commits-pagination"><span id="project-commits-count">1/${recentProjectCommits.length}</span><button onclick="changeProjectCommit(false)">${chevronLgLeftIconWithViewboxHack}</button><button onclick="changeProjectCommit(true)">${chevronLgRightIconWithViewboxHack}</button></div></div>`;
-    setElementHtml('#detail-headline', pagination);
-    setElementHtml('#project-pipeline', displayCommit(commit, project, 'author'));
+    if (commit) {
+      const pagination = `<div id="project-commits-pagination"><span class="name">Commits</span><div id="commits-pagination"><span id="project-commits-count">1/${recentProjectCommits.length}</span><button onclick="changeProjectCommit(false)">${chevronLgLeftIconWithViewboxHack}</button><button onclick="changeProjectCommit(true)">${chevronLgRightIconWithViewboxHack}</button></div></div>`;
+      setElementHtml('#detail-headline', pagination);
+      setElementHtml('#project-pipeline', displayCommit(commit, project, 'author'));
+    }
   } else {
     setElementHtml('#project-commits-pagination', '<span class="name">Commits</span>');
     setElementHtml('#project-pipeline', '<p class="no-results">No commits pushed yet.</p>');
@@ -1168,8 +1177,9 @@ async function getProjectCommitDetails(projectId, sha, index) {
   setElementHtml('#project-commits-count', `${index}/${recentProjectCommits.length}`);
 
   const commit = await callApi(`projects/${projectId}/repository/commits/${sha}`);
-
-  setElementHtml('#project-pipeline', displayCommit(commit, currentProject, 'author'));
+  if (commit) {
+    setElementHtml('#project-pipeline', displayCommit(commit, currentProject, 'author'));
+  }
 }
 
 async function getMoreRecentlyVisited() {
@@ -1323,8 +1333,9 @@ function getMoreRecentComments(
       for (const comment of comments) {
         const path = GitLab.commentToNoteableUrl(comment);
         const collabject = await callApi(path);
-
-        recentCommentsString += renderCollabject(comment, collabject);
+        if (collabject) {
+          recentCommentsString += renderCollabject(comment, collabject);
+        }
       }
       /* eslint-enable */
       recentCommentsString += `</ul>${displayPagination(keysetLinks, type)}`;
@@ -1512,7 +1523,7 @@ async function getProjectIssues(project) {
     order_by: 'created_at',
     per_page: 3,
   });
-  if (issues.length > 0) {
+  if (issues && issues.length > 0) {
     projectIssuesString = '<ul class="list-container">';
     issues.forEach((issue) => {
       projectIssuesString += '<li class="history-entry">';
@@ -1545,8 +1556,7 @@ async function getProjectMRs(project) {
     order_by: 'created_at',
     per_page: 3,
   });
-
-  if (mrs.length > 0) {
+  if (mrs && mrs.length > 0) {
     projectMRsString += '<ul class="list-container">';
     mrs.forEach((mr) => {
       projectMRsString += '<li class="history-entry">';
@@ -1627,7 +1637,7 @@ function addProject(link, target) {
   setElementHtml(`#project${newTarget}add-button`, `${spinner} Add`);
   if (GitLab.urlHasValidHost(link)) {
     GitLab.parseUrl(link)
-      .then((object) => {
+      .then(async (object) => {
         if (
           !store['favorite-projects'] ||
           !store['favorite-projects'].filter((project) => project.web_url === object.web_url).length
@@ -1636,36 +1646,31 @@ function addProject(link, target) {
             const projectWithNamespace = encodeURIComponent(
               link.split(`${store.host}/`)[1],
             ).replace(/%2F$/, '');
-            callApi(`projects/${projectWithNamespace}`)
-              .then((project) => {
-                const projects = store['favorite-projects'] || [];
-                projects.push({
-                  id: project.id,
-                  visibility: project.visibility,
-                  web_url: project.web_url,
-                  name: project.name,
-                  title: project.name,
-                  namespace: {
-                    name: project.namespace.name,
-                  },
-                  parent_name: project.name_with_namespace,
-                  parent_url: project.namespace.web_url,
-                  name_with_namespace: project.name_with_namespace,
-                  open_issues_count: project.open_issues_count,
-                  last_activity_at: project.last_activity_at,
-                  avatar_url: project.avatar_url,
-                  star_count: project.star_count,
-                  forks_count: project.forks_count,
-                });
-                store['favorite-projects'] = projects;
-                if (newTarget === '-settings-') {
-                  openSettingsPage();
-                }
-                displayUsersProjects(projects);
-              })
-              .catch(() => {
-                displayAddError('project', newTarget);
-              });
+            const project = await callApi(`projects/${projectWithNamespace}`);
+            const projects = store['favorite-projects'] || [];
+            projects.push({
+              id: project.id,
+              visibility: project.visibility,
+              web_url: project.web_url,
+              name: project.name,
+              title: project.name,
+              namespace: {
+                name: project.namespace.name,
+              },
+              parent_name: project.name_with_namespace,
+              parent_url: project.namespace.web_url,
+              name_with_namespace: project.name_with_namespace,
+              open_issues_count: project.open_issues_count,
+              last_activity_at: project.last_activity_at,
+              avatar_url: project.avatar_url,
+              star_count: project.star_count,
+              forks_count: project.forks_count,
+            });
+            store['favorite-projects'] = projects;
+            if (newTarget === '-settings-') {
+              openSettingsPage();
+            }
+            displayUsersProjects(projects);
           } else {
             const projects = store['favorite-projects'] || [];
             projects.push(object);
