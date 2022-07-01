@@ -24,8 +24,11 @@ test.describe('Application launch', function () {
       process.env.ACCESS_TOKEN,
     );
     this.window.$eval('#instance-url-input', (el) => (el.value = 'https://gitlab.com'));
+    await this.window.screenshot('1.png');
     await this.window.click('#login-instance-button');
+    await this.window.screenshot('2.png');
     await this.window.waitForNavigation();
+    await this.window.screenshot('3.png');
 
     const issues = this.window.locator('#issues-count');
     const mrs = this.window.locator('#mrs-count');
