@@ -82,7 +82,7 @@ feature-tests:
     - main
   tags:
     - linux
-  image: codingpaws/spectron-ci:latest
+  image: node:latest
   needs: ['install-dependencies-linux']
   cache:
     key: $CI_COMMIT_REF_SLUG-linux
@@ -90,7 +90,8 @@ feature-tests:
       - node_modules/
     policy: pull
   script:
-    - setup-for-spectron
+    - Xvfb -ac :99 -screen 0 1280x1024x16 &
+    - export DISPLAY=:99
     - npm install -D @playwright/test
     - npm run playwright
   artifacts:
