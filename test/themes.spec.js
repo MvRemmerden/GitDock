@@ -1,5 +1,4 @@
-const expect = require('@playwright/test').expect;
-const test = require('@playwright/test').test;
+const { test, expect } = require('@playwright/test');
 const { newApp, stopAppAfterEach } = require('./util');
 
 test.describe('Themes', function () {
