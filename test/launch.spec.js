@@ -1,20 +1,23 @@
-const assert = require('assert');
+const expect = require('@playwright/test').expect;
+const test = require('@playwright/test').test;
 const { newApp, stopAppAfterEach } = require('./util');
 
-describe('Application launch', function () {
-  this.timeout(25000);
+test.describe('Application launch', function () {
+  //this.timeout(25000);
 
-  beforeEach(async function () {
+  test.beforeEach(async function () {
     await newApp(this);
   });
 
   stopAppAfterEach();
 
-  it('starts the menubar window', async function () {
+  test('starts the menubar window', async function () {
     const windows = await this.app.windows();
-    assert.equal(windows.length, 1);
+    expect(windows.length).toEqual(1);
+    expect(await windows[0].title()).toEqual('GitDock');
+    await expect(windows[0]).toHaveScreenshot('launch-menubar.png');
   });
-  it('can log in', async function () {
+  test('can log in', async function () {
     await this.window.click('#instance-checkbox');
     this.window.$eval(
       '#access-token-input',
@@ -29,8 +32,8 @@ describe('Application launch', function () {
     const mrs = this.window.locator('#mrs-count');
     const todos = this.window.locator('#todos-count');
 
-    assert.equal(await issues.count(), 1);
-    assert.equal(await mrs.count(), 1);
-    assert.equal(await todos.count(), 1);
-  });
-});
+    expect(await issues.count()).toBe(1);
+    expect(await mrs.count()).toBe(1);
+    expect(await todos.count()).toBe (1);
+  }) ;
+}) ;
