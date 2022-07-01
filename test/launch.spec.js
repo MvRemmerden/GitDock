@@ -13,7 +13,6 @@ test.describe('Application launch', function () {
     const windows = await this.app.windows();
     expect(windows.length).toEqual(1);
     expect(await windows[0].title()).toEqual('GitDock');
-    await expect(windows[0]).toHaveScreenshot('launch-menubar.png');
   });
   test('can log in', async function () {
     await this.window.click('#instance-checkbox');
