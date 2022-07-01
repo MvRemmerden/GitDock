@@ -26,7 +26,7 @@ test.describe('Application launch', function () {
     );
     this.window.$eval('#instance-url-input', (el) => (el.value = 'https://gitlab.com'));
     await this.window.click('#login-instance-button');
-    await this.window.waitForNavigation();
+    await this.window.waitForNavigation({timeout: 120000});
 
     const issues = this.window.locator('#issues-count');
     const mrs = this.window.locator('#mrs-count');
