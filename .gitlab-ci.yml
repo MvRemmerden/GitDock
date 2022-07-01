@@ -90,6 +90,7 @@ feature-tests:
       - node_modules/
     policy: pull
   script:
+    - xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24"
     - npm install -D @playwright/test
     - npm run playwright
   artifacts:
