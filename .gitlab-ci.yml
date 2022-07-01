@@ -81,18 +81,17 @@ feature-tests:
     - merge_requests
     - main
   tags:
-    - shared-macos-amd64
-  image: macos-12-xcode-13
-  needs: ['install-dependencies-mac']
+    - linux
+  image: node:latest
+  needs: ['install-dependencies-linux']
   cache:
-    key: $CI_COMMIT_REF_SLUG-mac
+    key: $CI_COMMIT_REF_SLUG-linux
     paths:
       - node_modules/
     policy: pull
   script:
     - npx playwright install --with-deps
-    - Xvfb -ac :99 -screen 0 1280x1024x16 &
-    - export DISPLAY=:99
+    - npm install -D @playwright/test
     - npm run playwright
   artifacts:
     when: always
