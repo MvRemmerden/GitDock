@@ -3,7 +3,6 @@ const test = require('@playwright/test').test;
 const { newApp, stopAppAfterEach } = require('./util');
 
 test.describe('Feature tests', function () {
-
   test.beforeEach(async function () {
     await newApp(this, {
       loggedIn: true,

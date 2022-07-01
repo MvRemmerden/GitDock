@@ -1,8 +1,8 @@
-const assert = require('assert');
+const expect = require('@playwright/test').expect;
+const test = require('@playwright/test').test;
 const { newApp, stopAppAfterEach } = require('./util');
 
-describe('Favorite projects', function () {
-  this.timeout(25000);
+test.describe('Favorite projects', function () {
 
   const EXAMPLE_PROJECT = {
     added: Date.now(),
@@ -40,7 +40,7 @@ describe('Favorite projects', function () {
     await window.waitForSelector('#add-project-dialog a');
   };
 
-  beforeEach(async function () {
+  test.beforeEach(async function () {
     await newApp(this, {
       loggedIn: true,
     });
@@ -48,11 +48,11 @@ describe('Favorite projects', function () {
 
   stopAppAfterEach();
 
-  it('shows no favorite projects', async function () {
-    assert.equal((await listFavoriteProjects(this.window)).length, 0);
+  test('shows no favorite projects', async function () {
+    expect((await listFavoriteProjects(this.window)).length).toEqual(0);
   });
 
-  it('adds a new project', async function () {
+  test('adds a new project', async function () {
     await openSettings(this.window);
     await addProject(this.window, EXAMPLE_PROJECT.web_url);
 
@@ -61,12 +61,12 @@ describe('Favorite projects', function () {
 
     const projects = await listFavoriteProjects(this.window);
 
-    assert.equal(projects.length, 1);
-    assert.equal(projects[0].includes(EXAMPLE_PROJECT.name), true);
-    assert.equal(projects[0].includes(EXAMPLE_PROJECT.namespace.name), true);
+    expect(projects.length).toEqual(1);
+    expect(projects[0].includes(EXAMPLE_PROJECT.name)).toBe(true);
+    expect(projects[0].includes(EXAMPLE_PROJECT.namespace.name)).toBe(true);
   });
 
-  it('shows the correct project link', async function () {
+  test('shows the correct project link', async function () {
     await newApp(this, {
       loggedIn: true,
       favoriteProjects: [EXAMPLE_PROJECT],
@@ -75,17 +75,15 @@ describe('Favorite projects', function () {
     const onclick = await this.window
       .locator('[data-testid="favorite-projects"] li')
       .getAttribute('onclick');
-
-    assert.equal(onclick, `goToDetail('Project', '${JSON.stringify(EXAMPLE_PROJECT)}')`);
+    expect(onclick).toEqual(`goToDetail('Project', '${JSON.stringify(EXAMPLE_PROJECT)}')`);
   });
 
-  it('deletes an existing project', async function () {
+  test('deletes an existing project', async function () {
     await newApp(this, {
       loggedIn: true,
       favoriteProjects: [EXAMPLE_PROJECT],
     });
-
-    assert.equal((await listFavoriteProjects(this.window)).length, 1);
+    expect((await listFavoriteProjects(this.window)).length).toEqual(1);
 
     await this.window.click('#edit-favorite-projects');
     await this.window.waitForSelector('#favorite-projects');
@@ -94,10 +92,10 @@ describe('Favorite projects', function () {
     await this.window.click('#detail-header');
     await this.window.waitForTimeout(100);
 
-    assert.equal((await listFavoriteProjects(this.window)).length, 0);
+    expect((await listFavoriteProjects(this.window)).length).toEqual(0);
   });
 
-  it('prevents adding a project twice', async function () {
+  test('prevents adding a project twice', async function () {
     await newApp(this, {
       loggedIn: true,
       favoriteProjects: [EXAMPLE_PROJECT],
@@ -112,11 +110,11 @@ describe('Favorite projects', function () {
 
     const error = this.window.locator('#add-project-settings-error');
 
-    assert.equal(await error.innerText(), 'The same project was already added.');
+    expect(await error.innerText()).toEqual('The same project was already added.');
 
     await this.window.click('#detail-header');
     await this.window.waitForTimeout(100);
 
-    assert.equal((await listFavoriteProjects(this.window)).length, 1);
+    expect((await listFavoriteProjects(this.window)).length).toEqual(1);
   });
 });

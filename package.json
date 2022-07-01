@@ -5,7 +5,7 @@
   "description": "A better way of managing all your work on GitLab.",
   "main": "myApp.js",
   "scripts": {
-    "playwright": "PLAYWRIGHT_JUNIT_OUTPUT_NAME=junit.xml playwright test test/launch.spec.js test/features.spec.js --reporter=junit",
+    "playwright": "PLAYWRIGHT_JUNIT_OUTPUT_NAME=junit.xml playwright test --reporter=junit",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
