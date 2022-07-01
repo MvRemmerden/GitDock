@@ -99,6 +99,7 @@ feature-tests:
     when: always
     paths:
       - junit.xml
+      - test/launch.spec.js-snapshots
     reports:
       junit: junit.xml
 

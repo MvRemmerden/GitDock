@@ -12,6 +12,7 @@ test.describe('Application launch', function () {
   test('starts the menubar window', async function () {
     const windows = await this.app.windows();
     expect(windows.length).toEqual(1);
+    await expect(windows[0]).toHaveScreenshot();
     expect(await windows[0].title()).toEqual('GitDock');
   });
   test('can log in', async function () {
