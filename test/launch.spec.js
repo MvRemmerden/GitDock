@@ -34,6 +34,6 @@ test.describe('Application launch', function () {
 
     expect(await issues.count()).toBe(1);
     expect(await mrs.count()).toBe(1);
-    expect(await todos.count()).toBe (1);
-  }) ;
-}) ;
+    expect(await todos.count()).toBe(1);
+  });
+});
