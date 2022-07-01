@@ -3,7 +3,6 @@ const test = require('@playwright/test').test;
 const { newApp, stopAppAfterEach } = require('./util');
 
 test.describe('Application launch', function () {
-  test.setTimeout(120000);
 
   test.beforeEach(async function () {
     await newApp(this);
@@ -26,7 +25,7 @@ test.describe('Application launch', function () {
     );
     this.window.$eval('#instance-url-input', (el) => (el.value = 'https://gitlab.com'));
     await this.window.click('#login-instance-button');
-    await this.window.waitForNavigation({timeout: 120000});
+    await this.window.waitForNavigation();
 
     const issues = this.window.locator('#issues-count');
     const mrs = this.window.locator('#mrs-count');
