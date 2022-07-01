@@ -3,7 +3,6 @@ const test = require('@playwright/test').test;
 const { newApp, stopAppAfterEach } = require('./util');
 
 test.describe('Application launch', function () {
-  //this.timeout(25000);
 
   test.beforeEach(async function () {
     await newApp(this);
