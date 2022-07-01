@@ -3,7 +3,6 @@ const test = require('@playwright/test').test;
 const { newApp, stopAppAfterEach } = require('./util');
 
 test.describe('Favorite projects', function () {
-
   const EXAMPLE_PROJECT = {
     added: Date.now(),
     type: 'projects',
