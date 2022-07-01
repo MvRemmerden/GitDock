@@ -82,7 +82,7 @@ feature-tests:
     - main
   tags:
     - linux
-  image: node:latest
+  image: mcr.microsoft.com/playwright:v1.23.1-focal
   needs: ['install-dependencies-linux']
   cache:
     key: $CI_COMMIT_REF_SLUG-linux
