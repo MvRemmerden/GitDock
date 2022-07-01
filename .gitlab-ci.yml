@@ -103,6 +103,38 @@ feature-tests-linux:
     reports:
       junit: junit.xml
 
+feature-tests-windows:
+  stage: test
+  only:
+    - tags
+    - merge_requests
+    - main
+  tags:
+    - windows
+    - shared-windows
+    - windows-1809
+  before_script:
+    - cup nodejs.install -y
+  needs: ['install-dependencies-windows']
+  cache:
+    key: $CI_COMMIT_REF_SLUG-windows
+    paths:
+      - node_modules/
+    policy: pull
+  script:
+    - npx playwright install --with-deps
+    - npm install -D @playwright/test
+    - Xvfb -ac :99 -screen 0 1280x1024x16 &
+    - export DISPLAY=:99
+    - npm run playwright
+  artifacts:
+    when: always
+    paths:
+      - junit.xml
+      - test-results/
+    reports:
+      junit: junit.xml
+
 prettier:
   stage: test
   only:
