@@ -74,7 +74,7 @@ install-dependencies-linux:
     paths:
       - node_modules/
 
-feature-tests:
+feature-tests-linux:
   stage: test
   only:
     - tags
@@ -86,6 +86,35 @@ feature-tests:
   needs: ['install-dependencies-linux']
   cache:
     key: $CI_COMMIT_REF_SLUG-linux
+    paths:
+      - node_modules/
+    policy: pull
+  script:
+    - npx playwright install --with-deps
+    - npm install -D @playwright/test
+    - Xvfb -ac :99 -screen 0 1280x1024x16 &
+    - export DISPLAY=:99
+    - npm run playwright
+  artifacts:
+    when: always
+    paths:
+      - junit.xml
+      - test-results/
+    reports:
+      junit: junit.xml
+
+feature-tests-mac:
+  stage: test
+  only:
+    - tags
+    - merge_requests
+    - main
+  tags:
+    - shared-macos-amd64
+  image: macos-12-xcode-13
+  needs: ['install-dependencies-mac']
+  cache:
+    key: $CI_COMMIT_REF_SLUG-mac
     paths:
       - node_modules/
     policy: pull
