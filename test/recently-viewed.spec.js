@@ -1,9 +1,7 @@
-const assert = require('assert');
+const { test, expect } = require('@playwright/test');
 const { newApp, stopAppAfterEach } = require('./util');
 
-describe('"Recently viewed" section', function () {
-  this.timeout(25000);
-
+test.describe('"Recently viewed" section', function () {
   const SUPPORTED_PLATFORMS = [
     {
       platform: 'linux',
@@ -27,25 +25,29 @@ describe('"Recently viewed" section', function () {
   };
 
   SUPPORTED_PLATFORMS.forEach(({ platform, emptyMessage }) => {
-    describe(`${platform} platform`, () => {
-      describe('without history', function () {
+    test.describe(`${platform} platform`, () => {
+      test.describe('without history', function () {
         stopAppAfterEach();
-        this.beforeEach(async function () {
+        test.beforeEach(async function () {
           await newApp(this, {
             platform,
             loggedIn: true,
           });
         });
 
-        it('renders the correct message', async function () {
+        test('renders the correct message', async function () {
           const actual = await supportedBrowsersText(this.window);
-          assert.equal(actual, emptyMessage);
+          await this.window.screenshot({
+            path: `test-results/screenshots/recently-viewed/renders-the-correct-message-${platform}.png`,
+            fullPage: true,
+          });
+          expect(actual).toEqual(emptyMessage);
         });
       });
 
-      describe('with history', function () {
+      test.describe('with history', function () {
         stopAppAfterEach();
-        this.beforeEach(async function () {
+        test.beforeEach(async function () {
           await newApp(this, {
             platform,
             loggedIn: true,
@@ -62,39 +64,47 @@ describe('"Recently viewed" section', function () {
           });
         });
 
-        it('renders the history', async function () {
+        test('renders the history', async function () {
           const actual = await historyTexts(this.window);
 
-          assert.equal(actual.length, 1);
-          assert.equal(actual[0].includes('Test Issue (#1)'), 1);
-          assert.equal(actual[0].includes('ago · user / project'), 1);
+          await this.window.screenshot({
+            path: `test-results/screenshots/recently-viewed/renders-the-history-${platform}.png`,
+            fullPage: true,
+          });
+          expect(actual.length).toEqual(1);
+          expect(actual[0]).toContain('Test Issue (#1)');
+          expect(actual[0]).toContain('ago · user / project');
         });
       });
     });
   });
 
-  describe('unsupported platform', () => {
+  test.describe('unsupported platform', () => {
     const platform = 'android';
     const emptyMessage = 'No browsers are supported on your operating system yet.';
 
-    describe('without history', function () {
+    test.describe('without history', function () {
       stopAppAfterEach();
-      this.beforeEach(async function () {
+      test.beforeEach(async function () {
         await newApp(this, {
           platform,
           loggedIn: true,
         });
       });
 
-      it('renders the correct message', async function () {
+      test('renders the correct message', async function () {
         const actual = await supportedBrowsersText(this.window);
-        assert.equal(actual, emptyMessage);
+        await this.window.screenshot({
+          path: 'test-results/screenshots/recently-viewed/renders-the-correct-message-unsupported.png',
+          fullPage: true,
+        });
+        expect(actual).toEqual(emptyMessage);
       });
     });
 
-    describe('with history', function () {
+    test.describe('with history', function () {
       stopAppAfterEach();
-      this.beforeEach(async function () {
+      test.beforeEach(async function () {
         await newApp(this, {
           platform,
           loggedIn: true,
@@ -107,9 +117,13 @@ describe('"Recently viewed" section', function () {
         });
       });
 
-      it('renders the info message as if there was no history', async function () {
+      test('renders the info message as if there was no history', async function () {
         const actual = await supportedBrowsersText(this.window);
-        assert.equal(actual, emptyMessage);
+        await this.window.screenshot({
+          path: 'test-results/screenshots/recently-viewed/renders-the-info-message-as-if-there-was-no-history.png',
+          fullPage: true,
+        });
+        expect(actual).toEqual(emptyMessage);
       });
     });
   });

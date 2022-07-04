@@ -1,16 +1,14 @@
-const assert = require('assert');
+const { test, expect } = require('@playwright/test');
 const { stopAppAfterEach, newApp } = require('./util');
 
-describe('"Bookmarks" section', function () {
-  this.timeout(25000);
-
+test.describe('"Bookmarks" section', function () {
   const addBookmark = async (window, link) => {
     await window.fill('#bookmark-link', link);
     await window.click('#bookmark-add-button');
   };
 
-  describe('without bookmarks', () => {
-    beforeEach(async function () {
+  test.describe('without bookmarks', () => {
+    test.beforeEach(async function () {
       await newApp(this, {
         loggedIn: true,
       });
@@ -18,24 +16,32 @@ describe('"Bookmarks" section', function () {
 
     stopAppAfterEach();
 
-    it('can add and delete a bookmark', async function () {
+    test('can add and delete a bookmark', async function () {
       await addBookmark(this.window, 'https://gitlab.com/gitlab-org/gitlab/-/issues/1');
 
       const title = this.window.locator('#bookmark-title');
-      assert.equal(await title.innerText(), '500 error on MR approvers edit page (#1)');
+      await this.window.screenshot({
+        path: 'test-results/screenshots/bookmarks/can-add-and-delete-a-bookmark-1.png',
+        fullPage: true,
+      });
+      expect(await title.innerText()).toEqual('500 error on MR approvers edit page (#1)');
 
       await this.window.click('.bookmark-delete');
 
       const bookmarkInput = this.window.locator('#bookmark-link');
-      assert.equal(await bookmarkInput.count(), 1);
-      assert.equal(await title.count(), 0);
+      await this.window.screenshot({
+        path: 'test-results/screenshots/bookmarks/can-add-and-delete-a-bookmark-2.png',
+        fullPage: true,
+      });
+      expect(await bookmarkInput.count()).toEqual(1);
+      expect(await title.count()).toEqual(0);
     });
   });
 
-  describe('with bookmarks', () => {
+  test.describe('with bookmarks', () => {
     const FIRST_BOOKMARK_URL = 'https://gitlab.com/user/project/-/merge_requests/1';
 
-    beforeEach(async function () {
+    test.beforeEach(async function () {
       await newApp(this, {
         loggedIn: true,
         bookmarks: [
@@ -53,31 +59,45 @@ describe('"Bookmarks" section', function () {
 
     stopAppAfterEach();
 
-    it('can delete a bookmark', async function () {
+    test('can delete a bookmark', async function () {
       const title = this.window.locator('#bookmark-title');
-      assert.equal(await title.count(), 1);
+      await this.window.screenshot({
+        path: 'test-results/screenshots/bookmarks/can-delete-a-bookmark-1.png',
+        fullPage: true,
+      });
+      expect(await title.count()).toEqual(1);
 
       await this.window.click('.bookmark-delete');
 
-      assert.equal(await title.count(), 0);
+      await this.window.screenshot({
+        path: 'test-results/screenshots/bookmarks/can-delete-a-bookmark-2.png',
+        fullPage: true,
+      });
+      expect(await title.count()).toEqual(0);
     });
 
-    it('can add a bookmark', async function () {
+    test('can add a bookmark', async function () {
       await this.window.click('#add-bookmark-dialog a');
 
       await addBookmark(this.window, 'https://gitlab.com/gitlab-org/gitlab/-/issues/1');
 
       const titles = this.window.locator('.bookmark-information a');
-      assert.equal(await titles.count(), 2);
+      await this.window.screenshot({
+        path: 'test-results/screenshots/bookmarks/can-add-a-bookmark.png',
+        fullPage: true,
+      });
+      expect(await titles.count()).toEqual(2);
     });
 
-    it('cannot add a bookmark twice', async function () {
+    test('cannot add a bookmark twice', async function () {
       await this.window.click('#add-bookmark-dialog a');
 
       await addBookmark(this.window, FIRST_BOOKMARK_URL);
-
-      assert.equal(
-        await this.window.textContent('#add-bookmark-error'),
+      await this.window.screenshot({
+        path: 'test-results/screenshots/bookmarks/cannot-add-a-bookmark-twice.png',
+        fullPage: true,
+      });
+      expect(await this.window.textContent('#add-bookmark-error')).toEqual(
         'This bookmark has already been added.',
       );
     });

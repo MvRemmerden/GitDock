@@ -1,4 +1,5 @@
 const path = require('path');
+const { test } = require('@playwright/test');
 const { _electron: electron } = require('playwright-core');
 
 const userDataIfLoggedIn = (loggedIn = false) => {
@@ -77,7 +78,7 @@ module.exports = {
     };
   },
   stopAppAfterEach() {
-    afterEach(async function () {
+    test.afterEach(async function () {
       await stopAppIfStarted(this);
     });
   },

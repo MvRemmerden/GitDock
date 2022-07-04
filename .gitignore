@@ -11,3 +11,4 @@ builds/
 junit.xml
 screenshot.png
 .tool-versions
+test-results/

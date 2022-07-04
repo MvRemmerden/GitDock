@@ -5,7 +5,8 @@
   "description": "A better way of managing all your work on GitLab.",
   "main": "myApp.js",
   "scripts": {
-    "test": "mocha --reporter mocha-multi-reporters --reporter-options configFile=config.json",
+    "playwright": "PLAYWRIGHT_JUNIT_OUTPUT_NAME=junit.xml playwright test --reporter=junit",
+    "playwright-windows": "playwright test --reporter=junit",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
@@ -39,9 +40,6 @@
     "eslint-formatter-gitlab": "^3.0.0",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-prettier": "^4.0.0",
-    "mocha": "^10.0.0",
-    "mocha-junit-reporter": "^2.0.2",
-    "mocha-multi-reporters": "^1.5.1",
     "prettier": "^2.6.2"
   },
   "dependencies": {
@@ -51,7 +49,8 @@
     "menubar": "^9.2.0",
     "node-browser-history": "^2.4.6",
     "node-fetch": "^3.2.5",
-    "playwright": "^1.22.2",
+    "playwright": "^1.23.1",
+    "@playwright/test": "^1.23.1",
     "universal-analytics": "^0.5.3",
     "uuid": "^8.3.2"
   },
