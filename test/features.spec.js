@@ -1,10 +1,8 @@
-const assert = require('assert');
+const { test, expect } = require('@playwright/test');
 const { newApp, stopAppAfterEach } = require('./util');
 
-describe('Feature tests', function () {
-  this.timeout(25000);
-
-  beforeEach(async function () {
+test.describe('Feature tests', function () {
+  test.beforeEach(async function () {
     await newApp(this, {
       loggedIn: true,
     });
@@ -12,13 +10,17 @@ describe('Feature tests', function () {
 
   stopAppAfterEach();
 
-  it('shows overview page', async function () {
+  test('shows overview page', async function () {
     const issues = this.window.locator('#issues-count');
     const mrs = this.window.locator('#mrs-count');
     const todos = this.window.locator('#todos-count');
 
-    assert.equal(await issues.count(), 1);
-    assert.equal(await mrs.count(), 1);
-    assert.equal(await todos.count(), 1);
+    await this.window.screenshot({
+      path: 'test-results/screenshots/features/shows-overview-page.png',
+      fullPage: true,
+    });
+    expect(await issues.count()).toBe(1);
+    expect(await mrs.count()).toBe(1);
+    expect(await todos.count()).toBe(1);
   });
 });

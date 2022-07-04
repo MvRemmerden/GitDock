@@ -1,57 +1,64 @@
-const assert = require('assert');
+const { test, expect } = require('@playwright/test');
 const { newApp, stopAppAfterEach } = require('./util');
 
-describe('Themes', function () {
-  this.timeout(25000);
-
+test.describe('Themes', function () {
   const getBackgroundColor = async (page) => {
     const body = await page.waitForSelector('body');
     return await body.evaluate((button) => getComputedStyle(button).backgroundColor);
   };
 
-  describe('default theme', () => {
+  test.describe('default theme', () => {
     stopAppAfterEach();
 
-    beforeEach(async function () {
+    test.beforeEach(async function () {
       await newApp(this);
     });
 
-    it('has the correct background color', async function () {
+    test('has the correct background color', async function () {
       const color = await getBackgroundColor(this.window);
-
-      assert.equal(color, 'rgb(9, 12, 16)');
+      await this.window.screenshot({
+        path: 'test-results/screenshots/themes/has-the-correct-background-color-1.png',
+        fullPage: true,
+      });
+      expect(color).toEqual('rgb(9, 12, 16)');
     });
   });
 
-  describe('dark theme', () => {
+  test.describe('dark theme', () => {
     stopAppAfterEach();
 
-    beforeEach(async function () {
+    test.beforeEach(async function () {
       await newApp(this, {
         theme: 'dark',
       });
     });
 
-    it('has the correct background color', async function () {
+    test('has the correct background color', async function () {
       const color = await getBackgroundColor(this.window);
-
-      assert.equal(color, 'rgb(9, 12, 16)');
+      await this.window.screenshot({
+        path: 'test-results/screenshots/themes/has-the-correct-background-color-2.png',
+        fullPage: true,
+      });
+      expect(color).toEqual('rgb(9, 12, 16)');
     });
   });
 
-  describe('light theme', () => {
+  test.describe('light theme', () => {
     stopAppAfterEach();
 
-    beforeEach(async function () {
+    test.beforeEach(async function () {
       await newApp(this, {
         theme: 'light',
       });
     });
 
-    it('has the correct background color', async function () {
+    test('has the correct background color', async function () {
       const color = await getBackgroundColor(this.window);
-
-      assert.equal(color, 'rgb(255, 255, 255)');
+      await this.window.screenshot({
+        path: 'test-results/screenshots/themes/has-the-correct-background-color-3.png',
+        fullPage: true,
+      });
+      expect(color).toEqual('rgb(255, 255, 255)');
     });
   });
 });
