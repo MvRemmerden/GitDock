@@ -47,7 +47,7 @@
     "electron-store": "^8.0.1",
     "jsdom": "^19.0.0",
     "menubar": "^9.2.0",
-    "node-browser-history": "^2.4.6",
+    "node-browser-history": "^2.4.9",
     "node-fetch": "^3.2.5",
     "playwright": "^1.23.1",
     "@playwright/test": "^1.23.1",
