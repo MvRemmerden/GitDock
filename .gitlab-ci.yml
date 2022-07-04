@@ -124,8 +124,6 @@ feature-tests-windows:
   script:
     - npx playwright install --with-deps
     - npm install -D @playwright/test
-    - Xvfb -ac :99 -screen 0 1280x1024x16 &
-    - export DISPLAY=:99
     - npm run playwright
   artifacts:
     when: always

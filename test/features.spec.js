@@ -15,6 +15,7 @@ test.describe('Feature tests', function () {
     const mrs = this.window.locator('#mrs-count');
     const todos = this.window.locator('#todos-count');
 
+    await this.window.screenshot({path: 'test-results/screenshots/features/shows-overview-page.png', fullPage: true});
     expect(await issues.count()).toBe(1);
     expect(await mrs.count()).toBe(1);
     expect(await todos.count()).toBe(1);

@@ -37,6 +37,7 @@ test.describe('"Recently viewed" section', function () {
 
         test('renders the correct message', async function () {
           const actual = await supportedBrowsersText(this.window);
+          await this.window.screenshot({path: `test-results/screenshots/recently-viewed/renders-the-correct-message-${platform}.png`, fullPage: true});
           expect(actual).toEqual(emptyMessage);
         });
       });
@@ -63,6 +64,7 @@ test.describe('"Recently viewed" section', function () {
         test('renders the history', async function () {
           const actual = await historyTexts(this.window);
 
+          await this.window.screenshot({path: `test-results/screenshots/recently-viewed/renders-the-history-${platform}.png`, fullPage: true});
           expect(actual.length).toEqual(1);
           expect(actual[0]).toContain('Test Issue (#1)');
           expect(actual[0]).toContain('ago · user / project');
@@ -86,6 +88,7 @@ test.describe('"Recently viewed" section', function () {
 
       test('renders the correct message', async function () {
         const actual = await supportedBrowsersText(this.window);
+        await this.window.screenshot({path: 'test-results/screenshots/recently-viewed/renders-the-correct-message-unsupported.png', fullPage: true});
         expect(actual).toEqual(emptyMessage);
       });
     });
@@ -107,6 +110,7 @@ test.describe('"Recently viewed" section', function () {
 
       test('renders the info message as if there was no history', async function () {
         const actual = await supportedBrowsersText(this.window);
+        await this.window.screenshot({path: 'test-results/screenshots/recently-viewed/renders-the-info-message-as-if-there-was-no-history.png', fullPage: true});
         expect(actual).toEqual(emptyMessage);
       });
     });
