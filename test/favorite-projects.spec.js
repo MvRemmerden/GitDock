@@ -47,7 +47,10 @@ test.describe('Favorite projects', function () {
   stopAppAfterEach();
 
   test('shows no favorite projects', async function () {
-    await this.window.screenshot({path: 'test-results/screenshots/favorite-projects/shows-no-favorite-projects.png', fullPage: true});
+    await this.window.screenshot({
+      path: 'test-results/screenshots/favorite-projects/shows-no-favorite-projects.png',
+      fullPage: true,
+    });
     expect((await listFavoriteProjects(this.window)).length).toEqual(0);
   });
 
@@ -60,7 +63,10 @@ test.describe('Favorite projects', function () {
 
     const projects = await listFavoriteProjects(this.window);
 
-    await this.window.screenshot({path: 'test-results/screenshots/favorite-projects/adds-a-new-favorite-project.png', fullPage: true});
+    await this.window.screenshot({
+      path: 'test-results/screenshots/favorite-projects/adds-a-new-favorite-project.png',
+      fullPage: true,
+    });
     expect(projects.length).toEqual(1);
     expect(projects[0].includes(EXAMPLE_PROJECT.name)).toBe(true);
     expect(projects[0].includes(EXAMPLE_PROJECT.namespace.name)).toBe(true);
@@ -75,7 +81,10 @@ test.describe('Favorite projects', function () {
     const onclick = await this.window
       .locator('[data-testid="favorite-projects"] li')
       .getAttribute('onclick');
-      await this.window.screenshot({path: 'test-results/screenshots/favorite-projects/shows-the-correct-project-link.png', fullPage: true});
+    await this.window.screenshot({
+      path: 'test-results/screenshots/favorite-projects/shows-the-correct-project-link.png',
+      fullPage: true,
+    });
     expect(onclick).toEqual(`goToDetail('Project', '${JSON.stringify(EXAMPLE_PROJECT)}')`);
   });
 
@@ -84,7 +93,10 @@ test.describe('Favorite projects', function () {
       loggedIn: true,
       favoriteProjects: [EXAMPLE_PROJECT],
     });
-    await this.window.screenshot({path: 'test-results/screenshots/favorite-projects/deletes-an-existing-project-1.png', fullPage: true});
+    await this.window.screenshot({
+      path: 'test-results/screenshots/favorite-projects/deletes-an-existing-project-1.png',
+      fullPage: true,
+    });
     expect((await listFavoriteProjects(this.window)).length).toEqual(1);
 
     await this.window.click('#edit-favorite-projects');
@@ -94,7 +106,10 @@ test.describe('Favorite projects', function () {
     await this.window.click('#detail-header');
     await this.window.waitForTimeout(100);
 
-    await this.window.screenshot({path: 'test-results/screenshots/favorite-projects/deletes-an-existing-project-2.png', fullPage: true});
+    await this.window.screenshot({
+      path: 'test-results/screenshots/favorite-projects/deletes-an-existing-project-2.png',
+      fullPage: true,
+    });
     expect((await listFavoriteProjects(this.window)).length).toEqual(0);
   });
 
@@ -113,13 +128,19 @@ test.describe('Favorite projects', function () {
 
     const error = this.window.locator('#add-project-settings-error');
 
-    await this.window.screenshot({path: 'test-results/screenshots/favorite-projects/prevents-adding-a-project-twice-1.png', fullPage: true});
+    await this.window.screenshot({
+      path: 'test-results/screenshots/favorite-projects/prevents-adding-a-project-twice-1.png',
+      fullPage: true,
+    });
     expect(await error.innerText()).toEqual('The same project was already added.');
 
     await this.window.click('#detail-header');
     await this.window.waitForTimeout(100);
 
-    await this.window.screenshot({path: 'test-results/screenshots/favorite-projects/prevents-adding-a-project-twice-2.png', fullPage: true});
+    await this.window.screenshot({
+      path: 'test-results/screenshots/favorite-projects/prevents-adding-a-project-twice-2.png',
+      fullPage: true,
+    });
     expect((await listFavoriteProjects(this.window)).length).toEqual(1);
   });
 });

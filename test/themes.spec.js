@@ -16,7 +16,10 @@ test.describe('Themes', function () {
 
     test('has the correct background color', async function () {
       const color = await getBackgroundColor(this.window);
-      await this.window.screenshot({path: 'test-results/screenshots/themes/has-the-correct-background-color-1.png', fullPage: true});
+      await this.window.screenshot({
+        path: 'test-results/screenshots/themes/has-the-correct-background-color-1.png',
+        fullPage: true,
+      });
       expect(color).toEqual('rgb(9, 12, 16)');
     });
   });
@@ -32,7 +35,10 @@ test.describe('Themes', function () {
 
     test('has the correct background color', async function () {
       const color = await getBackgroundColor(this.window);
-      await this.window.screenshot({path: 'test-results/screenshots/themes/has-the-correct-background-color-2.png', fullPage: true});
+      await this.window.screenshot({
+        path: 'test-results/screenshots/themes/has-the-correct-background-color-2.png',
+        fullPage: true,
+      });
       expect(color).toEqual('rgb(9, 12, 16)');
     });
   });
@@ -48,7 +54,10 @@ test.describe('Themes', function () {
 
     test('has the correct background color', async function () {
       const color = await getBackgroundColor(this.window);
-      await this.window.screenshot({path: 'test-results/screenshots/themes/has-the-correct-background-color-3.png', fullPage: true});
+      await this.window.screenshot({
+        path: 'test-results/screenshots/themes/has-the-correct-background-color-3.png',
+        fullPage: true,
+      });
       expect(color).toEqual('rgb(255, 255, 255)');
     });
   });

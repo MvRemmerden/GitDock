@@ -10,7 +10,10 @@ test.describe('Application launch', function () {
 
   test('starts the menubar window', async function () {
     const windows = await this.app.windows();
-    await this.window.screenshot({path: 'test-results/screenshots/launch/starts-the-menubar-window.png', fullPage: true});
+    await this.window.screenshot({
+      path: 'test-results/screenshots/launch/starts-the-menubar-window.png',
+      fullPage: true,
+    });
     expect(windows.length).toEqual(1);
     expect(await windows[0].title()).toEqual('GitDock');
   });
@@ -29,7 +32,10 @@ test.describe('Application launch', function () {
     const mrs = this.window.locator('#mrs-count');
     const todos = this.window.locator('#todos-count');
 
-    await this.window.screenshot({path: 'test-results/screenshots/launch/can-log-in.png', fullPage: true});
+    await this.window.screenshot({
+      path: 'test-results/screenshots/launch/can-log-in.png',
+      fullPage: true,
+    });
     expect(await issues.count()).toBe(1);
     expect(await mrs.count()).toBe(1);
     expect(await todos.count()).toBe(1);
