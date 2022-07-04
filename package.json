@@ -6,6 +6,7 @@
   "main": "myApp.js",
   "scripts": {
     "playwright": "PLAYWRIGHT_JUNIT_OUTPUT_NAME=junit.xml playwright test --reporter=junit",
+    "playwright-windows": "playwright test --reporter=junit",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",

@@ -124,7 +124,7 @@ feature-tests-windows:
   script:
     - npx playwright install --with-deps
     - npm install -D @playwright/test
-    - npm run playwright
+    - npm run playwright-windows
   artifacts:
     when: always
     paths:
